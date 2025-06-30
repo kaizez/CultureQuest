@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenge Screening</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+
+    <!-- NavBar Placeholder -->
+    <header class="bg-white py-4 shadow-md">
+        <nav class="max-w-7xl mx-auto px-4">
+            <h1 class="text-2xl font-bold text-gray-900">Challenge Screening</h1>
+        </nav>
+    </header>
+
+    <div class="max-w-7xl mx-auto p-6 mt-8 bg-white rounded-lg shadow-md">
+        <h2 class="text-3xl font-semibold text-gray-900 mb-6">Challenges Submitted</h2>
+
+        <div class="space-y-6">
+            {% for challenge in challenges %}
+            <div class="p-4 border border-gray-300 rounded-lg shadow-sm">
+                <h3 class="text-xl font-semibold text-gray-800">{{ challenge.name }}</h3>
+                <p class="text-sm text-gray-600">Submitted by: {{ challenge.email }} | Phone: {{ challenge.phone }}</p>
+                <p class="mt-2 text-gray-700">{{ challenge.description }}</p>
+
+                <!-- Check if a thumbnail exists and if it's a PNG image -->
+                {% if challenge.thumbnail %}
+                    {% if challenge.thumbnail.endswith('.png') %}
+                        <!-- Display the PNG image directly -->
+                        <img src="{{ url_for('static', filename='uploads/' + challenge.thumbnail.split('/')[-1]) }}" alt="Thumbnail" class="mt-4 max-w-xs">
+                    {% else %}
+                        <p>Invalid file format. Only PNG images are allowed.</p>
+                    {% endif %}
+                {% else %}
+                    <p>No thumbnail available</p>
+                {% endif %}
+
+                <div class="mt-4 flex space-x-4">
+                    <a href="/update_status/{{ challenge.id }}/In Progress" class="bg-yellow-500 text-white px-4 py-2 rounded-lg">In Progress</a>
+                    <a href="/update_status/{{ challenge.id }}/Approved" class="bg-green-500 text-white px-4 py-2 rounded-lg">Approve</a>
+                    <a href="/update_status/{{ challenge.id }}/Rejected" class="bg-red-500 text-white px-4 py-2 rounded-lg">Reject</a>
+                    <span>Status: <strong>{{ challenge.status }}</strong></span>
+                    
+                    <!-- Only show delete button for rejected challenges -->
+                    {% if challenge.status == 'Rejected' %}
+                        <form action="/delete/{{ challenge.id }}" method="POST" class="inline-block">
+                            <button type="submit" class="bg-gray-500 text-white px-4 py-2 rounded-lg">Delete</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</body>
+</html>
