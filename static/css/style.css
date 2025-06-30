@@ -1,0 +1,147 @@
+/* Base Layout */
+body {
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+    background: #f7f8fa;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Header Bar */
+header {
+    background: white;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h2 {
+    font-weight: 700;
+    margin: 0;
+    font-size: 20px;
+}
+
+/* Message Area */
+#message-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 0 16px;
+    box-sizing: border-box;
+    flex: 1;
+}
+
+#messages {
+    max-width: 600px;
+    width: 100%;
+    padding: 20px 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Message Bubbles */
+.message {
+    max-width: 80%;
+    padding: 12px 16px 28px 16px;
+    border-radius: 16px;
+    position: relative;
+    font-size: 15px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+}
+
+.message.user {
+    align-self: flex-end;
+    background: #E5F3FE;
+    border-bottom-right-radius: 0;
+}
+
+.message.other {
+    align-self: flex-start;
+    background: #ffffff;
+    border-bottom-left-radius: 0;
+}
+
+/* Timestamp and Username Footer */
+.message-footer {
+    position: absolute;
+    bottom: 6px;
+    right: 14px;
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    color: #888;
+    font-weight: 400;
+}
+
+/* Chat Footer */
+#chat-footer {
+    background: #f7f8fa;
+    padding: 16px;
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+/* Input Form Bubble */
+#chat-form {
+    background: white;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    max-width: 720px;
+    width: 100%;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Text Input */
+#chat-form input[type="text"] {
+    flex: 1;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 999px;
+    outline: none;
+    background: transparent;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+}
+
+/* Send Button */
+#chat-form button {
+    background: transparent;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Send Icon Image */
+.send-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
+
+/* Other Icons */
+#chat-form .icon {
+    font-size: 18px;
+    color: #888;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
