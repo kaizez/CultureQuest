@@ -20,7 +20,7 @@ def handle_challenge_form(app):
         
         # Handle file upload (thumbnail)
         thumbnail = request.files['thumbnail']
-        thumbnail_path = None
+        thumbnail_filename = None  # Store only the filename
         
         # Ensure the 'uploads' folder exists
         upload_folder = app.config['UPLOAD_FOLDER']
@@ -36,7 +36,8 @@ def handle_challenge_form(app):
                     return render_template('challenge_form.html', message="Please upload a PNG image.")
                 
                 # Save the file with its original filename
-                thumbnail_path = os.path.join(upload_folder, thumbnail.filename)
+                thumbnail_filename = thumbnail.filename  # Only store the filename, not the full path
+                thumbnail_path = os.path.join(upload_folder, thumbnail_filename)
                 thumbnail.save(thumbnail_path)
 
             except IOError:
@@ -57,7 +58,7 @@ def handle_challenge_form(app):
 
         conn.execute('''INSERT INTO challenges (name, email, phone, description, thumbnail, status) 
                         VALUES (?, ?, ?, ?, ?, ?)''',
-                     (name, email, phone, description, thumbnail_path, 'New'))
+                     (name, email, phone, description, thumbnail_filename, 'New'))
         conn.commit()
         conn.close()
 

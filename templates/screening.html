@@ -29,7 +29,7 @@
                 {% if challenge.thumbnail %}
                     {% if challenge.thumbnail.endswith('.png') %}
                         <!-- Display the PNG image directly -->
-                        <img src="{{ url_for('static', filename='uploads/' + challenge.thumbnail.split('/')[-1]) }}" alt="Thumbnail" class="mt-4 max-w-xs">
+                        <img src="{{ url_for('static', filename='uploads/' + challenge.thumbnail) }}" alt="Thumbnail" class="mt-4 max-w-xs">
                     {% else %}
                         <p>Invalid file format. Only PNG images are allowed.</p>
                     {% endif %}
