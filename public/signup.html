@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign Up | CultureQuest</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img src="/static/logo.png" alt="CultureQuest Logo" />
+      <h1>Create an Account</h1>
+    </div>
+
+    <form id="signupForm" class="login-form">
+      <div class="input-field">
+        <input type="text" id="newUsername" placeholder="Username" required />
+      </div>
+      <div class="input-field">
+        <input type="email" id="newEmail" placeholder="Email" required />
+      </div>
+      <div class="input-field">
+        <input type="password" id="newPassword" placeholder="Password" required />
+        <small id="passwordHelp" style="color: red;"></small>
+      </div>
+      <button type="submit" class="login-btn">Sign Up</button>
+    </form>
+
+    <p style="text-align: center; margin-top: 10px;">
+      Already have an account? <a href="/">Login</a>
+    </p>
+  </div>
+
+  <script>
+    document.getElementById("signupForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById("newUsername").value.trim();
+      const email = document.getElementById("newEmail").value.trim();
+      const password = document.getElementById("newPassword").value.trim();
+
+      // Client-side password validation
+      const passwordHelp = document.getElementById("passwordHelp");
+      if (password.length < 6) {
+        passwordHelp.textContent = "Password must be at least 6 characters long.";
+        return;
+      } else {
+        passwordHelp.textContent = "";
+      }
+
+      fetch("/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Optionally store the user or just redirect
+          window.location.href = "/";
+        } else {
+          alert(data.message || "Signup failed.");
+        }
+      })
+      .catch(() => {
+        alert("Server error. Please try again.");
+      });
+    });
+  </script>
+</body>
+</html>

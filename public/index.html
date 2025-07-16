@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | CultureQuest</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+
+  <!-- Language Selector -->
+  <div class="language-box">
+    <select id="languageSelector">
+      <option value="en">English</option>
+      <option value="ko">한국어</option>
+      <option value="es">Español</option>
+      <option value="zh">中文</option>
+      <option value="ms">Bahasa Melayu</option>
+      <option value="hi">हिन्दी</option>
+    </select>
+  </div>
+
+  <div class="container">
+    <div class="logo">
+      <img src="/static/logo.png" alt="CultureQuest Logo" />
+      <h1 id="title">CULTUREQUEST</h1>
+    </div>
+
+    <div class="login-box">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="id" id="id-login-btn">ID Login</button>
+      </div>
+
+      <!-- ID Login Form -->
+      <form class="login-form" id="id-form" method="POST" action="/login">
+        <div class="input-field">
+          <input type="text" name="username" placeholder="Username or ID" required />
+        </div>
+        <div class="input-field">
+          <input type="password" name="password" placeholder="Password" required />
+        </div>
+        <div class="options">
+          <label class="custom-check">
+            <input type="checkbox" checked />
+            <span class="checkmark"></span> Stay Signed in
+          </label>
+        </div>
+        <button type="submit" class="login-btn" id="login-btn">Sign in</button>
+      </form>
+    </div>
+
+    <div class="help-signup">
+      <a href="#" id="forgot">Forgot your <strong>password</strong> or <strong>ID</strong>?</a>
+      <span class="divider">|</span>
+      <a href="/signup" id="signup">Sign up</a>
+    </div>
+
+    <div class="socials">
+      <a href="/auth/google">
+        <button class="enabled">
+          <img src="https://developers.google.com/identity/images/g-logo.png" class="social-icon" alt="Google" />
+          Google
+        </button>
+      </a>
+    </div>
+  </div>
+
+  <!-- Language and JavaScript Files -->
+  <script src="/static/lang.js"></script>
+  <script>
+    // Tab switching functionality (ID login only)
+    document.querySelectorAll('.tab-btn').forEach(button => {
+      button.addEventListener('click', () => {
+        // Remove active class from both buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+        // Add active class to the clicked button
+        button.classList.add('active');
+
+        // Get the data-tab attribute to switch between forms
+        const tab = button.getAttribute('data-tab');
+
+        // Toggle visibility of the forms
+        document.getElementById('id-form').classList.toggle('hidden', tab !== 'id');
+      });
+    });
+  </script>
+</body>
+
+</html>

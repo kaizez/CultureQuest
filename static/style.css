@@ -1,0 +1,305 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 40px 0;
+  margin: 0;
+  overflow-y: auto;
+}
+
+.language-box {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.language-box select {
+  height: 36px;
+  min-width: 130px;
+  padding: 6px 34px 6px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  appearance: none;
+  color: #333;
+  cursor: pointer;
+}
+
+.container {
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+}
+
+.logo img {
+  width: 100px;
+  margin: 0 auto 12px;
+}
+
+.logo h1 {
+  font-weight: bold;
+  font-size: 32px;
+  margin-bottom: 28px;
+  color: black;
+}
+
+.login-box {
+  background-color: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.tabs {
+  display: flex;
+  background: #f1f1f1;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 25px 0px 0px 0px;
+  font-weight: bold;
+  font-size: 18px;
+  border: none;
+  background: #f1f1f1;
+  color: #666;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  background: #ffffff;
+  color: black;
+}
+
+.login-form {
+  padding: 30px 28px;
+}
+
+.input-field {
+  margin-bottom: 14px;
+}
+
+.input-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  background: #fff;
+}
+
+.input-field input:focus {
+  outline: none;
+  border-color: #2db400;
+}
+
+.verify-box label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  text-align: left;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.row input {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.row button {
+  padding: 10px 16px;
+  background-color: #007bff;
+  border: none;
+  color: white;
+  font-size: 14px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.row button:hover {
+  background-color: #0056cc;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin: 12px 0 20px;
+  color: #444;
+}
+
+.custom-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.custom-check input {
+  display: none;
+}
+
+.custom-check .checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #999;
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+}
+
+.custom-check input:checked + .checkmark::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0px;
+  width: 5px;
+  height: 10px;
+  border: solid #2db400;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  border-radius: 34px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: 0.4s;
+}
+
+.slider::before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .slider {
+  background-color: #2db400;
+}
+
+.toggle-switch input:checked + .slider::before {
+  transform: translateX(16px);
+}
+
+.login-btn {
+  width: 100%;
+  background-color: #d4d7dd;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background-color: #249300;
+}
+
+.help-signup {
+  margin-top: 18px;
+  font-size: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  color: #666;
+}
+
+.help-signup a {
+  color: #2db400;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.help-signup .divider {
+  color: #ccc;
+}
+
+.socials {
+  margin-top: 25px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.socials a {
+  flex: 1;
+  margin: 0 5px;
+  text-decoration: none;
+}
+
+.socials .enabled {
+  width: 100%;
+  padding: 12px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.socials .enabled:hover {
+  background-color: #f3f3f3;
+}
+
+.social-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.hidden {
+  display: none !important;
+}
