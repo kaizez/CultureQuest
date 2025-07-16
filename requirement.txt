@@ -1,0 +1,3 @@
+npm install express express-session passport passport-google-oauth20 dotenv
+pip install Flask-Dance
+pip install twilio

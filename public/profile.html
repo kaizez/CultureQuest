@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile | CultureQuest</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <div class="logo">
+      <img src="/static/logo.png" alt="CultureQuest Logo" />
+      <h1>Welcome to Your Profile</h1>
+    </div>
+
+    <div class="profile-box">
+      <h2>Hello, {{ username }} 👋</h2>
+      <p>You are now logged in to CultureQuest.</p>
+
+      <button class="login-btn" onclick="confirmLogout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    function confirmLogout() {
+      if (confirm("Are you sure you want to logout?")) {
+        window.location.href = "/logout";
+      }
+    }
+  </script>
+  
+</body>
+</html>
