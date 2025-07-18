@@ -1,36 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Flask Chat</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.socket.io/socket.io-3.0.3.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</head>
-<body>
+{% extends "base.html" %}
 
-<header>
-    <h2>Challenge name</h2>
-    <div>30 Days remaining</div>
-</header>
+{% set hide_navbar = true %}
 
-<div id="message-wrapper">
-    <div id="messages"></div>
-</div>
+{% block title %}You.com Chat - Session{% endblock %}
 
-<!-- Input Footer -->
-<div id="chat-footer">
-    <form id="chat-form">
-        <span class="icon">📎</span>
-        <input type="text" id="message" placeholder="Message..." autocomplete="off" required />
-        <span class="icon">🎤</span>
-        <button type="submit">
-            <img src="{{ url_for('static', filename='img/send.png') }}" alt="Send" class="send-icon">
-        </button>
-    </form>
-</div>
+{% block body_class %}chat-body{% endblock %}
 
-</body>
-</html>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+{% endblock %}
+
+{% block scripts_head %}
+    <!-- Add any head scripts here -->
+{% endblock %}
+
+{% block content %}
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <div class="chat-header-left">
+            <div class="challenge-badge">
+                <div class="challenge-icon">💡</div>
+                <div class="challenge-info">
+                    <h3 class="challenge-name">AI Chat Session</h3>
+                    <span class="challenge-duration">Active now</span>
+                </div>
+            </div>
+        </div>
+        <div class="chat-header-right">
+            <button class="header-action-btn" title="Settings">
+                <span class="icon">⚙️</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Message Area -->
+    <div id="message-wrapper">
+        <div id="messages">
+            <!-- Messages will be loaded from database via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Chat Input Footer -->
+    <div id="chat-footer">
+        <div class="chat-input-container">
+            <form id="chat-form">
+                <div class="input-actions-left">
+                    <button type="button" class="action-btn" title="Attach file">
+                        <span class="icon">📎</span>
+                    </button>
+                    <button type="button" class="action-btn" title="Voice message">
+                        <span class="icon">🎤</span>
+                    </button>
+                </div>
+                
+                <div class="input-wrapper">
+                    <input type="text" id="message" name="message" placeholder="Type your message..." autocomplete="off" />
+                </div>
+                
+                <div class="input-actions-right">
+                    <button type="submit" class="send-btn">
+                        <svg class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 2L11 13"></path>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% endblock %}
