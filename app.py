@@ -4,10 +4,10 @@ import hashlib
 import requests
 import time
 import re
-from flask import Flask, render_template, jsonify, request, url_for
-from flask_socketio import SocketIO, emit
+from flask import Flask, render_template, jsonify, request, url_for, redirect, flash
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.utils import secure_filename
-from models import db, Message
+from models import db, Message, ChatRoom
 from datetime import datetime
 from markupsafe import escape
 from dotenv import load_dotenv
@@ -62,10 +62,25 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db.init_app(app)
 socketio = SocketIO(app)
 
-# Create tables if not exist
+# Create tables if not exist and seed default chat rooms
 with app.app_context():
     db.create_all()
+    
+    # Create default chat rooms if they don't exist
+    if ChatRoom.query.count() == 0:
+        default_rooms = [
+            ChatRoom(name="General Chat", description="Welcome to the general discussion room"),
+            ChatRoom(name="Tech Talk", description="Discuss technology, programming, and innovation"),
+            ChatRoom(name="Random", description="Talk about anything and everything"),
+            ChatRoom(name="File Sharing", description="Share and discuss files securely")
+        ]
+        
+        for room in default_rooms:
+            db.session.add(room)
+        db.session.commit()
+        print("✅ Default chat rooms created")
 
+# Keep all your existing helper functions (they don't need to change)
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and \
@@ -324,22 +339,75 @@ def landing():
     return render_template('landing.html')
 
 @app.route('/chat')
-def chat_session():
-    """Chat session route"""
+def chat_rooms():
+    """Chat rooms menu page"""
+    username = request.args.get('username', 'Guest')
+    rooms = ChatRoom.query.filter_by(is_active=True).order_by(ChatRoom.created_at.desc()).all()
+    return render_template('chat_rooms.html', username=escape(username), rooms=rooms)
+
+@app.route('/chat/<int:room_id>')
+def chat_session(room_id):
+    """Individual chat session route"""
+    room = ChatRoom.query.get_or_404(room_id)
+    if not room.is_active:
+        flash('This chat room is not available', 'error')
+        return redirect(url_for('chat_rooms'))
+    
     # Get username from query parameters or default to 'Guest'
     username = request.args.get('username', 'Guest')
-    # Sanitize username to prevent XSS
-    return render_template('session.html', username=escape(username))
+    return render_template('session.html', 
+                         username=escape(username), 
+                         room=room,
+                         room_id=room_id)
 
-@app.route('/history')
-def history():
-    """Get chat history"""
-    messages = Message.query.all()
+@app.route('/api/rooms', methods=['GET'])
+def get_rooms():
+    """API endpoint to get all active chat rooms"""
+    rooms = ChatRoom.query.filter_by(is_active=True).order_by(ChatRoom.created_at.desc()).all()
+    return jsonify([room.to_dict() for room in rooms])
+
+@app.route('/api/rooms', methods=['POST'])
+def create_room():
+    """API endpoint to create a new chat room"""
+    data = request.get_json()
+    
+    if not data or 'name' not in data:
+        return jsonify({'error': 'Room name is required'}), 400
+    
+    name = data['name'].strip()
+    description = data.get('description', '').strip()
+    
+    if len(name) > 100:
+        return jsonify({'error': 'Room name too long'}), 400
+    
+    if len(description) > 500:
+        return jsonify({'error': 'Description too long'}), 400
+    
+    # Check if room with same name already exists
+    existing_room = ChatRoom.query.filter_by(name=name, is_active=True).first()
+    if existing_room:
+        return jsonify({'error': 'Room with this name already exists'}), 400
+    
+    new_room = ChatRoom(name=name, description=description)
+    db.session.add(new_room)
+    db.session.commit()
+    
+    return jsonify(new_room.to_dict()), 201
+
+@app.route('/history/<int:room_id>')
+def history(room_id):
+    """Get chat history for a specific room"""
+    room = ChatRoom.query.get_or_404(room_id)
+    messages = Message.query.filter_by(room_id=room_id).order_by(Message.timestamp.asc()).all()
     return jsonify([msg.to_dict() for msg in messages])
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    """Handle file uploads with virus scanning"""
+@app.route('/upload/<int:room_id>', methods=['POST'])
+def upload_file(room_id):
+    """Handle file uploads with virus scanning for a specific room"""
+    room = ChatRoom.query.get_or_404(room_id)
+    if not room.is_active:
+        return jsonify({'error': 'Chat room is not available'}), 400
+    
     try:
         user_name = request.form.get('user_name', 'Guest')
         message = request.form.get('message', '')
@@ -356,10 +424,11 @@ def upload_file():
         if 'file' not in request.files:
             # If there's a message, treat it as a regular text message
             if message:
-                new_msg = Message(user_name=user_name, message=message, timestamp=datetime.utcnow())
+                new_msg = Message(user_name=user_name, message=message, 
+                                timestamp=datetime.utcnow(), room_id=room_id)
                 db.session.add(new_msg)
                 db.session.commit()
-                socketio.emit('my response', new_msg.to_dict())
+                socketio.emit('my response', new_msg.to_dict(), room=f'room_{room_id}')
                 return jsonify({'success': True, 'message': 'Message sent successfully'})
             return jsonify({'error': 'No file part in the request'}), 400
 
@@ -369,10 +438,11 @@ def upload_file():
         if file.filename == '':
             # If there's a message, treat it as a regular text message
             if message:
-                new_msg = Message(user_name=user_name, message=message, timestamp=datetime.utcnow())
+                new_msg = Message(user_name=user_name, message=message, 
+                                timestamp=datetime.utcnow(), room_id=room_id)
                 db.session.add(new_msg)
                 db.session.commit()
-                socketio.emit('my response', new_msg.to_dict())
+                socketio.emit('my response', new_msg.to_dict(), room=f'room_{room_id}')
                 return jsonify({'success': True, 'message': 'Message sent successfully'})
             return jsonify({'error': 'No selected file'}), 400
 
@@ -422,13 +492,14 @@ def upload_file():
                     message=full_message,
                     timestamp=datetime.utcnow(),
                     file_name=filename,
-                    file_url=file_url
+                    file_url=file_url,
+                    room_id=room_id
                 )
                 db.session.add(new_msg)
                 db.session.commit()
 
-                # Emit message to all clients
-                socketio.emit('my response', new_msg.to_dict())
+                # Emit message to room clients
+                socketio.emit('my response', new_msg.to_dict(), room=f'room_{room_id}')
 
                 return jsonify({
                     'success': True, 
@@ -450,9 +521,40 @@ def upload_file():
         print(f"Upload error: {e}")
         return jsonify({'error': 'An unexpected error occurred during upload'}), 500
 
-# SocketIO event
+# SocketIO events
+@socketio.on('join')
+def on_join(data):
+    """Handle user joining a chat room"""
+    room_id = data.get('room')
+    username = data.get('username', 'Guest')
+    
+    if room_id:
+        room_name = f'room_{room_id}'
+        join_room(room_name)
+        print(f'{username} joined room {room_id}')
+
+@socketio.on('leave')
+def on_leave(data):
+    """Handle user leaving a chat room"""
+    room_id = data.get('room')
+    username = data.get('username', 'Guest')
+    
+    if room_id:
+        room_name = f'room_{room_id}'
+        leave_room(room_name)
+        print(f'{username} left room {room_id}')
+
 @socketio.on('my event')
 def handle_my_custom_event(json):
+    room_id = json.get('room_id')
+    if not room_id:
+        return
+    
+    # Verify room exists
+    room = ChatRoom.query.get(room_id)
+    if not room or not room.is_active:
+        return
+    
     print('received message:', json)
 
     user_name = json.get('user_name', 'Guest')
@@ -495,13 +597,14 @@ def handle_my_custom_event(json):
     new_msg = Message(
         user_name=user_name,
         message=final_message,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.utcnow(),
+        room_id=room_id
     )
     db.session.add(new_msg)
     db.session.commit()
 
-    # Emit message including timestamp from database
-    emit('my response', new_msg.to_dict(), broadcast=True)
+    # Emit message to room including timestamp from database
+    emit('my response', new_msg.to_dict(), room=f'room_{room_id}')
 
 # Run the server
 if __name__ == '__main__':

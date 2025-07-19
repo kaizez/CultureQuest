@@ -15,14 +15,18 @@
 {% endblock %}
 
 {% block content %}
+    <div id="chat-container" data-room-id="{{ room.id }}" data-username="{{ username }}">
     <!-- Chat Header -->
     <div class="chat-header">
         <div class="chat-header-left">
+            <a href="{{ url_for('chat_rooms', username=username) }}" class="back-to-rooms-btn" title="Back to Rooms">
+                <span>←</span>
+            </a>
             <div class="challenge-badge">
                 <div class="challenge-icon">💡</div>
                 <div class="challenge-info">
-                    <h3 class="challenge-name">AI Chat Session</h3>
-                    <span class="challenge-duration">Active now</span>
+                    <h3 class="challenge-name">{{ room.name }}</h3>
+                    <span class="challenge-duration">{{ room.description or 'Active now' }}</span>
                 </div>
             </div>
         </div>
@@ -75,6 +79,7 @@
             </form>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}

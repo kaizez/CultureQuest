@@ -2,16 +2,29 @@ $(document).ready(function () {
     const socket = io();
     let selectedFile = null;
 
-    // Prompt for the username and use "Anonymous" if not provided
-    let userName = prompt("Enter your name:");
-    if (!userName) userName = "Anonymous";
+    // Get room and user info from the DOM
+    const chatContainer = $('#chat-container');
+    const roomId = chatContainer.data('room-id');
+    const userName = chatContainer.data('username');
 
-    // Load message history from server on page load
-    $.getJSON('/history', function (data) {
+    if (!roomId) {
+        alert('Error: Chat room ID not found. Returning to room selection.');
+        window.location.href = '/chat';
+        return;
+    }
+
+    // Join the specific chat room
+    socket.on('connect', function() {
+        socket.emit('join', { room: roomId, username: userName });
+        console.log(`Joined room ${roomId} as ${userName}`);
+    });
+
+    // Load message history for the specific room
+    $.getJSON(`/history/${roomId}`, function (data) {
         data.forEach(function (msg) {
             appendMessage(msg);
         });
-        scrollToBottom();  // Scroll to the most recent message
+        scrollToBottom();
     });
 
     // File attachment functionality
@@ -33,45 +46,44 @@ $(document).ready(function () {
 
     // Function to detect URLs in text
     function detectURLs(text) {
-        const urlRegex = /https?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
+        const urlRegex = /https?:\/\/(?:[a-zA-Z]|[0-9]|[$_@.&+]|[!*\\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
         return text.match(urlRegex) || [];
     }
 
-    // Handle form submission (either by pressing Enter or clicking the send button)
+    // Handle form submission
     $('#chat-form').submit(function (e) {
-        e.preventDefault();  // Prevent page refresh on submit
-        const message = $('#message').val().trim();  // Get the input value
+        e.preventDefault();
+        const message = $('#message').val().trim();
         
         if (message || selectedFile) {
             if (selectedFile) {
-                // Send file
                 sendFileMessage(message);
             } else {
-                // Check if message contains URLs for scanning indication
                 const urls = detectURLs(message);
                 if (urls.length > 0) {
-                    // Show URL scanning indication
                     showURLScanningIndicator(urls);
                 }
                 
-                // Send text message via SocketIO (URL scanning happens on server)
+                // Send text message with room_id
                 socket.emit('my event', {
                     user_name: userName,
-                    message: message
+                    message: message,
+                    room_id: roomId
                 });
             }
-            $('#message').val('').focus();  // Clear the input field after sending
+            $('#message').val('').focus();
             clearFileSelection();
         }
     });
 
-    // Listen for new messages from the server and display them
+    // Listen for new messages from the server
     socket.on('my response', function (msg) {
-        // Remove any URL scanning indicators if this is the response
-        removeURLScanningIndicator();
-        
-        appendMessage(msg);  // Append the new message to the message list
-        scrollToBottom();  // Scroll to the bottom of the message list
+        // Ensure message is for the current room
+        if (msg.room_id == roomId) {
+            removeURLScanningIndicator();
+            appendMessage(msg);
+            scrollToBottom();
+        }
     });
 
     // Function to show URL scanning indicator
@@ -82,7 +94,8 @@ $(document).ready(function () {
             message: `🔍 Scanning ${urls.length} URL(s) for threats...\n${urlList}\n\nPlease wait...`,
             timestamp: new Date().toISOString(),
             scanning: true,
-            scanning_id: 'url-scanning-indicator'
+            scanning_id: 'url-scanning-indicator',
+            room_id: roomId
         };
         
         appendMessage(scanningMsg);
@@ -96,68 +109,42 @@ $(document).ready(function () {
         });
     }
 
-    // Function to send file message with virus scanning
+    // Function to send file message to the correct room
     function sendFileMessage(message) {
         const formData = new FormData();
         formData.append('file', selectedFile);
         formData.append('user_name', userName);
         formData.append('message', message);
 
-        // Show scanning status
         const scanningId = showScanningMessage(selectedFile.name);
         
-        // Disable the send button during upload
         $('.send-btn').prop('disabled', true).css('opacity', '0.6');
 
         $.ajax({
-            url: '/upload',
+            url: `/upload/${roomId}`, // Use room-specific upload URL
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
-            timeout: 180000, // 3 minutes timeout for virus scanning
+            timeout: 180000,
             success: function(response) {
-                // Remove scanning message
                 removeScanningMessage(scanningId);
-                
                 if (response.success) {
-                    console.log('File uploaded successfully and passed virus scan');
-                    
-                    // Show success notification
                     showNotification('✅ File uploaded and virus scan passed', 'success');
-                    
-                    if (response.scan_details) {
-                        console.log('Scan details:', response.scan_details);
-                    }
                 } else {
                     showNotification('❌ Error: ' + response.error, 'error');
                 }
-                
-                // Re-enable send button
                 $('.send-btn').prop('disabled', false).css('opacity', '1');
             },
             error: function(xhr, status, error) {
-                console.error('Error uploading file:', error);
-                
-                // Remove scanning message
                 removeScanningMessage(scanningId);
-                
                 let errorMsg = 'An unknown error occurred.';
-                
                 if (status === 'timeout') {
                     errorMsg = 'Upload timed out. The file may be too large or the virus scan took too long.';
                 } else if (xhr.responseJSON && xhr.responseJSON.error) {
                     errorMsg = xhr.responseJSON.error;
-                    
-                    // Show additional scan details if available
-                    if (xhr.responseJSON.scan_details) {
-                        console.log('Scan details:', xhr.responseJSON.scan_details);
-                    }
                 }
-                
                 showNotification('❌ Error uploading file: ' + errorMsg, 'error');
-                
-                // Re-enable send button
                 $('.send-btn').prop('disabled', false).css('opacity', '1');
             }
         });
@@ -171,7 +158,8 @@ $(document).ready(function () {
             message: `🔍 Scanning "${fileName}" for viruses... Please wait.`,
             timestamp: new Date().toISOString(),
             scanning: true,
-            scanning_id: scanningId
+            scanning_id: scanningId,
+            room_id: roomId
         };
         
         appendMessage(scanningMsg);
@@ -179,6 +167,7 @@ $(document).ready(function () {
         
         return scanningId;
     }
+
 
     // Function to remove scanning message
     function removeScanningMessage(scanningId) {
@@ -295,7 +284,7 @@ $(document).ready(function () {
             } else {
                 // Display file link
                 const fileLink = $('<a>').attr('href', msg.file_url).attr('target', '_blank').text(fileName).addClass('file-link').css({
-                    'color': '#007bff',
+                    'color': '#ffffff',
                     'text-decoration': 'underline'
                 });
                 bubbleDiv.append($('<span>').addClass('file-icon').text('📄 ')).append(fileLink);

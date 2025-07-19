@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block title %}You.com Chat - Select Room{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.page-title {
+    font-size: 48px;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+    font-size: 18px;
+    color: #6b7280;
+    margin-bottom: 32px;
+}
+
+.username-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f0f9ff;
+    border: 1px solid #e0f2fe;
+    border-radius: 24px;
+    padding: 8px 16px;
+    color: #0369a1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.username-icon {
+    width: 20px;
+    height: 20px;
+    background: #0369a1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+    margin-bottom: 48px;
+}
+
+.room-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid #e5e7eb;
+}
+
+.room-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.15);
+    border-color: #6366f1;
+}
+
+.room-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.room-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.room-info {
+    flex: 1;
+}
+
+.room-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+}
+
+.room-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.room-description {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.room-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    border-top: 1px solid #f3f4f6;
+}
+
+.room-activity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+.room-enter {
+    background: #1f2937;
+    color: white;
+    font-weight: 500;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.room-enter:hover {
+    background: #111827;
+}
+
+.create-room-section {
+    text-align: center;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 32px;
+    border: 2px dashed #e5e7eb;
+}
+
+.create-room-icon {
+    width: 64px;
+    height: 64px;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 24px;
+    color: #6b7280;
+}
+
+.create-room-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.create-room-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+
+.create-room-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.form-group {
+    text-align: left;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+    margin-bottom: 6px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.create-room-btn {
+    background: #6366f1;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.create-room-btn:hover {
+    background: #5856eb;
+    transform: translateY(-1px);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    margin-bottom: 24px;
+}
+
+.back-link:hover {
+    color: #1f2937;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 24px 16px;
+    }
+
+    .page-title {
+        font-size: 36px;
+    }
+
+    .rooms-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .room-card {
+        padding: 20px;
+    }
+
+    .create-room-section {
+        padding: 24px;
+    }
+}
+
+/* Success/Error Messages */
+.flash-message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.flash-success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.flash-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <a href="/" class="back-link">
+        <span>←</span>
+        Back to Home
+    </a>
+
+    <div class="page-header">
+        <h1 class="page-title">Choose a Chat Room</h1>
+        <p class="page-subtitle">Join conversations with others or create your own room</p>
+        <div class="username-display">
+            <div class="username-icon">{{ username[0].upper() }}</div>
+            <span>Welcome, {{ username }}</span>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message flash-{{ 'success' if category == 'success' else 'error' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="rooms-grid">
+        {% for room in rooms %}
+        <a href="{{ url_for('chat_session', room_id=room.id, username=username) }}" class="room-card">
+            <div class="room-header">
+                <div class="room-icon">
+                    {% if room.name == "General Chat" %}💬
+                    {% elif room.name == "Tech Talk" %}💻
+                    {% elif room.name == "Random" %}🎲
+                    {% elif room.name == "File Sharing" %}📁
+                    {% else %}🔊{% endif %}
+                </div>
+                <div class="room-info">
+                    <div class="room-name">{{ room.name }}</div>
+                    <div class="room-meta">
+                        <span>Created {{ room.created_at.strftime('%b %d') }}</span>
+                        <span>•</span>
+                        <span>Active</span>
+                    </div>
+                </div>
+            </div>
+            <div class="room-description">
+                {{ room.description or "Join the conversation in this chat room" }}
+            </div>
+            <div class="room-stats">
+                <div class="room-activity">
+                    <div class="activity-dot"></div>
+                    <span>Active now</span>
+                </div>
+                <div class="room-enter">Join Room</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="create-room-section">
+        <div class="create-room-icon">+</div>
+        <h3 class="create-room-title">Create New Room</h3>
+        <p class="create-room-description">Start a new conversation topic for others to join</p>
+        
+        <form class="create-room-form" id="create-room-form">
+            <div class="form-group">
+                <label class="form-label" for="room-name">Room Name</label>
+                <input type="text" id="room-name" name="name" class="form-input" placeholder="Enter room name..." required maxlength="100">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="room-description">Description (Optional)</label>
+                <textarea id="room-description" name="description" class="form-input form-textarea" placeholder="What will you discuss in this room?" maxlength="500"></textarea>
+            </div>
+            
+            <button type="submit" class="create-room-btn">Create Room</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on room name input
+    const roomNameInput = document.getElementById('room-name');
+    if(roomNameInput) {
+        roomNameInput.focus();
+    }
+
+    // Handle form submission with AJAX
+    const createRoomForm = document.getElementById('create-room-form');
+    if(createRoomForm) {
+        createRoomForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const roomName = document.getElementById('room-name').value.trim();
+            const roomDescription = document.getElementById('room-description').value.trim();
+            const createButton = this.querySelector('button[type="submit"]');
+
+            if (!roomName) {
+                alert('Please enter a room name');
+                return;
+            }
+            if (roomName.length > 100) {
+                alert('Room name is too long (max 100 characters)');
+                return;
+            }
+
+            createButton.disabled = true;
+            createButton.textContent = 'Creating...';
+
+            fetch("{{ url_for('create_room') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: roomName,
+                    description: roomDescription
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                // Success: reload the page to show the new room
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error creating room:', error);
+                alert('Error creating room: ' + error.message);
+                createButton.disabled = false;
+                createButton.textContent = 'Create Room';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
