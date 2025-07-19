@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-2xl font-bold mb-6">Admin Dashboard</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+        <h3 class="font-bold text-lg mb-2">Pending Challenges</h3>
+        {% for ch in pending_challenges %}
+        <div class="bg-white p-3 mb-3 rounded shadow">
+            <div class="font-semibold">{{ ch.title }}</div>
+            <div class="text-sm text-gray-500">By: {{ ch.creator.username }}</div>
+            <form class="inline" action="{{ url_for('admin.approve_challenge', challenge_id=ch.id) }}" method="get">
+                <button class="px-2 py-1 bg-green-500 text-white rounded text-sm">Approve</button>
+            </form>
+            <form class="inline" action="{{ url_for('admin.reject_challenge', challenge_id=ch.id) }}" method="post">
+                <button class="px-2 py-1 bg-red-500 text-white rounded text-sm">Reject</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="text-gray-400">No pending challenges.</div>
+        {% endfor %}
+    </div>
+    <div>
+        <h3 class="font-bold text-lg mb-2">Pending Submissions</h3>
+        {% for sub in pending_submissions %}
+        <div class="bg-white p-3 mb-3 rounded shadow">
+            <div class="font-semibold">Submission to "{{ sub.challenge.title }}"</div>
+            <div class="text-sm text-gray-500">By: {{ sub.submitter.username }}</div>
+            <div class="mb-2">{{ sub.content }}</div>
+            <form class="inline" action="{{ url_for('admin.approve_submission', submission_id=sub.id) }}" method="get">
+                <button class="px-2 py-1 bg-green-500 text-white rounded text-sm">Approve</button>
+            </form>
+            <form class="inline" action="{{ url_for('admin.reject_submission', submission_id=sub.id) }}" method="post">
+                <button class="px-2 py-1 bg-red-500 text-white rounded text-sm">Reject</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="text-gray-400">No pending submissions.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

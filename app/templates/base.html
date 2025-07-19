@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CultureQuest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-white shadow mb-6">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="{{ url_for('challenges.list_challenges') }}" class="text-xl font-bold text-blue-600">CultureQuest</a>
+            <div>
+                {% if current_user.is_authenticated %}
+                    <span class="mr-3 text-gray-700">Hello, {{ current_user.username }}</span>
+                    {% if current_user.is_admin() %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="px-3 py-2 bg-blue-100 rounded hover:bg-blue-200">Admin Dashboard</a>
+                    {% endif %}
+                    <a href="{{ url_for('auth.logout') }}" class="px-3 py-2 bg-red-100 rounded hover:bg-red-200">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="px-3 py-2 bg-blue-100 rounded hover:bg-blue-200">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="px-3 py-2 bg-green-100 rounded hover:bg-green-200">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-4">
+                    {% for category, message in messages %}
+                        <div class="p-3 mb-2 rounded {{ 'bg-green-100' if category == 'success' else 'bg-red-100' if category == 'danger' else 'bg-yellow-100' }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-8 bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">Create a New Challenge</h2>
+    <form method="post">
+        <label class="block mb-1 font-semibold">Title</label>
+        <input name="title" class="w-full mb-3 px-3 py-2 border rounded" required>
+        <label class="block mb-1 font-semibold">Description</label>
+        <textarea name="description" class="w-full mb-3 px-3 py-2 border rounded" required></textarea>
+        <label class="block mb-1 font-semibold">Deadline</label>
+        <input type="datetime-local" name="deadline" class="w-full mb-3 px-3 py-2 border rounded" required>
+        <label class="block mb-1 font-semibold">Reward</label>
+        <input name="reward" class="w-full mb-3 px-3 py-2 border rounded" required>
+        <label class="block mb-1 font-semibold">XP</label>
+        <input name="xp" type="number" class="w-full mb-3 px-3 py-2 border rounded" required>
+        <label class="block mb-1 font-semibold">Criteria</label>
+        <textarea name="criteria" class="w-full mb-4 px-3 py-2 border rounded" required></textarea>
+        <button class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit for Approval</button>
+    </form>
+</div>
+{% endblock %}

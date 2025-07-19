@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-6 rounded shadow mt-8">
+    <h2 class="text-2xl font-bold mb-2">{{ challenge.title }}</h2>
+    <div class="mb-2 text-gray-600">Status: 
+        <span class="inline-block px-2 py-1 rounded {{ 
+            'bg-green-100 text-green-700' if challenge.status=='approved'
+            else 'bg-yellow-100 text-yellow-700' if challenge.status=='pending'
+            else 'bg-gray-200 text-gray-700'
+        }}">{{ challenge.status.capitalize() }}</span>
+    </div>
+    <div class="mb-2 text-gray-600">Deadline: {{ challenge.deadline.strftime('%Y-%m-%d %H:%M') }}</div>
+    <p class="mb-3">{{ challenge.description }}</p>
+    <div class="mb-1"><span class="font-semibold">Reward:</span> {{ challenge.reward }}</div>
+    <div class="mb-4"><span class="font-semibold">XP:</span> {{ challenge.xp }}</div>
+    <div class="mb-4"><span class="font-semibold">Criteria:</span> {{ challenge.criteria }}</div>
+    {% if can_participate %}
+        <form method="post" action="{{ url_for('challenges.submit_entry', challenge_id=challenge.id) }}">
+            <label class="block font-semibold mb-2">Submit Your Entry</label>
+            <textarea name="content" class="w-full mb-3 px-3 py-2 border rounded" required></textarea>
+            <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Submit</button>
+        </form>
+    {% elif not current_user.is_authenticated %}
+        <div class="text-blue-600 font-semibold">Login to participate in this challenge!</div>
+    {% endif %}
+</div>
+{% endblock %}
