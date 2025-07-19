@@ -31,6 +31,12 @@ $(document).ready(function () {
         clearFileSelection();
     });
 
+    // Function to detect URLs in text
+    function detectURLs(text) {
+        const urlRegex = /https?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
+        return text.match(urlRegex) || [];
+    }
+
     // Handle form submission (either by pressing Enter or clicking the send button)
     $('#chat-form').submit(function (e) {
         e.preventDefault();  // Prevent page refresh on submit
@@ -41,7 +47,14 @@ $(document).ready(function () {
                 // Send file
                 sendFileMessage(message);
             } else {
-                // Send text message
+                // Check if message contains URLs for scanning indication
+                const urls = detectURLs(message);
+                if (urls.length > 0) {
+                    // Show URL scanning indication
+                    showURLScanningIndicator(urls);
+                }
+                
+                // Send text message via SocketIO (URL scanning happens on server)
                 socket.emit('my event', {
                     user_name: userName,
                     message: message
@@ -54,9 +67,34 @@ $(document).ready(function () {
 
     // Listen for new messages from the server and display them
     socket.on('my response', function (msg) {
+        // Remove any URL scanning indicators if this is the response
+        removeURLScanningIndicator();
+        
         appendMessage(msg);  // Append the new message to the message list
         scrollToBottom();  // Scroll to the bottom of the message list
     });
+
+    // Function to show URL scanning indicator
+    function showURLScanningIndicator(urls) {
+        const urlList = urls.map(url => `• ${url}`).join('\n');
+        const scanningMsg = {
+            user_name: 'System',
+            message: `🔍 Scanning ${urls.length} URL(s) for threats...\n${urlList}\n\nPlease wait...`,
+            timestamp: new Date().toISOString(),
+            scanning: true,
+            scanning_id: 'url-scanning-indicator'
+        };
+        
+        appendMessage(scanningMsg);
+        scrollToBottom();
+    }
+
+    // Function to remove URL scanning indicator
+    function removeURLScanningIndicator() {
+        $('[data-scanning-id="url-scanning-indicator"]').fadeOut(300, function() {
+            $(this).remove();
+        });
+    }
 
     // Function to send file message with virus scanning
     function sendFileMessage(message) {
@@ -174,6 +212,9 @@ $(document).ready(function () {
             notification.css('background-color', '#28a745');
         } else if (type === 'error') {
             notification.css('background-color', '#dc3545');
+        } else if (type === 'warning') {
+            notification.css('background-color', '#ffc107');
+            notification.css('color', '#212529');
         }
         
         $('body').append(notification);
@@ -218,7 +259,9 @@ $(document).ready(function () {
             messageDiv.attr('data-scanning-id', msg.scanning_id);
             messageDiv.addClass('scanning-message').css({
                 'opacity': '0.8',
-                'font-style': 'italic'
+                'font-style': 'italic',
+                'background-color': '#f8f9fa',
+                'border-left': '4px solid #17a2b8'
             });
         }
         
@@ -247,7 +290,7 @@ $(document).ready(function () {
                 bubbleDiv.append(imgElement);
                 
                 if (msg.message) {
-                    bubbleDiv.append($('<br>')).append($('<div>').html(msg.message.replace(/\n/g, '<br>')));
+                    bubbleDiv.append($('<br>')).append($('<div>').html(formatMessage(msg.message)));
                 }
             } else {
                 // Display file link
@@ -258,12 +301,12 @@ $(document).ready(function () {
                 bubbleDiv.append($('<span>').addClass('file-icon').text('📄 ')).append(fileLink);
                 
                 if (msg.message) {
-                    bubbleDiv.append($('<br>')).append($('<div>').html(msg.message.replace(/\n/g, '<br>')));
+                    bubbleDiv.append($('<br>')).append($('<div>').html(formatMessage(msg.message)));
                 }
             }
         } else {
             // Regular text message or scanning message
-            bubbleDiv.html(msg.message.replace(/\n/g, '<br>'));
+            bubbleDiv.html(formatMessage(msg.message));
         }
 
         const footerDiv = $('<div>').addClass('message-footer');
@@ -277,9 +320,80 @@ $(document).ready(function () {
         $('#messages').append(messageDiv);
     }
 
+    // Function to format message text with enhanced URL scan result styling
+    function formatMessage(message) {
+        let formattedMessage = message.replace(/\n/g, '<br>');
+        
+        // Enhanced styling for URL scan results
+        formattedMessage = formattedMessage.replace(
+            /🔍 URL Scan Results:/g, 
+            '<div style="margin-top: 10px; font-weight: bold; color: #17a2b8;">🔍 URL Scan Results:</div>'
+        );
+        
+        // Style safe URLs
+        formattedMessage = formattedMessage.replace(
+            /✅ (https?:\/\/[^\s]+): ([^<\n]+)/g,
+            '<div style="margin: 5px 0; padding: 8px; background-color: #d4edda; border-radius: 4px; border-left: 4px solid #28a745;">' +
+            '<div style="font-weight: bold; color: #155724;">✅ Safe URL</div>' +
+            '<div style="font-family: monospace; font-size: 0.9em; color: #155724; word-break: break-all;">$1</div>' +
+            '<div style="font-size: 0.9em; color: #155724;">$2</div>' +
+            '</div>'
+        );
+        
+        // Style potentially dangerous URLs
+        formattedMessage = formattedMessage.replace(
+            /⚠️ (https?:\/\/[^\s]+): ([^<\n]+)/g,
+            '<div style="margin: 5px 0; padding: 8px; background-color: #f8d7da; border-radius: 4px; border-left: 4px solid #dc3545;">' +
+            '<div style="font-weight: bold; color: #721c24;">⚠️ Potential Threat Detected</div>' +
+            '<div style="font-family: monospace; font-size: 0.9em; color: #721c24; word-break: break-all;">$1</div>' +
+            '<div style="font-size: 0.9em; color: #721c24;">$2</div>' +
+            '</div>'
+        );
+        
+        // Style virus scan results for files
+        formattedMessage = formattedMessage.replace(
+            /✅ Virus scan passed:/g,
+            '<div style="margin-top: 10px; color: #28a745; font-weight: bold;">✅ Virus scan passed:</div>'
+        );
+        
+        formattedMessage = formattedMessage.replace(
+            /⚠️ Uploaded without virus scan/g,
+            '<div style="margin-top: 10px; color: #ffc107; font-weight: bold;">⚠️ Uploaded without virus scan</div>'
+        );
+        
+        return formattedMessage;
+    }
+
     // Function to scroll the messages div to the bottom
     function scrollToBottom() {
         const messagesDiv = $('#messages');
         messagesDiv.scrollTop(messagesDiv[0].scrollHeight);  // Scroll to the most recent message
     }
+
+    // Input field enhancements for URL detection
+    $('#message').on('input', function() {
+        const message = $(this).val();
+        const urls = detectURLs(message);
+        
+        // Optional: Visual indication when URLs are detected
+        if (urls.length > 0) {
+            $(this).css('border-left', '3px solid #17a2b8');
+            
+            // Optional: Show tooltip or indicator that URLs will be scanned
+            if (!$('#url-detected-indicator').length) {
+                const indicator = $('<div id="url-detected-indicator" style="position: absolute; right: 50px; top: 50%; transform: translateY(-50%); color: #17a2b8; font-size: 12px; pointer-events: none;">🔍 URLs detected</div>');
+                $(this).parent().css('position', 'relative').append(indicator);
+            }
+        } else {
+            $(this).css('border-left', '');
+            $('#url-detected-indicator').remove();
+        }
+    });
+
+    // Remove URL indicator when input loses focus
+    $('#message').on('blur', function() {
+        setTimeout(function() {
+            $('#url-detected-indicator').remove();
+        }, 2000);
+    });
 });

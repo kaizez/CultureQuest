@@ -3,6 +3,7 @@ import uuid
 import hashlib
 import requests
 import time
+import re
 from flask import Flask, render_template, jsonify, request, url_for
 from flask_socketio import SocketIO, emit
 from werkzeug.utils import secure_filename
@@ -10,6 +11,7 @@ from models import db, Message
 from datetime import datetime
 from markupsafe import escape
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 def load_env():
     """Load environment variables from .env file."""
@@ -48,8 +50,10 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'doc', 
 
 # VirusTotal configuration
 VIRUSTOTAL_API_KEY = os.environ.get('VIRUSTOTAL_API_KEY')
-VIRUSTOTAL_URL = 'https://www.virustotal.com/vtapi/v2/file/scan'
-VIRUSTOTAL_REPORT_URL = 'https://www.virustotal.com/vtapi/v2/file/report'
+VIRUSTOTAL_FILE_SCAN_URL = 'https://www.virustotal.com/vtapi/v2/file/scan'
+VIRUSTOTAL_FILE_REPORT_URL = 'https://www.virustotal.com/vtapi/v2/file/report'
+VIRUSTOTAL_URL_SCAN_URL = 'https://www.virustotal.com/vtapi/v2/url/scan'
+VIRUSTOTAL_URL_REPORT_URL = 'https://www.virustotal.com/vtapi/v2/url/report'
 
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -75,6 +79,134 @@ def get_file_hash(file_path):
             hasher.update(chunk)
     return hasher.hexdigest()
 
+def extract_urls(text):
+    """Extract URLs from text using regex"""
+    url_pattern = re.compile(
+        r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    )
+    urls = url_pattern.findall(text)
+    return urls
+
+def is_valid_url(url):
+    """Validate URL format"""
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
+
+def scan_url_with_virustotal(url):
+    """
+    Scan URL with VirusTotal API
+    Returns: (is_safe, scan_result, error_message)
+    """
+    if not VIRUSTOTAL_API_KEY:
+        print("Warning: VirusTotal API key not configured")
+        return True, None, "VirusTotal API key not configured"
+    
+    if not is_valid_url(url):
+        return False, None, "Invalid URL format"
+    
+    try:
+        # First, try to get existing report for the URL
+        report_params = {
+            'apikey': VIRUSTOTAL_API_KEY,
+            'resource': url
+        }
+        
+        report_response = requests.get(VIRUSTOTAL_URL_REPORT_URL, params=report_params, timeout=30)
+        
+        if report_response.status_code == 200:
+            report_data = report_response.json()
+            
+            if report_data['response_code'] == 1:  # Report exists
+                return analyze_url_scan_result(report_data, url)
+        
+        # If no existing report, submit URL for scanning
+        scan_params = {
+            'apikey': VIRUSTOTAL_API_KEY,
+            'url': url
+        }
+        
+        scan_response = requests.post(VIRUSTOTAL_URL_SCAN_URL, data=scan_params, timeout=30)
+        
+        if scan_response.status_code == 200:
+            scan_data = scan_response.json()
+            
+            if scan_data['response_code'] == 1:
+                # Wait for scan to complete and get results
+                return wait_for_url_scan_result(url)
+            else:
+                return False, None, f"VirusTotal URL scan failed: {scan_data.get('verbose_msg', 'Unknown error')}"
+        else:
+            return False, None, f"VirusTotal API request failed with status {scan_response.status_code}"
+                
+    except requests.exceptions.Timeout:
+        return False, None, "VirusTotal URL scan timed out"
+    except requests.exceptions.RequestException as e:
+        return False, None, f"VirusTotal API error: {str(e)}"
+    except Exception as e:
+        return False, None, f"Unexpected error during URL scan: {str(e)}"
+
+def wait_for_url_scan_result(url, max_wait_time=60):
+    """
+    Wait for VirusTotal URL scan to complete and return results
+    """
+    start_time = time.time()
+    
+    while time.time() - start_time < max_wait_time:
+        try:
+            report_params = {
+                'apikey': VIRUSTOTAL_API_KEY,
+                'resource': url
+            }
+            
+            report_response = requests.get(VIRUSTOTAL_URL_REPORT_URL, params=report_params, timeout=30)
+            
+            if report_response.status_code == 200:
+                report_data = report_response.json()
+                
+                if report_data['response_code'] == 1:  # Scan complete
+                    return analyze_url_scan_result(report_data, url)
+                elif report_data['response_code'] == -2:  # Still scanning
+                    time.sleep(5)  # Wait 5 seconds before checking again
+                    continue
+                else:
+                    return False, report_data, f"URL scan failed: {report_data.get('verbose_msg', 'Unknown error')}"
+            else:
+                return False, None, f"Failed to get URL scan report: HTTP {report_response.status_code}"
+                
+        except Exception as e:
+            return False, None, f"Error checking URL scan results: {str(e)}"
+    
+    return False, None, "URL scan timed out - please try again later"
+
+def analyze_url_scan_result(report_data, url):
+    """
+    Analyze VirusTotal URL scan results
+    Returns: (is_safe, scan_result, message)
+    """
+    total_scans = report_data.get('total', 0)
+    positive_detections = report_data.get('positives', 0)
+    
+    # Consider URL safe if no engines detected it as malicious
+    is_safe = positive_detections == 0
+    
+    scan_summary = {
+        'url': url,
+        'total_scans': total_scans,
+        'positive_detections': positive_detections,
+        'scan_date': report_data.get('scan_date'),
+        'permalink': report_data.get('permalink')
+    }
+    
+    if is_safe:
+        message = f"URL is clean - scanned by {total_scans} engines with 0 detections"
+    else:
+        message = f"URL may be malicious - {positive_detections}/{total_scans} engines detected threats"
+    
+    return is_safe, scan_summary, message
+
 def scan_file_with_virustotal(file_path):
     """
     Scan file with VirusTotal API
@@ -94,27 +226,27 @@ def scan_file_with_virustotal(file_path):
             'resource': file_hash
         }
         
-        report_response = requests.get(VIRUSTOTAL_REPORT_URL, params=report_params)
+        report_response = requests.get(VIRUSTOTAL_FILE_REPORT_URL, params=report_params)
         
         if report_response.status_code == 200:
             report_data = report_response.json()
             
             if report_data['response_code'] == 1:  # Report exists
-                return analyze_scan_result(report_data)
+                return analyze_file_scan_result(report_data)
         
         # If no existing report, submit file for scanning
         with open(file_path, 'rb') as f:
             files = {'file': (os.path.basename(file_path), f)}
             params = {'apikey': VIRUSTOTAL_API_KEY}
             
-            scan_response = requests.post(VIRUSTOTAL_URL, files=files, data=params, timeout=60)
+            scan_response = requests.post(VIRUSTOTAL_FILE_SCAN_URL, files=files, data=params, timeout=60)
             
             if scan_response.status_code == 200:
                 scan_data = scan_response.json()
                 
                 if scan_data['response_code'] == 1:
                     # Wait for scan to complete and get results
-                    return wait_for_scan_result(scan_data['scan_id'])
+                    return wait_for_file_scan_result(scan_data['scan_id'])
                 else:
                     return False, None, f"VirusTotal scan failed: {scan_data.get('verbose_msg', 'Unknown error')}"
             else:
@@ -127,9 +259,9 @@ def scan_file_with_virustotal(file_path):
     except Exception as e:
         return False, None, f"Unexpected error during virus scan: {str(e)}"
 
-def wait_for_scan_result(scan_id, max_wait_time=120):
+def wait_for_file_scan_result(scan_id, max_wait_time=120):
     """
-    Wait for VirusTotal scan to complete and return results
+    Wait for VirusTotal file scan to complete and return results
     """
     start_time = time.time()
     
@@ -140,13 +272,13 @@ def wait_for_scan_result(scan_id, max_wait_time=120):
                 'resource': scan_id
             }
             
-            report_response = requests.get(VIRUSTOTAL_REPORT_URL, params=report_params)
+            report_response = requests.get(VIRUSTOTAL_FILE_REPORT_URL, params=report_params)
             
             if report_response.status_code == 200:
                 report_data = report_response.json()
                 
                 if report_data['response_code'] == 1:  # Scan complete
-                    return analyze_scan_result(report_data)
+                    return analyze_file_scan_result(report_data)
                 elif report_data['response_code'] == -2:  # Still scanning
                     time.sleep(10)  # Wait 10 seconds before checking again
                     continue
@@ -160,9 +292,9 @@ def wait_for_scan_result(scan_id, max_wait_time=120):
     
     return False, None, "Virus scan timed out - please try again later"
 
-def analyze_scan_result(report_data):
+def analyze_file_scan_result(report_data):
     """
-    Analyze VirusTotal scan results
+    Analyze VirusTotal file scan results
     Returns: (is_safe, scan_result, message)
     """
     total_scans = report_data.get('total', 0)
@@ -334,10 +466,35 @@ def handle_my_custom_event(json):
     user_name = escape(user_name)
     message = escape(message)
 
+    # Check for URLs in the message
+    urls = extract_urls(message)
+    url_scan_results = []
+    
+    if urls and VIRUSTOTAL_API_KEY:
+        for url in urls:
+            print(f"Scanning URL: {url}")
+            is_safe, scan_result, scan_message = scan_url_with_virustotal(url)
+            url_scan_results.append({
+                'url': url,
+                'is_safe': is_safe,
+                'scan_result': scan_result,
+                'scan_message': scan_message
+            })
+
+    # Prepare the final message with URL scan results
+    final_message = message
+    if url_scan_results:
+        final_message += "\n\n🔍 URL Scan Results:"
+        for result in url_scan_results:
+            if result['is_safe']:
+                final_message += f"\n✅ {result['url']}: {result['scan_message']}"
+            else:
+                final_message += f"\n⚠️ {result['url']}: {result['scan_message']}"
+
     # Save to database
     new_msg = Message(
         user_name=user_name,
-        message=message,
+        message=final_message,
         timestamp=datetime.utcnow()
     )
     db.session.add(new_msg)
