@@ -289,6 +289,7 @@
 
 .input-wrapper {
     flex: 1;
+    position: relative;
 }
 
 /* Text Input */
@@ -302,6 +303,7 @@
     font-size: 15px;
     color: #1f2937;
     font-family: inherit;
+    box-sizing: border-box;
 }
 
 .input-wrapper input[type="text"]::placeholder {
@@ -345,6 +347,99 @@
 .send-icon {
     width: 18px;
     height: 18px;
+}
+
+/* File Upload Styles */
+#file-preview {
+    background: rgba(240, 240, 240, 0.8);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.file-preview-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9em;
+    color: #374151;
+}
+
+.file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 8px;
+    font-weight: 500;
+}
+
+.remove-file-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.remove-file-btn:hover {
+    background-color: rgba(229, 231, 235, 0.8);
+    color: #6b7280;
+}
+
+/* Message Image Styles */
+.message-image {
+    display: block;
+    margin: 8px 0 4px 0;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.message-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* File Link Styles */
+.file-link {
+    color: #6366f1 !important;
+    text-decoration: none !important;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.file-link:hover {
+    color: #4f46e5 !important;
+    border-bottom-color: #4f46e5;
+}
+
+.message.user .file-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.5);
+}
+
+.message.user .file-link:hover {
+    color: white !important;
+    border-bottom-color: white;
+}
+
+.file-icon {
+    margin-right: 6px;
+    opacity: 0.8;
 }
 
 /* Scrollbar Styling */
@@ -428,6 +523,11 @@
         width: 16px;
         height: 16px;
     }
+
+    .message-image {
+        max-width: 250px !important;
+        max-height: 250px !important;
+    }
 }
 
 @media (max-width: 480px) {
@@ -486,5 +586,10 @@
     
     .action-btn .icon {
         font-size: 14px;
+    }
+
+    .message-image {
+        max-width: 220px !important;
+        max-height: 220px !important;
     }
 }

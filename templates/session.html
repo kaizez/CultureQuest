@@ -43,11 +43,12 @@
     <!-- Chat Input Footer -->
     <div id="chat-footer">
         <div class="chat-input-container">
-            <form id="chat-form">
+            <form id="chat-form" enctype="multipart/form-data">
                 <div class="input-actions-left">
-                    <button type="button" class="action-btn" title="Attach file">
+                    <button type="button" class="action-btn" id="attach-file-btn" title="Attach file">
                         <span class="icon">📎</span>
                     </button>
+                    <input type="file" id="file-input" name="file" accept="image/*,.pdf,.txt,.doc,.docx" style="display: none;" />
                     <button type="button" class="action-btn" title="Voice message">
                         <span class="icon">🎤</span>
                     </button>
@@ -55,6 +56,12 @@
                 
                 <div class="input-wrapper">
                     <input type="text" id="message" name="message" placeholder="Type your message..." autocomplete="off" />
+                    <div id="file-preview" style="display: none;">
+                        <div class="file-preview-item">
+                            <span class="file-name"></span>
+                            <button type="button" class="remove-file-btn" title="Remove file">×</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="input-actions-right">
