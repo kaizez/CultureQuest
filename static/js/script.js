@@ -35,24 +35,23 @@ $(document).ready(function () {
 
     // Function to append a message to the messages list
     function appendMessage(msg) {
-        const className = msg.user_name === userName ? 'user' : 'other';  // Different class for own and others' messages
+        const className = msg.user_name === userName ? 'user' : 'other';
         const avatarContent = className === 'user' ? '👤' : '🤖';
         const messageTime = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
-        
-        $('#messages').append(`
-            <div class="message ${className}">
-                <div class="message-avatar">
-                    <span class="avatar-icon">${avatarContent}</span>
-                </div>
-                <div class="message-content">
-                    <div class="bubble-text">${msg.message}</div>
-                    <div class="message-footer">
-                        <span class="timestamp">${messageTime}</span>
-                        <span class="sender-name">${msg.user_name}</span>
-                    </div>
-                </div>
-            </div>
-        `);
+
+        const messageDiv = $('<div>').addClass('message').addClass(className);
+        const avatarDiv = $('<div>').addClass('message-avatar').append($('<span>').addClass('avatar-icon').text(avatarContent));
+        const contentDiv = $('<div>').addClass('message-content');
+        const bubbleDiv = $('<div>').addClass('bubble-text').text(msg.message);
+        const footerDiv = $('<div>').addClass('message-footer');
+        const timestampSpan = $('<span>').addClass('timestamp').text(messageTime);
+        const senderSpan = $('<span>').addClass('sender-name').text(msg.user_name);
+
+        footerDiv.append(timestampSpan).append(senderSpan);
+        contentDiv.append(bubbleDiv).append(footerDiv);
+        messageDiv.append(avatarDiv).append(contentDiv);
+
+        $('#messages').append(messageDiv);
     }
 
     // Function to scroll the messages div to the bottom

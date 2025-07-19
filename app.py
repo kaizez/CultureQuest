@@ -1,12 +1,15 @@
+import os
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, emit
 from models import db, Message
 from datetime import datetime
+from markupsafe import escape
 
 app = Flask(__name__)
 
 # Configuration
-app.config['SECRET_KEY'] = 'secret!'
+# It is recommended to use environment variables for the secret key in production
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-long-and-random-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -29,7 +32,8 @@ def chat_session():
     """Chat session route"""
     # Get username from query parameters or default to 'Guest'
     username = request.args.get('username', 'Guest')
-    return render_template('session.html', username=username)
+    # Sanitize username to prevent XSS
+    return render_template('session.html', username=escape(username))
 
 @app.route('/history')
 def history():
@@ -42,10 +46,21 @@ def history():
 def handle_my_custom_event(json):
     print('received message:', json)
 
+    user_name = json.get('user_name', 'Guest')
+    message = json.get('message', '')
+
+    # Basic input validation
+    if len(user_name) > 50 or len(message) > 500:
+        return
+
+    # Sanitize inputs
+    user_name = escape(user_name)
+    message = escape(message)
+
     # Save to database
     new_msg = Message(
-        user_name=json['user_name'],
-        message=json['message'],
+        user_name=user_name,
+        message=message,
         timestamp=datetime.utcnow()  # Add timestamp here
     )
     db.session.add(new_msg)
@@ -56,4 +71,4 @@ def handle_my_custom_event(json):
 
 # Run the server
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=False)
