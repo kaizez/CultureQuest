@@ -46,7 +46,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # File upload configuration
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'doc', 'docx'}
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg'}
 
 # VirusTotal configuration
 VIRUSTOTAL_API_KEY = os.environ.get('VIRUSTOTAL_API_KEY')
