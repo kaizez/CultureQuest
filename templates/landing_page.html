@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to the Challenge App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    <header class="text-center py-6 bg-gray-200">
+        <h1 class="text-3xl font-semibold">Welcome to the Challenge App</h1>
+    </header>
+
+    <main class="flex justify-center items-center h-screen">
+        <div class="text-center">
+            <p class="text-lg mb-4">Click the button below to create or participate in a challenge.</p>
+            <!-- Button to go to the Challenge Page -->
+            <a href="{{ url_for('challenge.create_challenge') }}">
+                <button class="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600">Go to Host a Challenge</button>
+            </a>
+
+            <!-- Button to go to the Admin Screening Page -->
+            <a href="{{ url_for('admin_screening.admin_page') }}">
+                <button class="px-6 py-3 bg-green-500 text-white rounded-md hover:bg-green-600">Go to Admin Screening</button>
+            </a>
+        </div>
+    </main>
+
+</body>
+</html>

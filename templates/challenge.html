@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Host a Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    <header class="text-center py-6 bg-gray-200">
+        <h1 class="text-3xl font-semibold">Host a New Challenge</h1>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-6 bg-white rounded-md shadow-md mt-10">
+        <form action="{{ url_for('challenge.create_challenge') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+            <div class="flex space-x-10">
+                <div class="w-1/2">
+                    <label for="name" class="block text-gray-700">Name</label>
+                    <input type="text" id="name" name="name" required class="mt-2 p-2 w-full border border-gray-300 rounded-md" placeholder="Enter your name">
+                    <label for="email" class="block text-gray-700">Email</label>
+                    <input type="email" id="email" name="email" required class="mt-2 p-2 w-full border border-gray-300 rounded-md" placeholder="Enter your email">
+                    <label for="phone" class="block text-gray-700">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required class="mt-2 p-2 w-full border border-gray-300 rounded-md" placeholder="Enter your phone number">
+                </div>
+                <div class="w-1/2">
+                    <label for="media" class="block text-gray-700">Upload Media (Image/Video, Max 2MB)</label>
+                    <input type="file" id="media" name="media" accept="image/*,video/*" required class="mt-2 p-2 w-full border border-gray-300 rounded-md">
+                    <label for="description" class="block text-gray-700">Description/Instructions</label>
+                    <textarea id="description" name="description" rows="4" required class="mt-2 p-2 w-full border border-gray-300 rounded-md" placeholder="Enter instructions for the challenge"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-center">
+                <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Create Challenge</button>
+            </div>
+        </form>
+    </main>
+
+</body>
+</html>

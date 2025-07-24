@@ -1,40 +1,28 @@
-from flask import Flask, render_template, redirect, url_for, request
-from challenge_form import handle_challenge_form, get_challenges, update_challenge_status
-import sqlite3
+from flask import Flask, render_template
+from flask_login import LoginManager
 
+# Initialize Flask app
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Secret key for sessions
 
-# Upload folder for the thumbnail image
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max file size 16 MB
+# Setup Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)  # Initialize the login manager
+login_manager.login_view = "login.login"  # Redirect to login if not logged in
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    return handle_challenge_form(app)
+# Import and Register the login Blueprint
+from login import login_bp
+app.register_blueprint(login_bp, url_prefix='/auth')
 
-@app.route("/screening")
-def challenge_screening():
-    challenges = get_challenges()  # Get all challenges from the database
-    return render_template('screening.html', challenges=challenges)  # Pass challenges to the template
+# Register other Blueprints
+from challenge import challenge_bp
+from admin_screening import admin_screening_bp
+app.register_blueprint(challenge_bp, url_prefix='/host')
+app.register_blueprint(admin_screening_bp, url_prefix='/admin')
 
-@app.route("/update_status/<int:id>/<status>")
-def update_status(id, status):
-    update_challenge_status(id, status)
-    return f"Challenge {id} status updated to {status}"
+@app.route('/')
+def landing_page():
+    return render_template('landing_page.html')
 
-@app.route("/delete/<int:id>", methods=["POST"])
-def delete_challenge(id):
-    # Connect to the database
-    conn = sqlite3.connect('challenges.db')
-    cursor = conn.cursor()
-    
-    # Delete the challenge with the specified ID
-    cursor.execute('DELETE FROM challenges WHERE id = ?', (id,))
-    conn.commit()
-    conn.close()
-    
-    # Redirect back to the screening page
-    return redirect(url_for('challenge_screening'))
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
