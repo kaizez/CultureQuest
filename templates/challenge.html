@@ -3,38 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Host a Challenge</title>
+    <title>Create Challenge</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Validate name: only letters and spaces
+        function validateName() {
+            var name = document.getElementById("name").value;
+            var nameRegex = /^[A-Za-z\s]+$/;
+            var nameError = document.getElementById("name-error");
+            if (!nameRegex.test(name)) {
+                nameError.style.display = "block";
+                document.getElementById("name").classList.add("border-red-500");
+                return false;
+            } else {
+                nameError.style.display = "none";
+                document.getElementById("name").classList.remove("border-red-500");
+                return true;
+            }
+        }
+
+        // Validate phone: only digits
+        function validatePhone() {
+            var phone = document.getElementById("phone").value;
+            var phoneRegex = /^[0-9]+$/;
+            var phoneError = document.getElementById("phone-error");
+            if (!phoneRegex.test(phone)) {
+                phoneError.style.display = "block";
+                document.getElementById("phone").classList.add("border-red-500");
+                return false;
+            } else {
+                phoneError.style.display = "none";
+                document.getElementById("phone").classList.remove("border-red-500");
+                return true;
+            }
+        }
+
+        // Validate form and enable/disable submit button
+        function validateForm() {
+            const nameValid = validateName();
+            const phoneValid = validatePhone();
+            const submitButton = document.getElementById("submit-btn");
+            
+            // Enable the submit button only if both fields are valid
+            submitButton.disabled = !(nameValid && phoneValid);
+        }
+
+        // Run validation on input change
+        document.addEventListener("DOMContentLoaded", function() {
+            // Initially disable submit button
+            validateForm();
+
+            // Set up input event listeners
+            document.getElementById("name").addEventListener("input", function() {
+                validateName();
+                validateForm();
+            });
+
+            document.getElementById("phone").addEventListener("input", function() {
+                validatePhone();
+                validateForm();
+            });
+        });
+    </script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 p-6">
 
-    <header class="text-center py-6 bg-gray-200">
-        <h1 class="text-3xl font-semibold">Host a New Challenge</h1>
-    </header>
+    <h1 class="text-2xl font-semibold mb-6">Create a New Challenge</h1>
 
-    <main class="max-w-4xl mx-auto p-6 bg-white rounded-md shadow-md mt-10">
-        <form action="{{ url_for('challenge.create_challenge') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-            <div class="flex space-x-10">
-                <div class="w-1/2">
+    <form action="{{ url_for('challenge.create_challenge') }}" method="POST" enctype="multipart/form-data">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Left Column (Name, Email, Phone) -->
+            <div class="space-y-4">
+                <div>
                     <label for="name" class="block text-gray-700">Name</label>
-                    <input type="text" id="name" name="name" required class="mt-2 p-2 w-full border border-gray-300 rounded-md" placeholder="Enter your name">
+                    <input type="text" id="name" name="name" class="mt-2 p-2 w-full border border-gray-300 rounded-md" required>
+                    <p id="name-error" class="text-red-500 text-sm mt-1" style="display: none;">Invalid name. Only letters and spaces are allowed.</p>
+                </div>
+
+                <div>
                     <label for="email" class="block text-gray-700">Email</label>
-                    <input type="email" id="email" name="email" required class="mt-2 p-2 w-full border border-gray-300 rounded-md" placeholder="Enter your email">
-                    <label for="phone" class="block text-gray-700">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" required class="mt-2 p-2 w-full border border-gray-300 rounded-md" placeholder="Enter your phone number">
+                    <input type="email" id="email" name="email" class="mt-2 p-2 w-full border border-gray-300 rounded-md" required>
                 </div>
-                <div class="w-1/2">
-                    <label for="media" class="block text-gray-700">Upload Media (Image/Video, Max 2MB)</label>
-                    <input type="file" id="media" name="media" accept="image/*,video/*" required class="mt-2 p-2 w-full border border-gray-300 rounded-md">
-                    <label for="description" class="block text-gray-700">Description/Instructions</label>
-                    <textarea id="description" name="description" rows="4" required class="mt-2 p-2 w-full border border-gray-300 rounded-md" placeholder="Enter instructions for the challenge"></textarea>
+
+                <div>
+                    <label for="phone" class="block text-gray-700">Phone</label>
+                    <input type="text" id="phone" name="phone" class="mt-2 p-2 w-full border border-gray-300 rounded-md" required>
+                    <p id="phone-error" class="text-red-500 text-sm mt-1" style="display: none;">Invalid phone number. Only digits are allowed.</p>
                 </div>
             </div>
-            <div class="flex justify-center">
-                <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Create Challenge</button>
+
+            <!-- Right Column (Description, Upload Media, Submit) -->
+            <div class="space-y-4">
+                <div>
+                    <label for="description" class="block text-gray-700">Description</label>
+                    <textarea id="description" name="description" class="mt-2 p-2 w-full border border-gray-300 rounded-md" required></textarea>
+                </div>
+
+                <div>
+                    <label for="media" class="block text-gray-700">Upload Media (Optional)</label>
+                    <input type="file" id="media" name="media" class="mt-2 p-2 w-full border border-gray-300 rounded-md">
+                </div>
+
+                <div>
+                    <button type="submit" class="w-full py-2 bg-blue-500 text-white rounded-md" id="submit-btn" disabled>Submit</button>
+                </div>
             </div>
-        </form>
-    </main>
+        </div>
+    </form>
 
 </body>
 </html>

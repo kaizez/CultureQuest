@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for
-import shelve
+from init_db import insert_challenge  # Use the insert function from init_db.py
+from validation import validate_name, validate_phone  # Import validation functions
 from file_upload import save_file  # Import file upload logic
 
 # Create a Blueprint for the challenge form
@@ -16,27 +17,26 @@ def create_challenge():
         phone = request.form['phone']
         description = request.form['description']
 
+        # Validate name and phone fields
+        if not validate_name(name):
+            return "Invalid name. Only letters and spaces are allowed.", 400
+
+        if not validate_phone(phone):
+            return "Invalid phone number. Only digits are allowed.", 400
+
         # Handle media file upload
-        media_file = request.files['media']
+        media_file = request.files.get('media')
         media_filename = None
 
-        if media_file:
+        if media_file and media_file.filename:
             try:
                 # Save the file and get its filename
                 media_filename = save_file(media_file)
             except ValueError as e:
                 return str(e)
 
-        # Store the challenge data in a shelve database (or other storage)
-        with shelve.open('challenges.db', writeback=True) as db:
-            challenge_id = len(db) + 1  # Simple auto-increment ID
-            db[str(challenge_id)] = {
-                'name': name,
-                'email': email,
-                'phone': phone,
-                'media': media_filename,
-                'description': description
-            }
+        # Insert challenge data into SQLite database using insert_challenge
+        insert_challenge(name, email, phone, description, media_filename)
 
         return redirect(url_for('challenge.success'))
 
