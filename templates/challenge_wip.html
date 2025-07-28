@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/challenge_wip.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 px-4 mx-auto">
+    <!-- Page Header -->
+    <header class="mb-4">
+        <h1 class="h3 fw-bold text-dark">{{ challenge.title }}</h1>
+        <p class="text-secondary mt-2">{{ challenge.description }}</p>
+    </header>
+
+    <!-- Main row for the two-column layout -->
+    <div class="row g-4 align-items-start">
+
+        <!-- Left Column: Main Content -->
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm rounded-lg overflow-hidden">
+                <img src="{{ challenge.image_src or 'https://placehold.co/800x256/e2e8f0/4a5568?text=Challenge+Image' }}"
+                    alt="{{ challenge.image_alt or 'Challenge placeholder image' }}" class="img-fluid"
+                    style="width: 100%; height: 256px; object-fit: cover;">
+
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Progress & Next Steps Section -->
+                    <section class="mb-5">
+                        <h2 class="h5 fw-semibold text-dark mb-3">Your Progress & Next Steps</h2>
+                        <ul class="list-group list-group-flush">
+                            {% for step in challenge.your_progress_next_steps %}
+                            <li class="list-group-item d-flex align-items-center px-0 py-2">
+                                {% if step.completed %}
+                                <i class="fas fa-check-circle text-success me-3 fa-lg"></i>
+                                <span class="text-secondary text-decoration-line-through">{{ step.text }}</span>
+                                {% else %}
+                                <i class="far fa-circle text-muted me-3 fa-lg"></i>
+                                <span class="text-dark">{{ step.text }}</span>
+                                {% endif %}
+                            </li>
+                            {% else %}
+                            <li class="list-group-item px-0 text-secondary">No progress steps defined yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+
+                    <!-- Resources Section -->
+                    <section class="mb-5">
+                        <h2 class="h5 fw-semibold text-dark mb-3">Resources for You</h2>
+                        <ul class="list-group list-group-flush">
+                            {% for resource in challenge.resources_for_you %}
+                            <li class="list-group-item d-flex align-items-center px-0 py-2">
+                                <i class="fas fa-link text-primary me-3"></i>
+                                <a href="{{ resource.link }}" class="text-primary" target="_blank">{{ resource.text
+                                    }}</a>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item px-0 text-secondary">No resources available yet.</li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+
+                    <!-- Community Discussion Section -->
+                    <section class="mb-5">
+                        <div class="card shadow-sm rounded-lg">
+                            <div class="card-body">
+                                <h3 class="h6 fw-medium text-dark mb-3 d-flex align-items-center">
+                                    <i class="fas fa-comments me-2"></i> Community Discussion
+                                </h3>
+                                <div class="mb-4 d-flex flex-column gap-3">
+                                    {% set approved_comments = challenge.comments | selectattr('status', 'equalto',
+                                    'APPROVED') | list %}
+                                    {% if approved_comments %}
+                                    {% for comment in approved_comments %}
+                                    <div class="bg-light p-3 rounded d-flex justify-content-between align-items-center">
+                                        <p class="small fw-semibold text-dark mb-1">{{ comment.user_id }}</p>
+                                        <p class="small text-secondary mb-0">{{ comment.text }}</p>
+                                        <form action="{{ url_for('report_comment', comment_id=comment.id) }}" method="POST"
+                                            class="ms-2">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                title="Report this comment">
+                                                <i class="fas fa-flag"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% endfor %}
+                                    {% else %}
+                                    <p class="text-secondary small mt-2">No approved comments yet. Be the first to
+                                        share!</p>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Comment Form -->
+                                <h3 class="h6 fw-medium text-dark mb-3 mt-4">Add a Comment</h3>
+                                <form id="comment-form"
+                                    action="{{ url_for('add_comment_to_wip_challenge', challenge_id=challenge.id) }}"
+                                    method="POST" novalidate data-rate-limit-info="{{ rate_limit_info | tojson }}">
+
+                                    {{ comment_form.g_recaptcha_response }}
+                                    {{ comment_form.hidden_tag() }} <div class="mb-3">
+                                        {{ comment_form.comment(class="form-control", rows="3", placeholder="Share your thoughts or ask a question...") }}
+                                        {% if comment_form.comment.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in comment_form.comment.errors %}
+                                            <span>{{ error }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" id="comment-submit-btn" class="btn btn-primary">
+                                        Submit for Review
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div> <!-- End Left Column -->
+
+        <!-- Right Column: Sidebar -->
+        <div class="col-12 col-lg-4">
+            <div class="position-sticky" style="top: 2rem;">
+                <!-- Challenge Status Card -->
+                <div class="card shadow-sm rounded-lg p-4 mb-4">
+                    <h3 class="h5 fw-semibold text-dark mb-4">Challenge Status</h3>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small text-secondary mb-1">
+                            <span>Progress</span>
+                            <span>{{ challenge.progress_percent or 0 }}%</span>
+                        </div>
+                        <div class="progress rounded-pill" style="height: 0.625rem;">
+                            <div class="progress-bar bg-primary rounded-pill" role="progressbar"
+                                style="width: {{ challenge.progress_percent or 0 }}%"
+                                aria-valuenow="{{ challenge.progress_percent or 0 }}" aria-valuemin="0"
+                                aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center text-muted small mb-4">
+                        <i class="far fa-clock me-2"></i>
+                        <span>{{ challenge.duration_left or 'N/A' }}</span>
+                        <i class="fas fa-trophy ms-4 me-2"></i>
+                        <span>{{ challenge.xp or 0 }} XP</span>
+                    </div>
+                    <a href="{{ url_for('challenge_submission', challenge_id=challenge.id) }}"
+                        class="btn btn-success w-100 fw-bold py-2 rounded-lg">
+                        <i class="fas fa-upload me-2"></i> Submit Challenge
+                    </a>
+                    <a href="{{ url_for('challenges') }}"
+                        class="btn btn-outline-secondary w-100 mt-2 fw-bold py-2 rounded-lg">
+                        <i class="fas fa-arrow-left me-2"></i> Back to Challenges
+                    </a>
+                </div>
+
+                <!-- More Challenges Card -->
+                <div class="card shadow-sm rounded-lg p-4">
+                    <h3 class="h5 fw-semibold text-dark mb-4">More Like This</h3>
+                    {% for more_challenge in more_challenges %}
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ more_challenge.image_src or 'https://placehold.co/64x64/e2e8f0/4a5568?text=Icon' }}"
+                            alt="{{ more_challenge.image_alt or 'Challenge Icon' }}" class="img-fluid rounded me-3"
+                            style="width: 64px; height: 64px; object-fit: cover;">
+                        <div>
+                            <h4 class="fw-semibold text-dark mb-1 fs-6">{{ more_challenge.title }}</h4>
+                            <p class="small text-secondary mb-1">{{ more_challenge.difficulty }} | {{
+                                more_challenge.duration }}</p>
+                            <a href="{{ url_for('challenge_description', challenge_id=more_challenge.id) }}"
+                                class="text-primary small fw-bold">View Challenge</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-secondary small">No similar challenges found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div> <!-- End Right Column -->
+
+    </div> <!-- End Main Row -->
+</div>
+{% endblock %}
+{% block extra_js %}
+<script type="application/json" id="flask-data">
+    {{ {
+        'has_server_errors': comment_form.errors | length > 0,
+        'recaptcha_site_key': config.RECAPTCHA_SITE_KEY
+    } | tojson }}
+</script>
+<script src="https://www.google.com/recaptcha/api.js?render={{ config.RECAPTCHA_SITE_KEY }}"></script>
+<script src="{{ url_for('static', filename='js/challenge_wip.js') }}"></script>
+{% endblock %}

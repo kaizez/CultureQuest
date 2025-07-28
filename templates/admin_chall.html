@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4 px-4 mx-auto">
+    <header class="mb-4">
+        <h1 class="h4 h3-md fw-bold text-gray-800">Admin: Uploaded Challenge Content</h1>
+        <p class="text-secondary mt-2">Review files submitted for challenges.</p>
+    </header>
+
+    <!-- FIX: Check for the 'responses' variable passed from app.py -->
+    {% if responses %}
+    <div class="card shadow-sm rounded-lg overflow-hidden">
+        <div class="card-header bg-light fw-bold text-gray-700">
+            Submitted Challenge Responses
+        </div>
+        <ul class="list-group list-group-flush">
+            <!-- FIX: Loop over 'response in responses' -->
+            {% for response in responses %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <!-- FIX: Access the challenge title via the relationship -->
+                    <h5 class="mb-1 fw-semibold text-gray-800">{{ response.challenge.title }}</h5>
+                    <small class="text-muted">User ID: {{ response.user_id }}</small><br>
+                    <!-- FIX: Display the actual filename from the response -->
+                    <small class="text-muted">File: {{ response.filename }}</small><br>
+                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                </div>
+                <!-- FIX: Link to the detail page using the response's ID -->
+                <a href="{{ url_for('admin_uploaded_content_detail', response_id=response.id) }}" class="btn btn-primary btn-sm rounded">
+                    View Details
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-folder-open text-muted opacity-50 fs-1 mb-3"></i>
+        <h3 class="h5 fw-medium text-gray-700 mb-2">No uploaded content found yet.</h3>
+        <p class="text-secondary mb-4">Users need to submit challenges with files for content to appear here.</p>
+        <a href="{{ url_for('challenges') }}" class="btn btn-primary rounded transition">Back to Challenges Hub</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

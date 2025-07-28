@@ -1,0 +1,68 @@
+#challengeTabs {
+    display: flex;
+    flex-wrap: wrap;
+    padding-left: 0;
+    margin-bottom: 0;
+    list-style: none;
+    border-bottom: 1px solid #dee2e6; /* Bootstrap's default border color */
+}
+
+#challengeTabs .nav-item {
+    margin-bottom: -1px;
+}
+
+#challengeTabs .nav-link {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: #0d6efd; /* Bootstrap's default link color */
+    text-decoration: none;
+    background: none;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.375rem; /* Bootstrap's default border radius */
+    border-top-right-radius: 0.375rem;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+#challengeTabs .nav-link:hover,
+#challengeTabs .nav-link:focus {
+    border-color: #e9ecef #e9ecef #dee2e6;
+    isolation: isolate;
+}
+
+#challengeTabs .nav-link.active {
+    color: #495057; /* Bootstrap's active text color */
+    background-color: #fff; /* White background for the active tab */
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+
+
+/* Custom styles for colors not directly in Bootstrap palette or for specific overrides */
+.text-gray-800 { color: #2d3748; }
+.text-gray-700 { color: #4a5568; }
+.text-purple { color: #805ad5; } /* Example custom purple */
+.bg-purple-subtle { background-color: #e9d8fd; } /* Light purple background */
+
+/* Custom transition for cards and buttons */
+.transition-all {
+    transition: all 0.3s ease-in-out;
+}
+.challenge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; /* Bootstrap shadow equivalent */
+}
+.btn.transition-all:hover {
+    transform: scale(1.02);
+}
+
+/* Custom styles for select dropdowns with icons */
+.position-relative .form-select {
+    padding-right: 2.5rem; /* Make space for the icon */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: none; /* Remove default arrow */
+}
+
+.position-relative .fa-chevron-down {
+    pointer-events: none; /* Allow clicks to pass through to the select element */
+}

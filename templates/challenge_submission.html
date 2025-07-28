@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4 px-4 mx-auto md:p-6">
+    <header class="mb-4">
+        <h1 class="h4 md:h3 fw-bold text-gray-800">Submit Your Experience for <span class="text-dark">"{{ challenge.title }}"</span></h1>
+        <p class="text-gray-600 mt-2">Share your completed project and reflection_story below to earn your points!</p>
+    </header>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 position-relative">
+        <div class="step-indicator d-flex flex-column align-items-center">
+            <div class="badge bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 40px; height: 40px;">1</div>
+            <span class="small fw-medium text-gray-700">Upload Proof</span>
+        </div>
+        <div class="step-indicator d-flex flex-column align-items-center">
+            <div class="badge bg-secondary text-gray-600 rounded-circle d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 40px; height: 40px;">2</div>
+            <span class="small fw-medium text-gray-500">Share Story</span>
+        </div>
+        <div class="step-indicator d-flex flex-column align-items-center">
+            <div class="badge bg-secondary text-gray-600 rounded-circle d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 40px; height: 40px;">3</div>
+            <span class="small fw-medium text-gray-500">Review</span>
+        </div>
+        <div class="d-flex flex-column align-items-center">
+            <div class="badge bg-secondary text-gray-600 rounded-circle d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 40px; height: 40px;">4</div>
+            <span class="small fw-medium text-gray-500">Submit</span>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('challenge_submission', challenge_id=challenge.id) }}" enctype="multipart/form-data">
+        {{ form.g_recaptcha_response }}
+        {{ form.csrf_token }}
+        <div class="card shadow-sm overflow-hidden">
+            <div id="step-1" class="card-body p-4">
+                <h2 class="h5 fw-semibold text-gray-800 mb-4">Step 1: Upload Photos or Video of Your Project</h2>
+
+                <div class="mb-3">
+                    {{ form.submission_type.label(class="form-label text-gray-700 fw-medium mb-2") }}
+                    {{ form.submission_type(class="form-select rounded") }}
+                    <div class="text-danger small mt-1 d-none" id="submission-type-client-error"></div>
+                    {% if form.submission_type.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.submission_type.errors %}{{ error }}<br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {# Use WTForms to render the file input #}
+                    {{ form.uploaded_file.label(class="form-label text-gray-700 fw-medium mb-2") }}
+                    <div id="upload-area" class="border border-2 border-dashed border-gray-300 rounded p-5 text-center cursor-pointer">
+                        <div class="d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-cloud-upload-alt text-dark fs-3 mb-3"></i>
+                            <p class="text-gray-600 mb-1">Drag and drop your photos/videos here</p>
+                            <p class="text-gray-500 small mb-2">or</p>
+                            <button type="button" id="browse-btn" class="btn btn-primary rounded transition">Browse Files</button>
+                            {# Render the WTForms file input, keep it hidden #}
+                            {{ form.uploaded_file(class="d-none", id="file-input", multiple="multiple", accept="image/*,video/*,.pdf,.doc,.docx") }}
+                            <p class="text-gray-500 small mt-3">Max file size: 50MB (Images: JPG, PNG; Video: MP4; Docs: PDF, DOCX)</p>
+                        </div>
+                    </div>
+                    <div id="file-list" class="mt-3 d-none">
+                        <h3 class="small fw-medium text-gray-700 mb-2">Selected Files:</h3>
+                        <ul id="file-list-items" class="border border-gray-200 rounded divide-y divide-gray-200 list-unstyled"></ul>
+                    </div>
+                    <div id="upload-progress" class="mt-3 d-none">
+                        <div class="d-flex justify-content-between small text-gray-600 mb-1">
+                            <span>Uploading...</span>
+                            <span id="upload-percentage">0%</span>
+                        </div>
+                        <div class="progress rounded-pill" style="height: 0.625rem;">
+                            <div id="progress-bar" class="progress-bar bg-primary rounded-pill" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    {# Client-side error for file upload #}
+                    <div class="text-danger small mt-1 d-none" id="file-client-error"></div>
+                    {# Server-side WTForms error display for uploaded_file #}
+                    {% if form.uploaded_file.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.uploaded_file.errors %}{{ error }}<br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="button" id="next-btn-1" class="btn btn-primary rounded transition">Next: Share Your Story</button>
+                </div>
+            </div>
+
+            <div id="step-2" class="card-body p-4 d-none">
+                <h2 class="h5 fw-semibold text-gray-800 mb-4">Step 2: Share Your Experience</h2>
+
+                <div class="mb-3">
+                    {{ form.project_title.label(class="form-label text-gray-700 fw-medium mb-2") }}
+                    {{ form.project_title(class="form-control rounded", placeholder="Give your crochet project a name (e.g., 'Grandma's Cozy Scarf')") }}
+                    <div class="text-danger small mt-1 d-none" id="project-title-client-error"></div>
+                    {% if form.project_title.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.project_title.errors %}{{ error }}<br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.reflection_story.label(class="form-label text-gray-700 fw-medium mb-2") }}
+                    {{ form.reflection_story(class="form-control rounded", rows="8", placeholder="Tell us about your experience! What did you learn? What was your favorite part of connecting with your elder mentor? Describe the project you created.") }}
+                    <p class="text-gray-500 small mt-1">Minimum 50 characters. Share your unique journey!</p>
+                    <div class="text-danger small mt-1 d-none" id="reflection-story-client-error"></div>
+                    {% if form.reflection_story.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.reflection_story.errors %}{{ error }}<br>{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="button" id="back-btn-2" class="btn btn-outline-secondary rounded transition">Back</button>
+                    <button type="button" id="next-btn-2" class="btn btn-primary rounded transition">Next: Review Submission</button>
+                </div>
+            </div>
+
+            <div id="step-3" class="card-body p-4 d-none">
+                <h2 class="h5 fw-semibold text-gray-800 mb-4">Step 3: Review Your Submission</h2>
+
+                <div class="bg-light rounded p-4 mb-4">
+                    <h3 class="fw-medium text-gray-700 mb-3">Submission Details</h3>
+                    <div class="row row-cols-1 row-cols-md-2 g-3">
+                        <div class="col">
+                            <p class="small text-gray-500 mb-0">Submission Type</p>
+                            <p id="review-type" class="fw-medium"></p>
+                        </div>
+                        <div class="col">
+                            <p class="small text-gray-500 mb-0">Files Uploaded</p>
+                            <p id="review-files" class="fw-medium"></p>
+                        </div>
+                        <div class="col">
+                            <p class="small text-gray-500 mb-0">Project Title</p>
+                            <p id="review-title" class="fw-medium"></p>
+                        </div>
+                        <div class="col">
+                            <p class="small text-gray-500 mb-0">reflection_story Length</p>
+                            <p id="review-desc-length" class="fw-medium"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h3 class="fw-medium text-gray-700 mb-2">Your reflection_story Preview</h3>
+                    <div id="review-desc" class="bg-light p-4 rounded text-gray-700"></div>
+                </div>
+
+                <div class="mb-4">
+                    <h3 class="fw-medium text-gray-700 mb-2">Uploaded Files</h3>
+                    <ul id="review-file-list" class="border border-gray-200 rounded divide-y divide-gray-200 list-unstyled"></ul>
+                </div>
+
+                <div class="d-flex align-items-center mb-4">
+                    {{ form.confirmation_check(class="form-check-input me-2") }}
+                    {{ form.confirmation_check.label(class="small text-gray-700") }}
+                </div>
+                <div class="text-danger small mt-1 d-none" id="confirmation-client-error"></div>
+                {% if form.confirmation_check.errors %}
+                    <div class="text-danger small mt-1">
+                        {% for error in form.confirmation_check.errors %}{{ error }}<br>{% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between">
+                    <button type="button" id="back-btn-3" class="btn btn-outline-secondary rounded transition">Back</button>
+                    <button type="submit" id="submit-btn" class="btn btn-primary rounded transition">Submit Challenge</button>
+                </div>
+            </div>
+
+            <div id="success-message" class="card-body p-4 text-center d-none">
+                <div class="mx-auto d-flex align-items-center justify-content-center bg-success-subtle rounded-circle mb-4" style="width: 48px; height: 48px;">
+                    <i class="fas fa-check text-success fs-4"></i>
+                </div>
+                <h2 class="h5 fw-semibold text-gray-800 mb-2">Submission Successful!</h2>
+                <p class="text-gray-600 mb-4">Your experience for "{{ challenge.title }}" has been submitted successfully. Points will be awarded soon!</p>
+                <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                    <a href="{{ url_for('wip_challenge_details', challenge_id=challenge.id) }}" class="btn btn-primary rounded transition">Back to My Challenge</a>
+                    <a href="#" class="btn btn-outline-secondary rounded transition">View My Submissions</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script src="https://www.google.com/recaptcha/api.js?render={{ config.RECAPTCHA_SITE_KEY }}"></script>
+<script type="application/json" id="flask-data">
+    {{ {
+        'has_server_errors': form.errors | length > 0,
+        'recaptcha_site_key': config.RECAPTCHA_SITE_KEY
+    } | tojson }}
+</script>
+<script src="{{ url_for('static', filename='js/challenge_submission.js') }}"></script>
+{% endblock %}

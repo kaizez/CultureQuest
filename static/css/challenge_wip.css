@@ -1,0 +1,18 @@
+/* static/css/challenge_wip.css */
+
+/* Custom styles for colors not directly in Bootstrap palette or for specific overrides */
+.text-gray-800 { color: #2d3748; }
+.text-gray-700 { color: #4a5568; }
+.text-purple { color: #805ad5; } /* Example custom purple */
+.bg-purple-subtle { background-color: #e9d8fd; } /* Light purple purple background */
+
+/* Custom transition for buttons */
+.transition-all {
+    transition: all 0.3s ease-in-out;
+}
+.btn.transition-all:hover {
+    transform: scale(1.02);
+}
+.hover-scale-105:hover {
+    transform: scale(1.05);
+}

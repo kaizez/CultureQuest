@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4 px-4 mx-auto">
+    <a href="{{ url_for('admin_uploaded_content_list') }}" class="btn btn-outline-secondary btn-sm mb-4">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+
+    <header class="mb-4">
+        <h1 class="h4 h3-md fw-bold text-gray-800">Submission for: {{ response.challenge.title }}</h1>
+        <p class="text-secondary mt-2">Review the submitted file and its scan results.</p>
+    </header>
+
+    <div class="card shadow-sm rounded-lg mb-4">
+        <div class="card-header bg-light fw-bold text-gray-700">
+            Submission Details
+        </div>
+        <div class="card-body">
+            <p><strong>Response ID:</strong> {{ response.id }}</p>
+            <p><strong>Challenge:</strong> {{ response.challenge.title }} (ID: {{ response.challenge.id }})</p>
+            <p><strong>User ID:</strong> {{ response.user_id }}</p>
+            <p><strong>Submitted On:</strong> {{ response.submission_date.strftime('%Y-%m-%d %H:%M:%S') if response.submission_date else 'Not recorded' }}</p>
+            <p><strong>Submission Status:</strong> <span class="badge bg-info">{{ response.status }}</span></p>
+            <hr>
+            <p><strong>Filename:</strong> {{ response.filename }}</p>
+            
+            <a href="{{ url_for('download_file', response_id=response.id) }}" class="btn btn-success btn-sm">
+                <i class="fas fa-download me-2"></i>Download File
+            </a>
+
+            {% if response.status == 'PENDING_SCAN' or response.status == 'SCAN_FAILED' %}
+                <form action="{{ url_for('admin_rescan_file', response_id=response.id) }}" method="POST" class="d-inline ms-2">
+                    <button type="submit" class="btn btn-warning btn-sm">
+                        <i class="fas fa-sync-alt me-2"></i>Re-scan File
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm rounded-lg">
+        <div class="card-header bg-light fw-bold text-gray-700">
+            VirusTotal Scan Results
+        </div>
+        <div class="card-body">
+            <!-- NEW: Display the summary instead of the full JSON -->
+            {% if scan_summary %}
+                <h5 class="card-title">Scan Summary</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Harmless
+                        <span class="badge bg-success rounded-pill">{{ scan_summary.get('harmless', 0) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Undetected
+                        <span class="badge bg-secondary rounded-pill">{{ scan_summary.get('undetected', 0) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Suspicious
+                        <span class="badge bg-warning text-dark rounded-pill">{{ scan_summary.get('suspicious', 0) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Malicious
+                        <span class="badge bg-danger rounded-pill">{{ scan_summary.get('malicious', 0) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Timeout
+                        <span class="badge bg-info text-dark rounded-pill">{{ scan_summary.get('timeout', 0) }}</span>
+                    </li>
+                </ul>
+                <hr>
+            {% elif response.status == 'PENDING_SCAN' or response.status == 'SCAN_FAILED' %}
+                 <p class="text-secondary">Scan has not completed or has failed.</p>
+            {% else %}
+                <p class="text-secondary">No VirusTotal scan results available for this submission.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
