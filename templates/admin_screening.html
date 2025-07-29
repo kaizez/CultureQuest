@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - View Challenges</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    <header class="text-center py-6 bg-gray-200">
+        <h1 class="text-3xl font-semibold">Admin - Challenge Details</h1>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-6 bg-white rounded-md shadow-md mt-10">
+        <h2 class="text-xl font-bold mb-4">Submitted Challenges</h2>
+
+        <div class="space-y-6">
+            {% for challenge in challenges %}
+                <div class="border p-4 rounded-md shadow-sm">
+                    <h3 class="text-lg font-semibold">{{ challenge['name'] }}</h3>
+                    <p><strong>Email:</strong> {{ challenge['email'] }}</p>
+                    <p><strong>Phone:</strong> {{ challenge['phone'] }}</p>
+                    <p><strong>Description:</strong> {{ challenge['description'] }}</p>
+                    {% if challenge['media'] %}
+                        <div>
+                            <strong>Media:</strong>
+                            <br>
+                            <img src="{{ url_for('static', filename='uploads/' + challenge['media']) }}" alt="Challenge Media" class="w-full max-w-xs mt-2">
+                        </div>
+                    {% else %}
+                        <p>No media uploaded</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+
+</body>
+</html>
