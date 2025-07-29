@@ -22,6 +22,7 @@
                     <p><strong>Email:</strong> {{ challenge['email'] }}</p>
                     <p><strong>Phone:</strong> {{ challenge['phone'] }}</p>
                     <p><strong>Description:</strong> {{ challenge['description'] }}</p>
+
                     {% if challenge['media'] %}
                         <div>
                             <strong>Media:</strong>
@@ -31,6 +32,29 @@
                     {% else %}
                         <p>No media uploaded</p>
                     {% endif %}
+
+                    <!-- Form to update status and comments -->
+                    <form action="{{ url_for('admin_screening.admin_page') }}" method="POST" class="mt-4">
+                        <input type="hidden" name="challenge_id" value="{{ challenge['id'] }}">
+                        
+                        <!-- Status Buttons -->
+                        <div class="space-x-4 mb-4">
+                            <button type="submit" name="status" value="Approved" class="px-4 py-2 bg-green-500 text-white rounded-md">Approve</button>
+                            <button type="submit" name="status" value="Rejected" class="px-4 py-2 bg-red-500 text-white rounded-md">Reject</button>
+                            <button type="submit" name="status" value="On Hold" class="px-4 py-2 bg-yellow-500 text-white rounded-md">On Hold</button>
+                        </div>
+
+                        <!-- Comment Section -->
+                        <div>
+                            <label for="comments" class="block text-gray-700">Comments</label>
+                            <textarea id="comments" name="comments" class="mt-2 p-2 w-full border border-gray-300 rounded-md" rows="4">{{ challenge['comments'] }}</textarea>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md">Submit</button>
+                        </div>
+                    </form>
+
                 </div>
             {% endfor %}
         </div>
