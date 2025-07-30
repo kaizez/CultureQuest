@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ url_for('challenge_submission', challenge_id=challenge.id) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('challenge.challenge_submission', challenge_id=challenge.id) }}" enctype="multipart/form-data">
         {{ form.g_recaptcha_response }}
         {{ form.csrf_token }}
         <div class="card shadow-sm overflow-hidden">
@@ -176,7 +176,7 @@
                 <h2 class="h5 fw-semibold text-gray-800 mb-2">Submission Successful!</h2>
                 <p class="text-gray-600 mb-4">Your experience for "{{ challenge.title }}" has been submitted successfully. Points will be awarded soon!</p>
                 <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                    <a href="{{ url_for('wip_challenge_details', challenge_id=challenge.id) }}" class="btn btn-primary rounded transition">Back to My Challenge</a>
+                    <a href="{{ url_for('challenge.wip_challenge_details', challenge_id=challenge.id) }}" class="btn btn-primary rounded transition">Back to My Challenge</a>
                     <a href="#" class="btn btn-outline-secondary rounded transition">View My Submissions</a>
                 </div>
             </div>

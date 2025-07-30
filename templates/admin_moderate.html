@@ -30,15 +30,15 @@
                         <td>{{ comment.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ comment.user_id }}</td>
                         <td>
-                            <a href="{{ url_for('wip_challenge_details', challenge_id=comment.challenge.id) }}" target="_blank" title="{{ comment.challenge.title }}">
+                            <a href="{{ url_for('challenge.wip_challenge_details', challenge_id=comment.challenge.id) }}" target="_blank" title="{{ comment.challenge.title }}">
                                 {{ comment.challenge_id }}
                             </a>
                         </td>
                         <td class="text-end">
-                            <form action="{{ url_for('admin_update_comment_status', comment_id=comment.id, action='approve') }}" method="POST" class="d-inline">
+                            <form action="{{ url_for('moderate.admin_update_comment_status', comment_id=comment.id, action='approve') }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-success btn-sm">Approve</button>
                             </form>
-                            <form action="{{ url_for('admin_update_comment_status', comment_id=comment.id, action='reject') }}" method="POST" class="d-inline">
+                            <form action="{{ url_for('moderate.admin_update_comment_status', comment_id=comment.id, action='reject') }}" method="POST" class="d-inline">
                                 <button type="submit" class="btn btn-danger btn-sm">Reject</button>
                             </form>
                         </td>

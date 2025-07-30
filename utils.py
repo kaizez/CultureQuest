@@ -1,9 +1,12 @@
 import requests, time, os, tempfile, json
 from models import ChallengeResponse
+from flask import current_app
+from db import db
 
-def scan_file_in_background(app_context, response_id, db):
-    with app_context.app_context():
+def scan_file_in_background(app, response_id):
+    with app.app_context():
         response = db.session.get(ChallengeResponse, response_id)
+        print(response)
         if not response or not response.file_content:
             print(f"Error: Could not find response or file content for {response_id}.")
             return
@@ -134,8 +137,8 @@ def check_file_signature(file_stream):
     return 'unknown'
 
 
-def verify_recaptcha(app, token, action):
-    secret = app.config['RECAPTCHA_SECRET_KEY']
+def verify_recaptcha(token, action):
+    secret = current_app.config['RECAPTCHA_SECRET_KEY']
     if not secret:
         print("Warning: RECAPTCHA_SECRET_KEY is not set. Skipping verification.")
         return True, 1.0 # Simulate success
@@ -165,100 +168,54 @@ def verify_recaptcha(app, token, action):
 initial_challenges_data = {
     "new_challenges": [
         {
-            "id": "crochet",
-            "image_src": "https://images.unsplash.com/photo-1735414526681-ef9339138f65?q=80&w=2076&auto=format&fit=crop&w=1470&q=80",
-            "image_alt": "Learn How to Crochet from an Elder",
             "status": "NEW",
             "title": "Learn How to Crochet from an Elder",
             "difficulty": "Beginner",
             "description": "Embark on a heartwarming journey to learn the beautiful art of crocheting. Spend quality time with an elderly mentor, learn stitches, and create a lovely piece together. This challenge is about sharing skills and building connections across generations.",
             "duration": "3 days",
-            "participants": "1,245 participants",
-            "popularity": 1245,
             "category": "Creative Arts",
-            "link": "/challenges/crochet",
-            "points_earned": 200,
             "what_you_will_do": [],
             "requirements": [],
-            "gallery_images": [],
             "comments": [],
-            "faqs": [],
-            "your_progress_next_steps": [],
-            "resources_for_you": []
         },
         {
-            "id": "dialect",
-            "image_src": "https://images.unsplash.com/photo-1650844228078-6c3cb119abcd?q=80&w=1974&auto=format&fit=crop&w=765&q=80",
-            "image_alt": "dialect",
             "status": None,
             "title": "Learn a new dialect",
             "difficulty": "Intermediate",
             "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut vestibulum id libero sit amet mollis.",
             "duration": "1 week",
-            "participants": "876 participants",
-            "popularity": 876,
             "category": "Life Skills",
-            "link": "/challenges/dialect",
-            "points_earned": 150,
             "what_you_will_do": [],
             "requirements": [],
-            "gallery_images": [],
             "comments": [],
-            "faqs": [],
-            "your_progress_next_steps": [],
-            "resources_for_you": []
         },
         {
-            "id": "instrument",
-            "image_src": "https://images.unsplash.com/photo-1511379938547-c1f69419868d?q=80&w=2070&auto=format&fit=crop&w=1374&q=80",
-            "image_alt": "instrument",
             "status": "NEW",
             "title": "Play with a new instrument",
             "difficulty": "Advanced",
             "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut vestibulum id libero sit amet mollis.",
             "duration": "2 weeks",
-            "participants": "532 participants",
-            "popularity": 532,
             "category": "Creative Arts",
-            "link": "/challenges/instrument",
-            "points_earned": 300,
             "what_you_will_do": [],
             "requirements": [],
-            "gallery_images": [],
             "comments": [],
-            "faqs": [],
-            "your_progress_next_steps": [],
-            "resources_for_you": []
         },
     ],
     "current_challenges": [
         {
-            "id": "letter-writing",
-            "image_src": "https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=1973&auto=format&fit=crop&w=764&q=80",
-            "image_alt": "Learning How to Crochet from an Elder",
             "status": "IN PROGRESS",
-            "title": "You're Working On: Learn about the art of letter writing",
+            "title": "Learn about the art of letter writing",
             "difficulty": "Intermediate",
             "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut vestibulum id libero sit amet mollis.",
             "progress_percent": 65,
             "duration_left": "3 days left",
             "xp": 250,
-            "popularity": 950,
             "category": "Life Skills",
-            "link": "/wip-challenges/letter-writing",
-            "points_earned": 200,
             "what_you_will_do": [],
             "requirements": [],
-            "gallery_images": [],
             "comments": [],
-            "faqs": [],
-            "your_progress_next_steps": [],
-            "resources_for_you": []
         },
         {
-            "id": "furniture-assembly",
-            "image_src": "https://plus.unsplash.com/premium_photo-1744995489261-eb3876aa6c81?q=80&w=2070&auto=format&fit=crop&w=1470&q=80",
-            "image_alt": "Furniture Assembly",
             "status": "IN PROGRESS",
             "title": "Learn to assemble a furniture yourself",
             "difficulty": "Advanced",
@@ -266,22 +223,12 @@ initial_challenges_data = {
             "progress_percent": 90,
             "duration_left": "1 day left",
             "xp": 500,
-            "popularity": 480,
             "category": "Life Skills",
-            "link": "/wip-challenges/furniture-assembly",
-            "points_earned": 500,
             "what_you_will_do": [],
             "requirements": [],
-            "gallery_images": [],
             "comments": [],
-            "faqs": [],
-            "your_progress_next_steps": [],
-            "resources_for_you": []
         },
         {
-            "id": "cook-malay-dishes",
-            "image_src": "https://images.unsplash.com/photo-1677029969063-23ecbb98d0af?q=80&w=1974&auto=format&fit=crop&w=1470&q=80",
-            "image_alt": "Malay Dishes",
             "status": "IN PROGRESS",
             "title": "Learn to cook traditional malay dishes",
             "difficulty": "Intermediate",
@@ -289,42 +236,25 @@ initial_challenges_data = {
             "progress_percent": 40,
             "duration_left": "5 days left",
             "xp": 350,
-            "popularity": 620,
             "category": "Creative Arts",
-            "link": "/wip-challenges/cook-malay-dishes",
-            "points_earned": 350,
             "what_you_will_do": [],
             "requirements": [],
-            "gallery_images": [],
             "comments": [],
-            "faqs": [],
-            "your_progress_next_steps": [],
-            "resources_for_you": []
         },
     ],
     "done_challenges": [
         {
-            "id": "digital-storytelling",
-            "image_src": "https://images.unsplash.com/photo-1542435503-956c469947f6?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-            "image_alt": "Digital Storytelling",
             "status": "COMPLETED",
-            "title": "Completed: Create a Digital Story with Your Elder",
+            "title": "Create a Digital Story with Your Elder",
             "difficulty": "Intermediate",
             "description": "You successfully created a beautiful digital story, preserving memories and sharing narratives! Congratulations on completing this heartwarming challenge.",
             "progress_percent": 100,
             "duration_left": "Completed",
             "xp": 400,
-            "popularity": 700,
             "category": "Digital Literacy",
-            "link": "/done-challenges/digital-storytelling",
-            "points_earned": 400,
             "what_you_will_do": [],
             "requirements": [],
-            "gallery_images": [],
             "comments": [],
-            "faqs": [],
-            "your_progress_next_steps": [],
-            "resources_for_you": []
         }
     ]
 }

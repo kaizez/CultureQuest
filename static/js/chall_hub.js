@@ -85,13 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return matchesSearch && matchesCategory && matchesDifficulty;
         });
 
-        if (selectedSort === 'Popularity') {
-            filteredChallenges.sort((a, b) => {
-                const popularityA = parseInt(a.querySelector('.challenge-card').dataset.popularity || '0');
-                const popularityB = parseInt(b.querySelector('.challenge-card').dataset.popularity || '0');
-                return popularityB - popularityA;
-            });
-        }
         
         if (activeContainerElement) {
             activeContainerElement.innerHTML = '';

@@ -21,27 +21,17 @@ def init_db(app):
 
             for data in all_challenges_data:
                 challenge = Challenge(
-                    id=str(data['id']), # Ensure ID is a string
-                    image_src=data['image_src'],
-                    image_alt=data['image_alt'],
                     status=data.get('status'),
                     title=data['title'],
                     difficulty=data['difficulty'],
                     description=data['description'],
                     duration=data.get('duration', 'Varies'),
-                    participants=data.get('participants', '0 participants'),
-                    popularity=data.get('popularity'),
-                    category=data.get('category'),\
+                    category=data.get('category'),
                     progress_percent=data.get('progress_percent'),
                     duration_left=data.get('duration_left'),
                     xp=data.get('xp'),
-                    points_earned=data.get('points_earned'),
                     what_you_will_do=json.dumps(data.get('what_you_will_do', [])),
                     requirements=json.dumps(data.get('requirements', [])),
-                    gallery_images=json.dumps(data.get('gallery_images', [])),
-                    faqs=json.dumps(data.get('faqs', [])),
-                    your_progress_next_steps=json.dumps(data.get('your_progress_next_steps', [])),
-                    resources_for_you=json.dumps(data.get('resources_for_you', []))
                 )
                 db.session.add(challenge)
                 
@@ -51,7 +41,7 @@ def init_db(app):
                             text=comment_data['text'],
                             user_id=comment_data.get('user', 'default_user'),
                             challenge_id=challenge.id,
-                            status='APPROVED'  # Pre-approve initial comments
+                            status='APPROVED'
                         )
                         db.session.add(new_comment)
 

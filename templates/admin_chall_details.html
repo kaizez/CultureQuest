@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container py-4 px-4 mx-auto">
-    <a href="{{ url_for('admin_uploaded_content_list') }}" class="btn btn-outline-secondary btn-sm mb-4">
+    <a href="{{ url_for('moderate.admin_uploaded_content_list') }}" class="btn btn-outline-secondary btn-sm mb-4">
         <i class="fas fa-arrow-left me-2"></i>Back to List
     </a>
 
@@ -24,12 +24,12 @@
             <hr>
             <p><strong>Filename:</strong> {{ response.filename }}</p>
             
-            <a href="{{ url_for('download_file', response_id=response.id) }}" class="btn btn-success btn-sm">
+            <a href="{{ url_for('moderate.download_file', response_id=response.id) }}" class="btn btn-success btn-sm">
                 <i class="fas fa-download me-2"></i>Download File
             </a>
 
             {% if response.status == 'PENDING_SCAN' or response.status == 'SCAN_FAILED' %}
-                <form action="{{ url_for('admin_rescan_file', response_id=response.id) }}" method="POST" class="d-inline ms-2">
+                <form action="{{ url_for('moderate.admin_rescan_file', response_id=response.id) }}" method="POST" class="d-inline ms-2">
                     <button type="submit" class="btn btn-warning btn-sm">
                         <i class="fas fa-sync-alt me-2"></i>Re-scan File
                     </button>

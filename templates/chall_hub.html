@@ -25,13 +25,16 @@
 
     <ul class="nav nav-tabs mb-4" id="challengeTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="new-tab" data-bs-toggle="tab" data-bs-target="#new-challenges" type="button" role="tab" aria-controls="new-challenges" aria-selected="true">New Challenges</button>
+            <button class="nav-link active" id="new-tab" data-bs-toggle="tab" data-bs-target="#new-challenges"
+                type="button" role="tab" aria-controls="new-challenges" aria-selected="true">New Challenges</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="current-tab" data-bs-toggle="tab" data-bs-target="#current-challenges" type="button" role="tab" aria-controls="current-challenges" aria-selected="false">My Challenges</button>
+            <button class="nav-link" id="current-tab" data-bs-toggle="tab" data-bs-target="#current-challenges"
+                type="button" role="tab" aria-controls="current-challenges" aria-selected="false">My Challenges</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="done-tab" data-bs-toggle="tab" data-bs-target="#done-challenges" type="button" role="tab" aria-controls="done-challenges" aria-selected="false">Done Challenges</button>
+            <button class="nav-link" id="done-tab" data-bs-toggle="tab" data-bs-target="#done-challenges" type="button"
+                role="tab" aria-controls="done-challenges" aria-selected="false">Done Challenges</button>
         </li>
     </ul>
 
@@ -87,46 +90,38 @@
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 {% for challenge in new_challenges %}
                 <div class="col">
-                    <div class="challenge-card card h-100"
-                         data-difficulty="{{ challenge.difficulty }}"
-                         data-popularity="{{ challenge.popularity }}"
-                         data-category="{{ challenge.category }}"
-                         data-title="{{ challenge.title | lower }}">
-                        <div class="position-relative">
-                            <img src="{{ challenge.image_src }}" alt="{{ challenge.image_alt }}" class="card-img-top" style="height: 160px; object-fit: cover;">
-                            {% if challenge.status == 'NEW' %}
-                            <div class="position-absolute top-0 end-0 bg-success text-white small fw-bold px-2 py-1 rounded-pill d-flex align-items-center mt-2 me-2">
-                                <span class="pulse d-inline-block" style="width: 0.5rem; height: 0.5rem; background-color: white; border-radius: 50%; margin-right: 0.25rem;"></span>
-                                NEW
-                            </div>
-                            {% endif %}
-                        </div>
+                    <div class="challenge-card card h-100" data-difficulty="{{ challenge.difficulty }}"
+                        data-category="{{ challenge.category }}" data-title="{{ challenge.id | lower }}">
                         <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h3 class="h5 fw-bold text-gray-800">{{ challenge.title }}</h3>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 {% if challenge.difficulty == 'Beginner' %}
-                                    <span class="badge bg-info text-dark">Beginner</span>
+                                <span class="badge bg-info text-dark">{{ challenge.difficulty }}</span>
                                 {% elif challenge.difficulty == 'Intermediate' %}
-                                    <span class="badge bg-warning text-dark">Intermediate</span>
+                                <span class="badge bg-warning text-dark">{{ challenge.difficulty }}</span>
                                 {% elif challenge.difficulty == 'Advanced' %}
-                                    <span class="badge bg-danger">Advanced</span>
+                                <span class="badge bg-danger">{{ challenge.difficulty }}</span>
+                                {% endif %}
+                                {% if challenge.status == 'NEW' %}
+                                <span class="badge bg-success">NEW</span>
                                 {% endif %}
                             </div>
+                            <h3 class="h5 fw-bold text-gray-800 mb-2">{{ challenge.title }}</h3>
                             <p class="text-secondary mb-3">{{ challenge.description | truncate(100) }}</p>
                             <div class="d-flex align-items-center text-muted small mb-3">
                                 <i class="far fa-clock me-2"></i>
                                 <span>{{ challenge.duration }}</span>
-                                <i class="fas fa-users ms-4 me-2"></i>
-                                <span>{{ challenge.participants }}</span>
+                                <i class="fas fa-trophy ms-4 me-2"></i>
+                                <span>{{ challenge.xp or 0 }} XP</span>
                             </div>
-                            <a href="{{ url_for('challenge_description', challenge_id=challenge.id) }}" class="btn btn-primary w-100 fw-bold py-2 px-4 rounded transition-all text-center">
+                            <a href="{{ url_for('challenge.challenge_description', challenge_id=challenge.id) }}"
+                                class="btn btn-primary w-100 fw-bold py-2 px-4 rounded transition-all text-center">
                                 Start Challenge
                             </a>
                         </div>
                     </div>
                 </div>
                 {% else %}
-                    <p class="text-secondary text-center col-12">No new challenges available.</p>
+                <p class="text-secondary text-center col-12">No new challenges available.</p>
                 {% endfor %}
             </div>
         </div>
@@ -135,38 +130,24 @@
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 {% for challenge in current_challenges %}
                 <div class="col">
-                    <div class="challenge-card card h-100"
-                         data-difficulty="{{ challenge.difficulty }}"
-                         data-popularity="{{ challenge.popularity }}"
-                         data-category="{{ challenge.category }}"
-                         data-title="{{ challenge.title | lower }}">
-                        <div class="position-relative">
-                            <img src="{{ challenge.image_src }}" alt="{{ challenge.image_alt }}" class="card-img-top" style="height: 160px; object-fit: cover;">
-                            {% if challenge.status == 'IN PROGRESS' %}
-                            <div class="position-absolute top-0 end-0 bg-info text-dark small fw-bold px-2 py-1 rounded-pill mt-2 me-2">
-                                IN PROGRESS
-                            </div>
-                            {% elif challenge.status == 'NEEDS REVIEW' %}
-                            <div class="position-absolute top-0 end-0 bg-warning text-dark small fw-bold px-2 py-1 rounded-pill mt-2 me-2">
-                                NEEDS REVIEW
-                            </div>
-                            {% elif challenge.status == 'NEEDS REVIEW' %}
-                            <div class="position-absolute top-0 end-0 bg-purple text-white small fw-bold px-2 py-1 rounded-pill mt-2 me-2">
-                                NEEDS REVIEW
-                            </div>
-                            {% endif %}
-                        </div>
+                    <div class="challenge-card card h-100" data-difficulty="{{ challenge.difficulty }}"
+                        data-category="{{ challenge.category }}" data-title="{{ challenge.title | lower }}">
                         <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h3 class="h5 fw-bold text-gray-800">{{ challenge.title }}</h3>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 {% if challenge.difficulty == 'Beginner' %}
-                                    <span class="badge bg-info text-dark">Beginner</span>
+                                <span class="badge bg-info text-dark">{{ challenge.difficulty }}</span>
                                 {% elif challenge.difficulty == 'Intermediate' %}
-                                    <span class="badge bg-warning text-dark">Intermediate</span>
+                                <span class="badge bg-warning text-dark">{{ challenge.difficulty }}</span>
                                 {% elif challenge.difficulty == 'Advanced' %}
-                                    <span class="badge bg-danger">Advanced</span>
+                                <span class="badge bg-danger">{{ challenge.difficulty }}</span>
+                                {% endif %}
+                                {% if challenge.status == 'IN PROGRESS' %}
+                                <span class="badge bg-primary">IN PROGRESS</span>
+                                {% elif challenge.status == 'NEEDS REVIEW' %}
+                                <span class="badge bg-warning text-dark">NEEDS REVIEW</span>
                                 {% endif %}
                             </div>
+                            <h3 class="h5 fw-bold text-gray-800 mb-2">{{ challenge.title }}</h3>
                             <p class="text-secondary mb-3">{{ challenge.description | truncate(100) }}</p>
 
                             <div class="mb-3">
@@ -175,7 +156,8 @@
                                     <span>{{ challenge.progress_percent }}%</span>
                                 </div>
                                 <div class="progress rounded-pill" style="height: 0.625rem;">
-                                    <div class="progress-bar bg-primary rounded-pill" role="progressbar" style="width: {{ challenge.progress_percent }}%"></div>
+                                    <div class="progress-bar bg-primary rounded-pill" role="progressbar"
+                                        style="width: {{ challenge.progress_percent }}%"></div>
                                 </div>
                             </div>
 
@@ -187,7 +169,8 @@
                             </div>
 
                             <div class="d-flex" style="gap: 0.5rem;">
-                                <a href="{{ url_for('wip_challenge_details', challenge_id=challenge.id) }}" class="btn btn-primary flex-fill fw-bold py-2 px-4 rounded transition-all text-center">
+                                <a href="{{ url_for('challenge.wip_challenge_details', challenge_id=challenge.id) }}"
+                                    class="btn btn-primary flex-fill fw-bold py-2 px-4 rounded transition-all text-center">
                                     Continue
                                 </a>
                                 <button class="btn btn-light flex-fill fw-bold py-2 px-4 rounded transition-all">
@@ -198,7 +181,7 @@
                     </div>
                 </div>
                 {% else %}
-                    <p class="text-secondary text-center col-12">No current challenges. Start a new one!</p>
+                <p class="text-secondary text-center col-12">No current challenges. Start a new one!</p>
                 {% endfor %}
             </div>
         </div>
@@ -207,28 +190,20 @@
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 {% for challenge in done_challenges %}
                 <div class="col">
-                    <div class="challenge-card card h-100"
-                         data-difficulty="{{ challenge.difficulty }}"
-                         data-popularity="{{ challenge.popularity }}"
-                         data-category="{{ challenge.category }}"
-                         data-title="{{ challenge.title | lower }}">
-                        <div class="position-relative">
-                            <img src="{{ challenge.image_src }}" alt="{{ challenge.image_alt }}" class="card-img-top" style="height: 160px; object-fit: cover;">
-                            <div class="position-absolute top-0 end-0 bg-success text-white small fw-bold px-2 py-1 rounded-pill d-flex align-items-center mt-2 me-2">
-                                COMPLETED <i class="fas fa-check-circle ms-1"></i>
-                            </div>
-                        </div>
+                    <div class="challenge-card card h-100" data-difficulty="{{ challenge.difficulty }}"
+                        data-category="{{ challenge.category }}" data-title="{{ challenge.title | lower }}">
                         <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h3 class="h5 fw-bold text-gray-800">{{ challenge.title }}</h3>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 {% if challenge.difficulty == 'Beginner' %}
-                                    <span class="badge bg-info text-dark">Beginner</span>
+                                <span class="badge bg-info text-dark">{{ challenge.difficulty }}</span>
                                 {% elif challenge.difficulty == 'Intermediate' %}
-                                    <span class="badge bg-warning text-dark">Intermediate</span>
+                                <span class="badge bg-warning text-dark">{{ challenge.difficulty }}</span>
                                 {% elif challenge.difficulty == 'Advanced' %}
-                                    <span class="badge bg-danger">Advanced</span>
+                                <span class="badge bg-danger">{{ challenge.difficulty }}</span>
                                 {% endif %}
+                                <span class="badge bg-success">COMPLETED <i class="fas fa-check-circle ms-1"></i></span>
                             </div>
+                            <h3 class="h5 fw-bold text-gray-800 mb-2">{{ challenge.title }}</h3>
                             <p class="text-secondary mb-3">{{ challenge.description | truncate(100) }}</p>
 
                             <div class="mb-3">
@@ -237,7 +212,8 @@
                                     <span>{{ challenge.progress_percent }}%</span>
                                 </div>
                                 <div class="progress rounded-pill" style="height: 0.625rem;">
-                                    <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width: {{ challenge.progress_percent }}%"></div>
+                                    <div class="progress-bar bg-success rounded-pill" role="progressbar"
+                                        style="width: {{ challenge.progress_percent }}%"></div>
                                 </div>
                             </div>
 
@@ -247,7 +223,8 @@
                             </div>
 
                             <div class="d-flex" style="gap: 0.5rem;">
-                                <a href="{{ url_for('wip_challenge_details', challenge_id=challenge.id) }}" class="btn btn-light flex-fill fw-bold py-2 px-4 rounded transition-all text-center">
+                                <a href="{{ url_for('challenge.wip_challenge_details', challenge_id=challenge.id) }}"
+                                    class="btn btn-light flex-fill fw-bold py-2 px-4 rounded transition-all text-center">
                                     View Details
                                 </a>
                                 <button class="btn btn-light flex-fill fw-bold py-2 px-4 rounded transition-all">
@@ -257,7 +234,7 @@
                     </div>
                 </div>
                 {% else %}
-                    <p class="text-secondary text-center col-12">No completed challenges yet. Keep going!</p>
+                <p class="text-secondary text-center col-12">No completed challenges yet. Keep going!</p>
                 {% endfor %}
             </div>
         </div>

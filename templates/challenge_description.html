@@ -14,14 +14,10 @@
         <div class="row g-4 align-items-start">
             <div class="col-12 col-md-8 h-100">
                 <div class="card shadow-sm rounded-lg overflow-hidden mb-4"> 
-                    <img src="{{ challenge.image_src }}" alt="{{ challenge.image_alt }}" class="img-fluid" style="width: 100%; height: 256px; object-fit: cover;">
-                    <div class="card-body p-4">
                         <h2 class="h5 fw-semibold mb-3" style="color: #2d3748;">About This Challenge</h2>
                         <div class="d-flex align-items-center text-secondary small mb-4">
                             <i class="far fa-clock me-2"></i>
                             <span>{{ challenge.duration }}</span>
-                            <i class="fas fa-users ms-4 me-2"></i>
-                            <span>{{ challenge.participants }}</span>
                             <span class="badge bg-primary text-white ms-auto">{{ challenge.difficulty }}</span>
                         </div>
 
@@ -53,7 +49,7 @@
                             <p class="text-secondary small">No comments yet. Be the first to share your experience!</p>
                             {% endfor %}
                         </div>
-                    </div>
+                    
                 </div>
             </div>
 
@@ -62,14 +58,14 @@
                     <h3 class="h5 fw-semibold mb-4" style="color: #2d3748;">Challenge Actions</h3>
                     <p class="text-secondary mb-4">Ready to embark on this journey? Accept the challenge to begin tracking your progress!</p>
 
-                    <form method="POST" action="{{ url_for('accept_challenge', challenge_id=challenge.id) }}">
+                    <form method="POST" action="{{ url_for('challenge.accept_challenge', challenge_id=challenge.id) }}">
                         {{ form.csrf_token }}
                         <button type="submit" class="btn btn-success w-100 fw-bold py-3 px-4 rounded-lg transition-all hover-scale-105">
                             <i class="fas fa-play-circle me-2"></i> Accept Challenge
                         </button>
                     </form>
 
-                    <a href="{{ url_for('challenges') }}" class="btn btn-light w-100 mt-3 fw-bold py-3 px-4 rounded-lg text-center transition-all">
+                    <a href="{{ url_for('challenge.challenges') }}" class="btn btn-light w-100 mt-3 fw-bold py-3 px-4 rounded-lg text-center transition-all">
                         <i class="fas fa-arrow-left me-2"></i> Back to Challenges
                     </a>
                 </div>
@@ -78,11 +74,10 @@
                     <h3 class="h5 fw-semibold mb-4" style="color: #2d3748;">More Challenges Like This</h3>
                     {% for more_challenge in more_challenges %}
                     <div class="d-flex align-items-center mb-3">
-                        <img src="{{ more_challenge.image_src }}" alt="{{ more_challenge.image_alt }}" class="img-fluid rounded me-3" style="width: 64px; height: 64px; object-fit: cover;">
                         <div>
                             <h4 class="fw-semibold" style="color: #2d3748;">{{ more_challenge.title }}</h4>
                             <p class="small text-secondary">{{ more_challenge.difficulty }} | {{ more_challenge.duration }}</p>
-                            <a href="{{ url_for('challenge_description', challenge_id=more_challenge.id) }}" class="text-primary small">View Challenge</a>
+                            <a href="{{ url_for('challenge.challenge_description', challenge_id=more_challenge.id) }}" class="text-primary small">View Challenge</a>
                         </div>
                     </div>
                     {% else %}
