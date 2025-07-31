@@ -1,6 +1,8 @@
 $(document).ready(function () {
     const socket = io();
     let selectedFile = null;
+    let isMuted = false;
+    let muteInfo = null;
 
     // Get room and user info from the DOM
     const chatContainer = $('#chat-container');
@@ -17,7 +19,94 @@ $(document).ready(function () {
     socket.on('connect', function() {
         socket.emit('join', { room: roomId, username: userName });
         console.log(`Joined room ${roomId} as ${userName}`);
+        
+        // Check mute status when connecting
+        checkMuteStatus();
     });
+
+    // Function to check if user is muted
+    function checkMuteStatus() {
+        $.getJSON(`/api/mute-status/${encodeURIComponent(userName)}/${roomId}`, function(response) {
+            isMuted = response.is_muted;
+            muteInfo = response.mute_info;
+            
+            if (isMuted) {
+                showMuteUI();
+            } else {
+                hideMuteUI();
+            }
+        }).fail(function() {
+            console.log('Failed to check mute status');
+        });
+    }
+
+    // Function to show mute UI
+    function showMuteUI() {
+        // Disable input elements
+        $('#message').prop('disabled', true).attr('placeholder', 'You are muted in this room');
+        $('#attach-file-btn').prop('disabled', true).css('opacity', '0.5');
+        $('.send-btn').prop('disabled', true).css('opacity', '0.5');
+        $('#file-input').prop('disabled', true);
+        
+        // Show mute notification
+        showMuteNotification();
+        
+        // Add visual styling to indicate muted state
+        $('.chat-input-container').addClass('muted-state');
+    }
+
+    // Function to hide mute UI
+    function hideMuteUI() {
+        // Enable input elements
+        $('#message').prop('disabled', false).attr('placeholder', 'Type your message...');
+        $('#attach-file-btn').prop('disabled', false).css('opacity', '1');
+        $('.send-btn').prop('disabled', false).css('opacity', '1');
+        $('#file-input').prop('disabled', false);
+        
+        // Remove mute notification
+        $('.mute-notification').remove();
+        
+        // Remove visual styling
+        $('.chat-input-container').removeClass('muted-state');
+    }
+
+    // Function to show mute notification
+    function showMuteNotification() {
+        // Remove existing notification
+        $('.mute-notification').remove();
+        
+        let muteMessage = '🔇 You are muted in this room';
+        let muteDetails = '';
+        
+        if (muteInfo) {
+            muteDetails += `<br><strong>Reason:</strong> ${muteInfo.reason}`;
+            
+            if (muteInfo.is_permanent) {
+                muteDetails += '<br><strong>Duration:</strong> Permanent';
+            } else if (muteInfo.remaining_time) {
+                muteDetails += `<br><strong>Time remaining:</strong> ${muteInfo.remaining_time}`;
+            }
+            
+            if (muteInfo.muted_by) {
+                muteDetails += `<br><strong>Muted by:</strong> ${muteInfo.muted_by}`;
+            }
+        }
+        
+        const notification = $(`
+            <div class="mute-notification">
+                <div class="mute-notification-content">
+                    <div class="mute-notification-title">${muteMessage}</div>
+                    <div class="mute-notification-details">${muteDetails}</div>
+                </div>
+            </div>
+        `);
+        
+        // Insert notification above the chat input
+        $('#chat-footer').prepend(notification);
+    }
+
+    // Periodic mute status check (every 30 seconds)
+    setInterval(checkMuteStatus, 30000);
 
     // Load message history for the specific room
     $.getJSON(`/history/${roomId}`, function (data) {
@@ -53,6 +142,13 @@ $(document).ready(function () {
     // Handle form submission
     $('#chat-form').submit(function (e) {
         e.preventDefault();
+        
+        // Check if user is muted
+        if (isMuted) {
+            showNotification('🔇 You are muted and cannot send messages', 'warning');
+            return;
+        }
+        
         const message = $('#message').val().trim();
         
         if (message || selectedFile) {
@@ -83,6 +179,15 @@ $(document).ready(function () {
             removeURLScanningIndicator();
             appendMessage(msg);
             scrollToBottom();
+        }
+    });
+
+    // Listen for mute notifications from server
+    socket.on('mute_notification', function (data) {
+        if (data.room_id == roomId) {
+            showNotification(data.message, 'warning');
+            // Refresh mute status
+            checkMuteStatus();
         }
     });
 

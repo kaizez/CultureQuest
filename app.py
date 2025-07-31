@@ -4,10 +4,11 @@ import hashlib
 import requests
 import time
 import re
+import json as json_module
 from flask import Flask, render_template, jsonify, request, url_for, redirect, flash
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.utils import secure_filename
-from models import db, Message, ChatRoom
+from models import db, Message, ChatRoom, SecurityViolation, MutedUser
 from datetime import datetime
 from markupsafe import escape
 from dotenv import load_dotenv
@@ -338,6 +339,11 @@ def landing():
     """Landing page route"""
     return render_template('landing.html')
 
+@app.route('/admin')
+def admin_dashboard():
+    """Admin dashboard route"""
+    return render_template('admin.html')
+
 @app.route('/chat')
 def chat_rooms():
     """Chat rooms menu page"""
@@ -401,6 +407,238 @@ def history(room_id):
     messages = Message.query.filter_by(room_id=room_id).order_by(Message.timestamp.asc()).all()
     return jsonify([msg.to_dict() for msg in messages])
 
+@app.route('/api/admin/violations', methods=['GET'])
+def get_violations():
+    """API endpoint to get security violations with optional pagination"""
+    page = request.args.get('page', type=int)
+    per_page = request.args.get('per_page', type=int)
+    
+    violations_query = SecurityViolation.query.order_by(SecurityViolation.timestamp.desc())
+    
+    if page is not None and per_page is not None:
+        # Paginated response
+        per_page = min(per_page, 100)  # Limit per_page to prevent abuse
+        violations = violations_query.paginate(
+            page=page, 
+            per_page=per_page, 
+            error_out=False
+        )
+        
+        return jsonify({
+            'violations': [violation.to_dict() for violation in violations.items],
+            'page': page,
+            'pages': violations.pages,
+            'per_page': per_page,
+            'total': violations.total,
+            'has_next': violations.has_next,
+            'has_prev': violations.has_prev
+        })
+    else:
+        # Return all violations (for client-side pagination)
+        violations = violations_query.all()
+        return jsonify([violation.to_dict() for violation in violations])
+
+@app.route('/api/admin/violations/<int:violation_id>', methods=['GET'])
+def get_violation_details(violation_id):
+    """API endpoint to get specific violation details"""
+    violation = SecurityViolation.query.get_or_404(violation_id)
+    return jsonify(violation.to_dict())
+
+@app.route('/api/admin/violations/<int:violation_id>', methods=['DELETE'])
+def delete_violation(violation_id):
+    """API endpoint to delete a violation record"""
+    violation = SecurityViolation.query.get_or_404(violation_id)
+    db.session.delete(violation)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Violation deleted successfully'})
+
+@app.route('/api/admin/violations/<int:violation_id>/status', methods=['PATCH'])
+def update_violation_status(violation_id):
+    """API endpoint to update violation status"""
+    violation = SecurityViolation.query.get_or_404(violation_id)
+    data = request.get_json()
+    
+    if 'status' in data and data['status'] in ['pending', 'handled', 'ignored']:
+        violation.status = data['status']
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Status updated successfully'})
+    
+    return jsonify({'error': 'Invalid status value'}), 400
+
+@app.route('/api/admin/mute-user', methods=['POST'])
+def mute_user():
+    """API endpoint to mute a user in a specific room"""
+    data = request.get_json()
+    
+    if not data or 'user_name' not in data or 'room_id' not in data:
+        return jsonify({'error': 'user_name and room_id are required'}), 400
+    
+    user_name = data['user_name'].strip()
+    room_id = data['room_id']
+    duration_hours = data.get('duration_hours', None)  # None for permanent mute
+    reason = data.get('reason', 'Security violation')
+    
+    # Validate room exists
+    room = ChatRoom.query.get(room_id)
+    if not room:
+        return jsonify({'error': 'Room not found'}), 404
+    
+    try:
+        # Check if user is already muted in this room
+        existing_mute = MutedUser.query.filter_by(
+            user_name=user_name, 
+            room_id=room_id, 
+            is_active=True
+        ).first()
+        
+        if existing_mute and existing_mute.is_muted():
+            return jsonify({'error': 'User is already muted in this room'}), 400
+        
+        # Clean up any old inactive mutes for this user/room combination
+        old_mutes = MutedUser.query.filter_by(
+            user_name=user_name,
+            room_id=room_id,
+            is_active=False
+        ).all()
+        
+        for old_mute in old_mutes:
+            db.session.delete(old_mute)
+        
+        if old_mutes:
+            db.session.commit()
+        
+        # Calculate mute expiration
+        muted_until = None
+        if duration_hours:
+            from datetime import timedelta
+            muted_until = datetime.utcnow() + timedelta(hours=duration_hours)
+        
+        # Create mute record
+        mute = MutedUser(
+            user_name=user_name,
+            room_id=room_id,
+            muted_until=muted_until,
+            reason=reason,
+            muted_by_admin='Admin'  # Will be updated when auth is implemented
+        )
+        
+        db.session.add(mute)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'User {user_name} muted in room {room.name}',
+            'mute': mute.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error muting user: {e}")
+        return jsonify({'error': 'Failed to mute user'}), 500
+
+@app.route('/api/admin/unmute-user', methods=['POST'])
+def unmute_user():
+    """API endpoint to unmute a user in a specific room"""
+    data = request.get_json()
+    
+    if not data or 'user_name' not in data or 'room_id' not in data:
+        return jsonify({'error': 'user_name and room_id are required'}), 400
+    
+    user_name = data['user_name'].strip()
+    room_id = data['room_id']
+    
+    try:
+        # Find active mute
+        mute = MutedUser.query.filter_by(
+            user_name=user_name,
+            room_id=room_id,
+            is_active=True
+        ).first()
+        
+        if not mute:
+            return jsonify({'error': 'User is not muted in this room'}), 404
+        
+        # Delete the mute record instead of deactivating
+        db.session.delete(mute)
+        db.session.commit()
+        
+        room = ChatRoom.query.get(room_id)
+        return jsonify({
+            'success': True, 
+            'message': f'User {user_name} unmuted in room {room.name if room else room_id}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error unmuting user: {e}")
+        return jsonify({'error': 'Failed to unmute user'}), 500
+
+@app.route('/api/admin/muted-users', methods=['GET'])
+def get_muted_users():
+    """API endpoint to get all muted users"""
+    muted_users = MutedUser.query.filter_by(is_active=True).order_by(MutedUser.muted_at.desc()).all()
+    return jsonify([mute.to_dict() for mute in muted_users])
+
+def is_user_muted(user_name, room_id):
+    """Helper function to check if a user is muted in a specific room"""
+    mute = MutedUser.query.filter_by(
+        user_name=user_name,
+        room_id=room_id,
+        is_active=True
+    ).first()
+    
+    if not mute:
+        return False
+    
+    return mute.is_muted()
+
+@app.route('/api/mute-status/<username>/<int:room_id>', methods=['GET'])
+def check_mute_status(username, room_id):
+    """API endpoint to check if a user is muted in a specific room"""
+    mute = MutedUser.query.filter_by(
+        user_name=username,
+        room_id=room_id,
+        is_active=True
+    ).first()
+    
+    if not mute or not mute.is_muted():
+        return jsonify({
+            'is_muted': False,
+            'mute_info': None
+        })
+    
+    # Calculate remaining time for temporary mutes
+    remaining_time = None
+    if mute.muted_until:
+        remaining_seconds = (mute.muted_until - datetime.utcnow()).total_seconds()
+        if remaining_seconds > 0:
+            hours = int(remaining_seconds // 3600)
+            minutes = int((remaining_seconds % 3600) // 60)
+            if hours > 0:
+                remaining_time = f"{hours}h {minutes}m"
+            else:
+                remaining_time = f"{minutes}m"
+        else:
+            # Mute has expired, deactivate it
+            mute.is_active = False
+            db.session.commit()
+            return jsonify({
+                'is_muted': False,
+                'mute_info': None
+            })
+    
+    return jsonify({
+        'is_muted': True,
+        'mute_info': {
+            'reason': mute.reason,
+            'muted_at': mute.muted_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'muted_until': mute.muted_until.strftime('%Y-%m-%d %H:%M:%S') if mute.muted_until else None,
+            'is_permanent': mute.muted_until is None,
+            'remaining_time': remaining_time,
+            'muted_by': mute.muted_by_admin
+        }
+    })
+
 @app.route('/upload/<int:room_id>', methods=['POST'])
 def upload_file(room_id):
     """Handle file uploads with virus scanning for a specific room"""
@@ -419,6 +657,10 @@ def upload_file(room_id):
         # Sanitize inputs
         user_name = escape(user_name)
         message = escape(message)
+        
+        # Check if user is muted in this room
+        if is_user_muted(str(user_name), room_id):
+            return jsonify({'error': 'You are muted in this room and cannot send messages or upload files.'}), 403
 
         # Check if file was uploaded
         if 'file' not in request.files:
@@ -463,6 +705,18 @@ def upload_file(room_id):
                 print(f"Scan result for {filename}: {scan_message}")
                 
                 if not is_safe:
+                    # Log the security violation
+                    violation = SecurityViolation(
+                        user_name=str(user_name),
+                        violation_type='file',
+                        content=filename,
+                        message_content=str(message),
+                        detection_details=json_module.dumps(scan_result) if scan_result else None,
+                        room_id=room_id
+                    )
+                    db.session.add(violation)
+                    db.session.commit()
+                    
                     # Remove the temporary file
                     os.remove(temp_file_path)
                     return jsonify({
@@ -567,10 +821,19 @@ def handle_my_custom_event(json):
     # Sanitize inputs
     user_name = escape(user_name)
     message = escape(message)
+    
+    # Check if user is muted in this room
+    if is_user_muted(str(user_name), room_id):
+        emit('mute_notification', {
+            'message': 'You are muted in this room and cannot send messages.',
+            'room_id': room_id
+        })
+        return
 
     # Check for URLs in the message
     urls = extract_urls(message)
     url_scan_results = []
+    violations_to_add = []
     
     if urls and VIRUSTOTAL_API_KEY:
         for url in urls:
@@ -582,6 +845,18 @@ def handle_my_custom_event(json):
                 'scan_result': scan_result,
                 'scan_message': scan_message
             })
+            
+            # Collect security violations for unsafe URLs
+            if not is_safe:
+                violation = SecurityViolation(
+                    user_name=str(user_name),
+                    violation_type='url',
+                    content=url,
+                    message_content=str(message),
+                    detection_details=json_module.dumps(scan_result) if scan_result else None,
+                    room_id=room_id
+                )
+                violations_to_add.append(violation)
 
     # Prepare the final message with URL scan results
     final_message = message
@@ -593,7 +868,7 @@ def handle_my_custom_event(json):
             else:
                 final_message += f"\n⚠️ {result['url']}: {result['scan_message']}"
 
-    # Save to database
+    # Save message to database
     new_msg = Message(
         user_name=user_name,
         message=final_message,
@@ -601,6 +876,12 @@ def handle_my_custom_event(json):
         room_id=room_id
     )
     db.session.add(new_msg)
+    
+    # Add any security violations to database
+    for violation in violations_to_add:
+        db.session.add(violation)
+    
+    # Commit all changes together
     db.session.commit()
 
     # Emit message to room including timestamp from database
