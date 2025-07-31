@@ -1,9 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
 import json
-# 1. Initialize SQLAlchemy without the app object
+
 db = SQLAlchemy(session_options={"autoflush": False})
 
-# 2. Create a function to initialize the DB and populate data
+
 def init_db(app):
     """Initializes the database, creates tables, and populates initial data if empty."""
     from models import Challenge, ChallengeResponse, Comment

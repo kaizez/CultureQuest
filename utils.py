@@ -23,7 +23,7 @@ def scan_file_in_background(app, response_id):
             if analysis_id:
                 report = get_file_analysis_report(analysis_id)
             
-            # Re-fetch the response to be safe in a threaded context
+            
             response_to_update = db.session.get(ChallengeResponse, response_id)
             if response_to_update:
                 if report:
@@ -47,7 +47,7 @@ def scan_file_in_background(app, response_id):
                 os.remove(temp_filepath)
                 print(f"Cleaned up temporary file: {temp_filepath}")
 
-API_KEY = "946b13d4021ccccbc02e1ca31bd20900e390da70e434013f58f82a2a58ede2c9"  
+API_KEY = os.environ.get('VIRUSTOTAL_API_KEY')
 def upload_file_to_virustotal(file_path):
     """Uploads a file to VirusTotal for scanning."""
     url = "https://www.virustotal.com/api/v3/files"
@@ -96,7 +96,7 @@ def get_file_analysis_report(analysis_id):
                 return report
             elif status == "queued" or status == "running":
                 print(f"Scan status: {status}. Waiting for completion...")
-                time.sleep(10)  # Wait for 10 seconds before polling again
+                time.sleep(10)  
             else:
                 print(f"Unexpected scan status: {status}. Response: {report}")
                 return None
@@ -116,19 +116,19 @@ FILE_SIGNATURES = {
     'gif': (b'\x47\x49\x46\x38\x37\x61', b'\x47\x49\x46\x38\x39\x61'),
     'pdf': (b'\x25\x50\x44\x46\x2D',),
     'zip': (b'\x50\x4B\x03\x04', b'\x50\x4B\x05\x06', b'\x50\x4B\x07\x08'),
-    'docx': (b'\x50\x4B\x03\x04',), # DOCX, XLSX, PPTX are essentially ZIP files
+    'docx': (b'\x50\x4B\x03\x04',), 
     'xlsx': (b'\x50\x4B\x03\x04',),
     'pptx': (b'\x50\x4B\x03\x04',),
-    'mp3': (b'\x49\x44\x33', b'\xFF\xFB', b'\xFF\xF3', b'\xFF\xF2'), # ID3 tag or MPEG audio frame
-    'wav': (b'\x52\x49\x46\x46', b'\x57\x41\x56\x45'), # RIFF and WAVE
-    'mp4': (b'\x00\x00\x00\x18\x66\x74\x79\x70', b'\x66\x74\x79\x70\x69\x73\x6F\x6D'), # ftyp box
-    'exe': (b'\x4D\x5A',), # MZ header for Windows executables
+    'mp3': (b'\x49\x44\x33', b'\xFF\xFB', b'\xFF\xF3', b'\xFF\xF2'), 
+    'wav': (b'\x52\x49\x46\x46', b'\x57\x41\x56\x45'), 
+    'mp4': (b'\x00\x00\x00\x18\x66\x74\x79\x70', b'\x66\x74\x79\x70\x69\x73\x6F\x6D'), 
+    'exe': (b'\x4D\x5A',), 
 }
 
 def check_file_signature(file_stream):
     header_size = max(len(sig) for signatures in FILE_SIGNATURES.values() for sig in signatures) if FILE_SIGNATURES else 0
-    header = file_stream.read(header_size + 10)  # Read a bit more just in case
-    file_stream.seek(0)  # Reset stream position to the beginning after reading
+    header = file_stream.read(header_size + 10)  
+    file_stream.seek(0)  
 
     for file_type, signatures in FILE_SIGNATURES.items():
         for signature in signatures:
@@ -141,7 +141,7 @@ def verify_recaptcha(token, action):
     secret = current_app.config['RECAPTCHA_SECRET_KEY']
     if not secret:
         print("Warning: RECAPTCHA_SECRET_KEY is not set. Skipping verification.")
-        return True, 1.0 # Simulate success
+        return True, 1.0 
     try:
         response = requests.post(
             'https://www.google.com/recaptcha/api/siteverify',
@@ -151,17 +151,17 @@ def verify_recaptcha(token, action):
             }
         )
         result = response.json()
-        print(f"reCAPTCHA verification result: {result}") # For debugging
+        print(f"reCAPTCHA verification result: {result}") 
 
-        # Check for success, correct action, and a reasonable score
+        
         if result.get('success') and result.get('action') == action and result.get('score', 0) > 0.5:
             return True, result.get('score')
         else:
-            # return False, result.get('score', 0)
-            return True, 1.0 # Simulate success
+            
+            return True, 1.0 
     except Exception as e:
         print(f"Error verifying reCAPTCHA: {e}")
-        return True, 1.0 # Simulate success
+        return True, 1.0 
 
 
 

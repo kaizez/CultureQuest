@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 import threading
 from models import Challenge, ChallengeResponse, Comment
 
-response_bp = Blueprint('challenge', __name__, template_folder='templates')
+response_bp = Blueprint('challenge', __name__)
 
 limiter = Limiter(
     app=current_app,
@@ -68,12 +68,11 @@ def wip_challenge_details(challenge_id):
                            rate_limit_info=rate_limit_info)
 
 @response_bp.route('/wip-challenges/<string:challenge_id>/add-comment', methods=['POST'])
-@limiter.limit("5 per minute") # Adjusted rate limit
+@limiter.limit("5 per minute") 
 def add_comment_to_wip_challenge(challenge_id):
     challenge = Challenge.query.get_or_404(challenge_id)
     form = CommentForm()
-
-    # We still validate the form, which also checks the CSRF token
+    
     if form.validate_on_submit():
         recaptcha_token = request.form.get('g_recaptcha_response')
         if not recaptcha_token:
@@ -83,12 +82,12 @@ def add_comment_to_wip_challenge(challenge_id):
         if not is_human:
             return jsonify({'success': False, 'message': 'reCAPTCHA verification failed. Please try again.'}), 400
 
-        # If validation and reCAPTCHA pass, add the comment
+        
         new_comment_text = form.comment.data
         new_comment = Comment(
             text=new_comment_text,
             challenge_id=challenge.id,
-            user_id='user' # Replace with actual user ID when auth is implemented
+            user_id='user' 
         )
         db.session.add(new_comment)
         try:
@@ -101,7 +100,7 @@ def add_comment_to_wip_challenge(challenge_id):
             print(f"Error adding comment: {e}")
             return jsonify({'success': False, 'message': 'A server error occurred while adding the comment.'}), 500
     else:
-        # If form validation fails, return the errors as JSON
+        
         errors = [error for field in form.errors.values() for error in field]
         return jsonify({'success': False, 'message': errors[0] if errors else 'Invalid data submitted.'}), 422
 
@@ -132,7 +131,7 @@ def challenge_submission(challenge_id):
                 allowed_signature_types = ['jpeg', 'png', 'mp4', 'pdf', 'docx', 'xlsx', 'pptx', 'zip']
                 allowed_signatures = ['jpeg', 'png', 'mp4', 'pdf', 'docx', 'xlsx', 'pptx']
                 
-                # Check if the detected signature type is among the allowed types
+                
                 if detected_file_type == 'error_reading_file':
                     error_message = "Error reading uploaded file for signature verification."
                     flash(error_message, 'danger')
@@ -151,8 +150,7 @@ def challenge_submission(challenge_id):
                             reflection=reflection_text
                         )
                         db.session.add(new_response)
-
-                        # Update challenge status
+                        
                         challenge.status = 'COMPLETED'
                         challenge.progress_percent = 100
                         db.session.commit()
@@ -170,7 +168,7 @@ def challenge_submission(challenge_id):
                         db.session.rollback()
                         flash(f"An unexpected error occurred during file processing: {e}", 'danger')
                         
-            # Update challenge status only if no critical errors occurred during scanning
+            
             if not error_message: 
                 challenge.status = 'DONE'
                 challenge.progress_percent = 100

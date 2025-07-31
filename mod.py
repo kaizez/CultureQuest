@@ -43,7 +43,7 @@ def admin_rescan_file(response_id):
         return redirect(url_for('moderate.admin_uploaded_content_detail', response_id=response.id))
 
     try:
-        # Start the scan in a background thread
+        
         app_instance = current_app._get_current_object()
         scan_thread = threading.Thread(target=scan_file_in_background, args=(app_instance, response.id))
         scan_thread.start()
