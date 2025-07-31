@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Complete your Google account setup - Choose username and password">
+  <meta name="theme-color" content="#4a90e2">
+  <title>Complete Your Account | CultureQuest</title>
+  
+  <!-- Enhanced Security Headers -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://developers.google.com data:; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=(), usb=()">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/static/signup2.css" />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
+  
+</head>
+
+<body>
+  <!-- Security Indicator -->
+  <div class="security-indicator" id="security-indicator">
+    🔒 Secure Google Account Setup
+  </div>
+
+  <!-- Subtle Animated Background -->
+  <div class="bg-container">
+    <div class="gradient-bg"></div>
+    <div class="floating-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+    <div class="shooting-stars">
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Progress Indicator -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 100%"></div>
+      </div>
+      <div class="progress-steps">
+        <div class="step completed">
+          <div class="step-number">✓</div>
+          <div class="step-label">Google Login</div>
+        </div>
+        <div class="step active">
+          <div class="step-number">2</div>
+          <div class="step-label">Account Setup</div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-label">Welcome</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signup Card -->
+    <div class="signup-card">
+      <div class="card-header">
+        <h2>Complete Your Account</h2>
+        <p>Welcome! Please choose a username and password to complete your CultureQuest account.</p>
+        <div class="google-info">
+          <span class="google-badge">🌐 Google Account</span>
+          <p><strong>{{ email }}</strong></p>
+        </div>
+      </div>
+
+      <!-- Enhanced Security Tip -->
+      <div class="security-tip">
+        <div>
+          <strong>Security First:</strong> We use AES-256 encryption, secure password hashing, and multi-factor authentication to protect your data.
+        </div>
+      </div>
+
+      <!-- Rate Limit Warning -->
+      <div class="rate-limit-warning" id="rate-limit-warning">
+        ⚠️ Too many attempts detected. Please wait before trying again.
+      </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash-message {{ category }}">
+                {% if category == 'success' %}
+                  <span class="flash-icon">✅</span>
+                {% elif category == 'error' or category == 'danger' %}
+                  <span class="flash-icon">❌</span>
+                {% else %}
+                  <span class="flash-icon">ℹ️</span>
+                {% endif %}
+                <span class="flash-text">{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- Signup Form -->
+      <form method="POST" action="/signup2" class="signup-form" id="signup-form" novalidate>
+        <!-- Enhanced CSRF Protection - Server must HTML escape all values -->
+        <input type="hidden" name="csrf_token" value="" id="csrf-token-field" />
+        <input type="hidden" name="form_token" value="" id="form-token-field" />
+        <input type="hidden" name="session_id" value="" id="session-id-field" />
+        <input type="hidden" name="timestamp" value="" id="timestamp-field" />
+        
+        <!-- Bot Prevention Field -->
+        <input type="text" name="website" class="botprevention" tabindex="-1" autocomplete="off" />
+        
+        <!-- Device Fingerprint -->
+        <input type="hidden" name="device_fingerprint" id="device_fingerprint" />
+        
+        <!-- Username Field -->
+        <div class="input-group">
+          <label for="username" class="input-label">Username</label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="username" 
+              name="username" 
+              placeholder="Choose a unique username"
+              required
+              minlength="3"
+              maxlength="20"
+              pattern="[a-zA-Z0-9_-]+"
+              title="Username can only contain letters, numbers, underscores, and hyphens"
+              autocomplete="username"
+              spellcheck="false"
+              data-validate="username"
+            />
+            <span class="input-icon" aria-hidden="true">👤</span>
+          </div>
+          <span class="validation-message" id="username-validation"></span>
+        </div>
+
+        <!-- Password Field -->
+        <div class="input-group">
+          <label for="password" class="input-label">Password</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              placeholder="Create a secure password"
+              required
+              minlength="12"
+              aria-describedby="password-help password-strength"
+              autocomplete="new-password"
+              data-validate="password"
+            />
+            <button 
+              type="button" 
+              class="toggle-password" 
+              aria-label="Toggle password visibility"
+              tabindex="-1"
+            >
+              👁️
+            </button>
+          </div>
+          <span class="validation-message" id="password-validation"></span>
+          
+          <div class="password-strength" id="password-strength">
+            <div class="strength-meter">
+              <div class="strength-fill"></div>
+            </div>
+            <div class="strength-text">
+              <span id="strength-label">Password strength</span>
+              <span id="strength-score"></span>
+            </div>
+            <ul class="strength-requirements">
+              <li id="req-length">At least 12 characters</li>
+              <li id="req-uppercase">One uppercase letter</li>
+              <li id="req-lowercase">One lowercase letter</li>
+              <li id="req-number">One number</li>
+              <li id="req-special">One special character (!@#$%^&*)</li>
+              <li id="req-no-common">Not a common password</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Confirm Password Field -->
+        <div class="input-group">
+          <label for="confirmPassword" class="input-label">Confirm Password</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="confirmPassword" 
+              name="confirmPassword" 
+              placeholder="Confirm your password"
+              required
+              aria-describedby="confirm-password-help"
+              autocomplete="new-password"
+              data-validate="confirm-password"
+            />
+            <button 
+              type="button" 
+              class="toggle-password" 
+              onclick="togglePassword('confirmPassword')"
+              aria-label="Show confirm password"
+              tabindex="-1"
+            >
+              <span aria-hidden="true">👁️</span>
+            </button>
+          </div>
+          <span class="validation-message" id="confirm-password-validation"></span>
+          <div id="confirm-password-help" class="password-match">Re-enter your password to confirm</div>
+        </div>
+
+        <!-- Security Verification (CAPTCHA) -->
+        <div class="captcha-container" id="captcha-container">
+          <label for="captcha" class="input-label">Security Verification</label>
+          <div class="captcha-challenge" id="captcha-challenge">Loading...</div>
+          <div class="captcha-input-row">
+            <input 
+              type="text" 
+              id="captcha" 
+              name="captcha" 
+              placeholder="Enter the code above"
+              required
+              autocomplete="off"
+              spellcheck="false"
+              class="captcha-input"
+            />
+            <button type="button" onclick="refreshCaptcha()" class="captcha-refresh-btn">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="signup-btn" id="signup-btn">
+          <span class="btn-text">Complete Account Setup</span>
+          <span class="btn-icon">🚀</span>
+          <span class="btn-loader" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <!-- Alternative Actions -->
+      <div class="signup-footer">
+        <div class="divider">
+          <span>or</span>
+        </div>
+        
+        <div class="alternative-actions">
+          <a href="/" class="alt-link">
+            <span>🔑</span>
+            Already have an account? Sign in
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Notice -->
+    <div class="security-notice">
+      <strong>🛡️ Your account is secured by Google OAuth</strong>
+      <p>Your Google account provides additional security. We'll never store your Google password.</p>
+    </div>
+  </div>
+
+  <script>
+    // Enhanced Security Configuration
+    const SECURITY_CONFIG = {
+      MAX_ATTEMPTS: 5,
+      RATE_LIMIT_WINDOW: 15 * 60 * 1000, // 15 minutes
+      LOCKOUT_DURATION: 30 * 60 * 1000, // 30 minutes
+      SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minutes
+      MAX_PASSWORD_AGE: 90 * 24 * 60 * 60 * 1000, // 90 days
+      STRONG_PASSWORD_MIN_SCORE: 4,
+      DEBOUNCE_DELAY: 300
+    };
+
+    // Security state tracking
+    let securityState = {
+      submitAttempts: 0,
+      lastSubmitTime: 0,
+      sessionStartTime: Date.now(),
+      isLocked: false,
+      deviceFingerprint: null,
+      captchaToken: null,
+      validationErrors: new Set()
+    };
+
+    // Common passwords list (subset for demo)
+    const COMMON_PASSWORDS = new Set([
+      'password', '123456', 'password123', 'admin', 'qwerty', 
+      'letmein', 'welcome', 'monkey', '1234567890', 'password1',
+      'abc123', 'Password1', 'password!', '12345678', 'sunshine'
+    ]);
+
+    // Device fingerprinting for fraud detection
+    function generateDeviceFingerprint() {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillText('Device fingerprint', 2, 2);
+      
+      const fingerprint = {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        platform: navigator.platform,
+        screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        canvas: canvas.toDataURL(),
+        timestamp: Date.now(),
+        cookieEnabled: navigator.cookieEnabled,
+        doNotTrack: navigator.doNotTrack,
+        plugins: Array.from(navigator.plugins).map(p => p.name).join(','),
+        webgl: getWebGLFingerprint()
+      };
+      
+      // Hash the fingerprint
+      return btoa(JSON.stringify(fingerprint)).substring(0, 32);
+    }
+
+    function getWebGLFingerprint() {
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) return 'no-webgl';
+        
+        const renderer = gl.getParameter(gl.RENDERER);
+        const vendor = gl.getParameter(gl.VENDOR);
+        return `${vendor}~${renderer}`;
+      } catch (e) {
+        return 'webgl-error';
+      }
+    }
+
+    // Enhanced CAPTCHA system with server fallback
+    async function generateCaptcha() {
+      const challengeElement = document.getElementById('captcha-challenge');
+      const container = document.getElementById('captcha-container');
+      
+      if (challengeElement && container) {
+        // Show loading state
+        challengeElement.textContent = 'Loading...';
+        challengeElement.classList.add('loading');
+        container.style.display = 'block';
+        container.classList.add('loaded');
+        
+        try {
+          // Try server-side CAPTCHA first with timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+          
+          const response = await fetch('/api/captcha', {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'Cache-Control': 'no-cache'
+            },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.captcha && typeof data.captcha === 'string') {
+              securityState.captchaToken = data.captcha;
+              challengeElement.textContent = data.captcha;
+              challengeElement.classList.remove('loading');
+              logSecurityEvent('server_captcha_generated');
+              return;
+            } else {
+              throw new Error('Invalid CAPTCHA response format');
+            }
+          } else {
+            throw new Error(`CAPTCHA generation failed: ${response.status} ${response.statusText}`);
+          }
+        } catch (error) {
+          // Server failed, immediately use client fallback
+          console.warn('Server CAPTCHA failed, using client fallback:', error.message);
+          logSecurityEvent('captcha_server_failed', { error: error.message });
+        }
+        
+        // Fallback to client-side CAPTCHA
+        generateClientCaptcha();
+      }
+    }
+
+    // Client-side CAPTCHA fallback
+    function generateClientCaptcha() {
+      const challengeElement = document.getElementById('captcha-challenge');
+      const container = document.getElementById('captcha-container');
+      
+      if (challengeElement && container) {
+        // Generate random CAPTCHA code
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let captcha = '';
+        for (let i = 0; i < 6; i++) {
+          captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        
+        // Store token for validation
+        securityState.captchaToken = captcha;
+        
+        // Display CAPTCHA with visual styling
+        challengeElement.textContent = captcha;
+        challengeElement.classList.remove('loading');
+        container.style.display = 'block';
+        container.classList.add('loaded');
+        
+        // Clear previous input
+        const captchaInput = document.getElementById('captcha');
+        if (captchaInput) {
+          captchaInput.value = '';
+          captchaInput.focus();
+        }
+        
+        logSecurityEvent('client_captcha_generated', { fallback: true });
+      }
+    }
+
+    function refreshCaptcha() {
+      // Add visual feedback to refresh button
+      const refreshBtn = event.target;
+      if (refreshBtn) {
+        const originalText = refreshBtn.textContent;
+        refreshBtn.textContent = 'Refreshing...';
+        refreshBtn.disabled = true;
+        
+        // Generate new CAPTCHA
+        generateCaptcha();
+        showSecurityMessage('CAPTCHA refreshed', 'info');
+        
+        setTimeout(() => {
+          refreshBtn.textContent = originalText;
+          refreshBtn.disabled = false;
+        }, 1000);
+      } else {
+        // Fallback if no button reference
+        generateCaptcha();
+        showSecurityMessage('CAPTCHA refreshed', 'info');
+      }
+    }
+
+    // Enhanced password visibility toggle with fixed emoji logic
+    function togglePassword(fieldId) {
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+      
+      const button = field.parentNode.querySelector('.toggle-password');
+      if (!button) return;
+      
+      const eyeIcon = button.querySelector('span[aria-hidden="true"]');
+      if (!eyeIcon) return;
+      
+      if (field.type === 'password') {
+        field.type = 'text';
+        eyeIcon.textContent = '🙈'; // Hide emoji
+        button.setAttribute('aria-label', 'Hide password');
+        logSecurityEvent('password_visibility_toggled', { field: fieldId, action: 'show' });
+      } else {
+        field.type = 'password';
+        eyeIcon.textContent = '👁️'; // Show emoji
+        button.setAttribute('aria-label', 'Show password');
+        logSecurityEvent('password_visibility_toggled', { field: fieldId, action: 'hide' });
+      }
+    }
+
+    // Enhanced input validation with real-time feedback
+    function validateInput(field, value) {
+      const validators = {
+        username: async (val) => {
+          // First do client-side validation
+          if (!val) return { valid: false, message: 'Username is required' };
+          if (val.length < 3) return { valid: false, message: 'Username too short (min 3 chars)' };
+          if (val.length > 30) return { valid: false, message: 'Username too long (max 30 chars)' };
+          if (!/^[a-zA-Z0-9_]+$/.test(val)) return { valid: false, message: 'Only letters, numbers, and underscores allowed' };
+          if (/^[0-9]+$/.test(val)) return { valid: false, message: 'Username cannot be all numbers' };
+          
+          // Then check availability with server
+          try {
+            const response = await fetch('/api/check-username', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              credentials: 'same-origin',
+              body: JSON.stringify({ username: val })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.available) {
+              return { valid: true, message: 'Username is available ✓' };
+            } else {
+              return { valid: false, message: result.message || 'Username is taken' };
+            }
+          } catch (error) {
+            console.error('Username check error:', error);
+            return { valid: false, message: 'Error checking username availability' };
+          }
+        },
+        
+        password: (val) => {
+          if (!val) return { valid: false, message: 'Password is required' };
+          
+          const issues = [];
+          if (val.length < 12) issues.push('At least 12 characters');
+          if (!/[A-Z]/.test(val)) issues.push('One uppercase letter');
+          if (!/[a-z]/.test(val)) issues.push('One lowercase letter');
+          if (!/\d/.test(val)) issues.push('One number');
+          if (!/[!@#$%^&*(),.?":{}|<>]/.test(val)) issues.push('One special character');
+          
+          // Check against common passwords
+          if (COMMON_PASSWORDS.has(val.toLowerCase())) {
+            issues.push('Password is too common');
+          }
+          
+          // Check for keyboard patterns
+          if (isKeyboardPattern(val)) {
+            issues.push('Avoid keyboard patterns');
+          }
+          
+          // Check for personal info (basic)
+          const username = document.getElementById('username').value;
+          if (username && val.toLowerCase().includes(username.toLowerCase())) {
+            issues.push('Cannot contain username');
+          }
+          
+          if (issues.length > 0) {
+            return { valid: false, message: `Missing: ${issues.join(', ')}` };
+          }
+          
+          return { valid: true, message: 'Strong password' };
+        },
+        
+        'confirm-password': (val) => {
+          const password = document.getElementById('password').value;
+          if (!val) return { valid: false, message: 'Password confirmation required' };
+          if (val !== password) return { valid: false, message: 'Passwords do not match' };
+          return { valid: true, message: 'Passwords match' };
+        }
+      };
+
+      return validators[field] ? validators[field](value) : { valid: true, message: '' };
+    }
+
+    function isKeyboardPattern(password) {
+      const patterns = [
+        'qwerty', 'asdf', 'zxcv', 'qaz', 'wsx', 'edc',
+        '123456', '098765', 'abcdef', 'fedcba'
+      ];
+      const lower = password.toLowerCase();
+      return patterns.some(pattern => lower.includes(pattern));
+    }
+
+    // Enhanced password strength calculation with animated requirements
+    function calculatePasswordStrength(password) {
+      let score = 0;
+      const requirements = {
+        length: password.length >= 12,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /\d/.test(password),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+        'no-common': !COMMON_PASSWORDS.has(password.toLowerCase()) && !isKeyboardPattern(password)
+      };
+
+      // Update requirement indicators with proper checking and animation
+      Object.keys(requirements).forEach(req => {
+        const element = document.getElementById(`req-${req}`);
+        if (element) {
+          const wasValid = element.classList.contains('valid');
+          const isValid = requirements[req];
+          
+          if (isValid && !wasValid) {
+            // Animate to green with checkmark
+            element.classList.add('valid');
+            element.style.animation = 'checkmarkBounce 0.5s ease';
+            setTimeout(() => {
+              element.style.animation = '';
+            }, 500);
+          } else if (!isValid && wasValid) {
+            // Animate to red with dot
+            element.classList.remove('valid');
+          }
+        }
+      });
+
+      // Calculate score with weights
+      const weights = { length: 2, uppercase: 1, lowercase: 1, number: 1, special: 2, 'no-common': 2 };
+      Object.keys(requirements).forEach(req => {
+        if (requirements[req]) score += weights[req] || 1;
+      });
+
+      // Bonus points for extra length
+      if (password.length >= 16) score += 2;
+      if (password.length >= 20) score += 1;
+
+      // Penalty for common patterns
+      if (password.match(/(.)\1{2,}/)) score -= 1; // Repeated characters
+      if (password.match(/012|123|234|345|456|567|678|789|890/)) score -= 1; // Sequential numbers
+
+      return { score: Math.max(0, score), requirements };
+    }
+
+    function updatePasswordStrength(password) {
+      const { score } = calculatePasswordStrength(password);
+      const strengthMeter = document.querySelector('.strength-meter');
+      const strengthFill = document.querySelector('.strength-fill');
+      const strengthLabel = document.getElementById('strength-label');
+      const strengthScore = document.getElementById('strength-score');
+
+      if (!strengthMeter || !strengthFill || !strengthLabel || !strengthScore) return;
+
+      // Remove existing classes
+      strengthMeter.classList.remove('weak', 'fair', 'good', 'strong', 'very-strong');
+
+      if (password.length === 0) {
+        strengthLabel.textContent = 'Password strength';
+        strengthScore.textContent = '';
+        return;
+      }
+
+      const levels = [
+        { min: 0, max: 3, class: 'weak', label: 'Very Weak' },
+        { min: 4, max: 6, class: 'fair', label: 'Weak' },
+        { min: 7, max: 8, class: 'good', label: 'Good' },
+        { min: 9, max: 10, class: 'strong', label: 'Strong' },
+        { min: 11, max: 15, class: 'very-strong', label: 'Very Strong' }
+      ];
+
+      const level = levels.find(l => score >= l.min && score <= l.max) || levels[0];
+      
+      strengthMeter.classList.add(level.class);
+      strengthLabel.textContent = 'Password strength:';
+      strengthScore.textContent = level.label;
+    }
+
+    // Password confirmation check
+    function checkPasswordMatch() {
+      const password = document.getElementById('password');
+      const confirmPassword = document.getElementById('confirmPassword');
+      const matchIndicator = document.getElementById('confirm-password-help');
+
+      if (!password || !confirmPassword || !matchIndicator) return;
+
+      matchIndicator.classList.remove('match', 'no-match');
+
+      if (confirmPassword.value.length === 0) {
+        matchIndicator.textContent = 'Re-enter your password to confirm';
+        return;
+      }
+
+      if (password.value === confirmPassword.value) {
+        matchIndicator.classList.add('match');
+        matchIndicator.textContent = 'Passwords match ✓';
+      } else {
+        matchIndicator.classList.add('no-match');
+        matchIndicator.textContent = 'Passwords do not match ✗';
+      }
+    }
+
+    // Real-time validation with debouncing
+    function setupRealTimeValidation() {
+      const inputs = document.querySelectorAll('[data-validate]');
+      
+      inputs.forEach(input => {
+        let timeout;
+        
+        input.addEventListener('input', function() {
+          clearTimeout(timeout);
+          const field = this.dataset.validate;
+          const value = this.value;
+          
+          // Real-time typing animation
+          if (value.length > 0) {
+            this.classList.add('has-content');
+          } else {
+            this.classList.remove('has-content');
+          }
+          
+          // Show loading state for username while checking
+          if (field === 'username' && value.length >= 3) {
+            const wrapper = this.closest('.input-wrapper');
+            if (wrapper) {
+              wrapper.classList.add('validating');
+              wrapper.classList.remove('valid', 'invalid');
+            }
+            const messageEl = document.getElementById(`${field}-validation`);
+            if (messageEl) {
+              messageEl.textContent = 'Checking availability...';
+              messageEl.className = 'validation-message validating';
+              messageEl.style.color = '#4a90e2';
+              messageEl.style.opacity = '1';
+            }
+          }
+          
+          timeout = setTimeout(async () => {
+            const validation = await validateInput(field, value);
+            updateValidationUI(this, validation);
+          }, SECURITY_CONFIG.DEBOUNCE_DELAY);
+        });
+        
+        input.addEventListener('blur', async function() {
+          const validation = await validateInput(this.dataset.validate, this.value);
+          updateValidationUI(this, validation);
+        });
+      });
+    }
+
+    function updateValidationUI(input, validation) {
+      const wrapper = input.closest('.input-wrapper');
+      const messageEl = document.getElementById(`${input.dataset.validate}-validation`);
+      
+      if (!wrapper) return;
+      
+      // Remove existing classes with smooth transition
+      wrapper.classList.remove('valid', 'invalid', 'validating');
+      
+      if (validation.valid) {
+        wrapper.classList.add('valid');
+        securityState.validationErrors.delete(input.dataset.validate);
+      } else {
+        wrapper.classList.add('invalid');
+        securityState.validationErrors.add(input.dataset.validate);
+      }
+      
+      if (messageEl) {
+        // Smooth message transition
+        messageEl.style.opacity = '0';
+        setTimeout(() => {
+          messageEl.textContent = validation.message;
+          messageEl.className = `validation-message ${validation.valid ? 'valid' : 'invalid'}`;
+          messageEl.style.color = validation.valid ? '#48bb78' : '#f56565';
+          messageEl.style.opacity = '1';
+        }, 150);
+      }
+    }
+
+    // Enhanced rate limiting with progressive penalties
+    function checkRateLimit() {
+      const now = Date.now();
+      
+      // Check if currently locked out
+      if (securityState.isLocked) {
+        const lockoutRemaining = SECURITY_CONFIG.LOCKOUT_DURATION - (now - securityState.lastSubmitTime);
+        if (lockoutRemaining > 0) {
+          showRateLimitWarning(Math.ceil(lockoutRemaining / 60000));
+          return false;
+        } else {
+          // Lockout expired
+          securityState.isLocked = false;
+          securityState.submitAttempts = 0;
+          hideRateLimitWarning();
+        }
+      }
+      
+      // Reset attempts if window has passed
+      if (now - securityState.lastSubmitTime >= SECURITY_CONFIG.RATE_LIMIT_WINDOW) {
+        securityState.submitAttempts = 0;
+      }
+      
+      // Check current attempts
+      if (securityState.submitAttempts >= SECURITY_CONFIG.MAX_ATTEMPTS) {
+        securityState.isLocked = true;
+        securityState.lastSubmitTime = now;
+        showRateLimitWarning(SECURITY_CONFIG.LOCKOUT_DURATION / 60000);
+        logSecurityEvent('rate_limit_exceeded', { 
+          attempts: securityState.submitAttempts,
+          ip: 'client-side',
+          userAgent: navigator.userAgent 
+        });
+        return false;
+      }
+      
+      return true;
+    }
+
+    function showRateLimitWarning(minutesRemaining) {
+      const warning = document.getElementById('rate-limit-warning');
+      if (warning) {
+        warning.textContent = `⚠️ Account temporarily locked. Try again in ${minutesRemaining} minutes.`;
+        warning.style.display = 'block';
+      }
+      updateSecurityIndicator('danger', '🚫 Account Locked');
+    }
+
+    function hideRateLimitWarning() {
+      const warning = document.getElementById('rate-limit-warning');
+      if (warning) {
+        warning.style.display = 'none';
+      }
+      updateSecurityIndicator('secure', '🔒 Secure Connection');
+    }
+
+    // Security event logging
+    function logSecurityEvent(event, data = {}) {
+      const logEntry = {
+        event,
+        timestamp: new Date().toISOString(),
+        sessionId: securityState.deviceFingerprint,
+        ...data
+      };
+      
+      // Send to security monitoring endpoint in production
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        // Only log security events in production to monitoring service
+        fetch('/api/security-events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(logEntry)
+        }).catch(() => {}); // Fail silently
+      }
+    }
+
+    // Security indicator management
+    function updateSecurityIndicator(level, message) {
+      const indicator = document.getElementById('security-indicator');
+      if (indicator) {
+        indicator.className = `security-indicator ${level}`;
+        indicator.textContent = message;
+      }
+    }
+
+    function showSecurityMessage(message, type = 'info') {
+      // Create temporary notification
+      const notification = document.createElement('div');
+      notification.className = `security-notification ${type}`;
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        background: ${type === 'error' ? '#f56565' : type === 'success' ? '#48bb78' : '#4a90e2'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 1001;
+        animation: slideIn 0.3s ease;
+      `;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    // Enhanced form validation
+    function validateForm() {
+      const form = document.getElementById('signup-form');
+      if (!form) return ['Form not found'];
+      
+      const formData = new FormData(form);
+      const errors = [];
+
+      // Validate all required fields (no email for signup2, but include captcha)
+      const requiredFields = ['username', 'password', 'confirmPassword', 'captcha'];
+      requiredFields.forEach(field => {
+        const value = formData.get(field);
+        if (!value || value.trim() === '') {
+          errors.push(`${field.charAt(0).toUpperCase() + field.slice(1)} is required`);
+        }
+      });
+
+      // Validate bot prevention field (should be empty)
+      if (formData.get('website')) {
+        logSecurityEvent('bot_prevention_triggered', { value: formData.get('website') });
+        errors.push('Security check failed');
+      }
+
+      // Validate CAPTCHA - both client and server validation
+      const captchaInput = formData.get('captcha');
+      if (!captchaInput || captchaInput.trim() === '') {
+        errors.push('Security verification code is required');
+      } else if (securityState.captchaToken && captchaInput.toUpperCase() !== securityState.captchaToken.toUpperCase()) {
+        errors.push('Security verification code is incorrect');
+        // Generate new CAPTCHA after failed attempt
+        setTimeout(() => generateCaptcha(), 100);
+      }
+
+      // Check for validation errors from real-time validation
+      if (securityState.validationErrors.size > 0) {
+        errors.push('Please fix the highlighted errors');
+      }
+
+      return errors;
+    }
+
+    // Enhanced form submission with comprehensive security checks
+    async function handleFormSubmission(e) {
+      e.preventDefault();
+      console.log('DEBUG: Form submission started');
+      
+      // Rate limiting check
+      if (!checkRateLimit()) {
+        console.log('DEBUG: Rate limit check failed');
+        return false;
+      }
+
+      // Increment attempt counter
+      securityState.submitAttempts++;
+      securityState.lastSubmitTime = Date.now();
+
+      // Validate form
+      const errors = validateForm();
+      console.log('DEBUG: Form validation result:', errors);
+      if (errors.length > 0) {
+        console.log('DEBUG: Form validation failed:', errors[0]);
+        showSecurityMessage(errors[0], 'error');
+        logSecurityEvent('form_validation_failed', { errors });
+        return false;
+      }
+
+      // UI feedback
+      const submitBtn = document.getElementById('signup-btn');
+      const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
+      const btnLoader = submitBtn ? submitBtn.querySelector('.btn-loader') : null;
+      
+      if (submitBtn && btnText && btnLoader) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+        btnText.textContent = 'Creating Account...';
+        btnLoader.style.display = 'block';
+      }
+
+      try {
+        // Submit to secure server
+        console.log('DEBUG: Creating FormData and submitting to server');
+        const formData = new FormData(document.getElementById('signup-form'));
+        const result = await submitToServer(formData);
+        console.log('DEBUG: Server response:', result);
+        
+        // Success feedback
+        if (btnText) btnText.textContent = 'Account Created! ✓';
+        showSecurityMessage('Account created successfully!', 'success');
+        
+        logSecurityEvent('account_created');
+        
+        // Redirect to verification page if URL provided
+        if (result.redirect_url) {
+          setTimeout(() => {
+            window.location.href = result.redirect_url;
+          }, 1500);
+        } else {
+          // Reset form after delay
+          setTimeout(() => {
+            if (submitBtn && btnText && btnLoader) {
+              submitBtn.disabled = false;
+              submitBtn.classList.remove('loading');
+              btnText.textContent = 'Complete Account Setup';
+              btnLoader.style.display = 'none';
+            }
+          }, 3000);
+        }
+        
+      } catch (error) {
+        // Error handling
+        if (submitBtn && btnText && btnLoader) {
+          btnText.textContent = 'Complete Account Setup';
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('loading');
+          btnLoader.style.display = 'none';
+        }
+        
+        showSecurityMessage('Account creation failed. Please try again.', 'error');
+        logSecurityEvent('account_creation_failed', { error: error.message });
+      }
+    }
+
+    // Secure server API submission
+    async function submitToServer(formData) {
+      const response = await fetch('/signup2', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Signup failed');
+      }
+      
+      return result;
+    }
+
+    // Secure token population from server
+    async function populateSecurityTokens() {
+      try {
+        const response = await fetch('/api/security-tokens', {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        if (response.ok) {
+          const tokens = await response.json();
+          // Safely populate tokens (server ensures these are properly escaped)
+          document.getElementById('csrf-token-field').value = tokens.csrf_token || '';
+          document.getElementById('form-token-field').value = tokens.form_token || '';
+          document.getElementById('session-id-field').value = tokens.session_id || '';
+          document.getElementById('timestamp-field').value = tokens.timestamp || '';
+          logSecurityEvent('security_tokens_populated');
+        }
+      } catch (error) {
+        // Fail securely - form cannot be submitted without tokens
+        logSecurityEvent('token_fetch_failed', { error: error.message });
+      }
+    }
+
+    // Initialize everything when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      // Populate security tokens from server
+      populateSecurityTokens();
+      
+      // Generate device fingerprint
+      securityState.deviceFingerprint = generateDeviceFingerprint();
+      const fingerprintField = document.getElementById('device_fingerprint');
+      if (fingerprintField) {
+        fingerprintField.value = securityState.deviceFingerprint;
+      }
+
+      // Initialize CAPTCHA immediately
+      generateCaptcha();
+
+      // Set up real-time validation
+      setupRealTimeValidation();
+
+      // Password strength monitoring
+      const passwordField = document.getElementById('password');
+      const confirmPasswordField = document.getElementById('confirmPassword');
+
+      if (passwordField) {
+        passwordField.addEventListener('input', function() {
+          updatePasswordStrength(this.value);
+          checkPasswordMatch();
+        });
+      }
+
+      if (confirmPasswordField) {
+        confirmPasswordField.addEventListener('input', checkPasswordMatch);
+      }
+
+      // Form submission with security checks
+      const signupForm = document.getElementById('signup-form');
+      if (signupForm) {
+        signupForm.addEventListener('submit', handleFormSubmission);
+      }
+
+      // Enhanced keyboard navigation
+      document.addEventListener('keydown', function(e) {
+        // Close modals with Escape key
+        if (e.key === 'Escape') {
+          // No modals in signup2
+        }
+      });
+
+      // Initialize security indicator
+      updateSecurityIndicator('secure', '🔒 Secure Google Account Setup');
+      
+      // Password visibility toggles
+      document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+          const input = this.parentElement.querySelector('input');
+          const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+          input.setAttribute('type', type);
+          
+          this.textContent = type === 'password' ? '👁️' : '🙈';
+          this.setAttribute('aria-label', type === 'password' ? 'Show password' : 'Hide password');
+        });
+      });
+      
+      // Add entrance animations
+      setTimeout(() => {
+        document.querySelectorAll('.signup-card, .security-notice').forEach((el, index) => {
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(30px)';
+          el.style.transition = 'all 0.6s ease';
+          
+          setTimeout(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+          }, index * 200);
+        });
+      }, 100);
+    });
+
+    // Add CSS animations for security notifications
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      
+      @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+      }
+      
+      @keyframes checkmarkBounce {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+      }
+      
+      .shake {
+        animation: shake 0.5s ease-in-out;
+      }
+      
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>
