@@ -423,8 +423,8 @@ def upload_file(room_id):
             return jsonify({'error': 'Input too long'}), 400
 
         # Sanitize inputs
-        user_name = escape(user_name)
-        message = escape(message)
+        user_name = str(escape(user_name))
+        message = str(escape(message))
         
         # Check if user is muted in this room
         if is_user_muted(str(user_name), room_id):
@@ -599,8 +599,8 @@ def handle_chat_message(socketio, json):
         return
 
     # Sanitize inputs
-    user_name = escape(user_name)
-    message = escape(message)
+    user_name = str(escape(user_name))
+    message = str(escape(message))
     
     # Check if user is muted in this room
     if is_user_muted(str(user_name), room_id):

@@ -3,7 +3,16 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+# MySQL table options
+mysql_table_args = {
+    'mysql_engine': 'InnoDB',
+    'mysql_charset': 'utf8mb4',
+    'mysql_collate': 'utf8mb4_unicode_ci'
+}
+
 class ChatRoom(db.Model):
+    __table_args__ = mysql_table_args
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.String(500), nullable=True)
@@ -22,6 +31,8 @@ class ChatRoom(db.Model):
         }
 
 class Message(db.Model):
+    __table_args__ = mysql_table_args
+    
     id = db.Column(db.Integer, primary_key=True)
     user_name = db.Column(db.String(50), nullable=False)
     message = db.Column(db.String(500), nullable=False)
@@ -43,6 +54,8 @@ class Message(db.Model):
         }
 
 class SecurityViolation(db.Model):
+    __table_args__ = mysql_table_args
+    
     id = db.Column(db.Integer, primary_key=True)
     user_name = db.Column(db.String(50), nullable=False)
     violation_type = db.Column(db.String(20), nullable=False)  # 'url' or 'file'
@@ -67,6 +80,8 @@ class SecurityViolation(db.Model):
         }
 
 class MutedUser(db.Model):
+    __table_args__ = mysql_table_args
+    
     id = db.Column(db.Integer, primary_key=True)
     user_name = db.Column(db.String(50), nullable=False)
     room_id = db.Column(db.Integer, db.ForeignKey('chat_room.id'), nullable=False)

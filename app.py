@@ -20,9 +20,9 @@ def load_env():
         # Debug: Check if API key is loaded
         api_key = os.environ.get('VIRUSTOTAL_API_KEY')
         if api_key:
-            print(f"✅ VirusTotal API key loaded (length: {len(api_key)})")
+            print(f"[OK] VirusTotal API key loaded (length: {len(api_key)})")
         else:
-            print("❌ VirusTotal API key not found in environment")
+            print("[ERROR] VirusTotal API key not found in environment")
     else:
         print("Warning: .env file not found.")
         print(f"Looking for .env at: {dotenv_path}")
@@ -37,7 +37,7 @@ app = Flask(__name__)
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-long-and-random-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_URI', 'mysql+pymysql://SQLUser:Pleasestopleakingenv@staging.nypdsf.me:8080/culturequest')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # File upload configuration
@@ -67,7 +67,7 @@ with app.app_context():
         for room in default_rooms:
             db.session.add(room)
         db.session.commit()
-        print("✅ Default chat rooms created")
+        print("[OK] Default chat rooms created")
 
 # Register Blueprints
 # app.register_blueprint(challenge_bp, url_prefix='/host')
