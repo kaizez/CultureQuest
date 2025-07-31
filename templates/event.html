@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event - Approved Challenges</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+
+    <header class="bg-blue-900 text-white py-8 shadow-lg">
+        <h1 class="text-4xl font-bold text-center">Approved Challenges</h1>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-8">
+        <!-- Latest Challenge (Large Rectangle) -->
+        {% if latest_challenge %}
+            <div class="bg-white rounded-lg shadow-xl p-8 mb-8">
+                <h2 class="text-3xl font-semibold text-blue-700">{{ latest_challenge['name'] }}</h2>
+                <p class="text-gray-700 mt-2"><strong>Email:</strong> {{ latest_challenge['email'] }}</p>
+                <p class="text-gray-700"><strong>Phone:</strong> {{ latest_challenge['phone'] }}</p>
+                <p class="text-gray-700 mt-4"><strong>Description:</strong> {{ latest_challenge['description'] }}</p>
+                
+                {% if latest_challenge['media'] %}
+                    <img src="{{ url_for('static', filename='uploads/' + latest_challenge['media']) }}" alt="Media" class="mt-6 rounded-xl shadow-md">
+                {% else %}
+                    <p class="text-gray-500 mt-6">No media uploaded</p>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="text-center text-xl font-semibold text-gray-600">No approved challenges available.</p>
+        {% endif %}
+
+        <!-- Other Approved Challenges (Smaller Rectangles) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for challenge in other_challenges %}
+                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition duration-300 ease-in-out">
+                    <h3 class="text-2xl font-semibold text-gray-800">{{ challenge['name'] }}</h3>
+                    <p class="text-gray-700 mt-2"><strong>Email:</strong> {{ challenge['email'] }}</p>
+                    <p class="text-gray-700"><strong>Phone:</strong> {{ challenge['phone'] }}</p>
+                    <p class="text-gray-700 mt-4"><strong>Description:</strong> {{ challenge['description'] }}</p>
+                    
+                    {% if challenge['media'] %}
+                        <img src="{{ url_for('static', filename='uploads/' + challenge['media']) }}" alt="Challenge Media" class="mt-6 rounded-xl shadow-md">
+                    {% else %}
+                        <p class="text-gray-500 mt-6">No media uploaded</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+
+</body>
+</html>

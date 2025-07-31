@@ -66,46 +66,48 @@
         });
     </script>
 </head>
-<body class="bg-gray-100 p-6">
+<body class="bg-gray-50 p-8">
 
-    <h1 class="text-2xl font-semibold mb-6">Create a New Challenge</h1>
+    <header class="bg-blue-900 text-white py-8 shadow-lg">
+        <h1 class="text-4xl font-bold text-center">Create a New Challenge</h1>
+    </header>
 
-    <form action="{{ url_for('challenge.create_challenge') }}" method="POST" enctype="multipart/form-data">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form action="{{ url_for('challenge.create_challenge') }}" method="POST" enctype="multipart/form-data" class="max-w-6xl mx-auto mt-8 bg-white p-8 rounded-lg shadow-lg">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Left Column (Name, Email, Phone) -->
-            <div class="space-y-4">
+            <div class="space-y-6">
                 <div>
                     <label for="name" class="block text-gray-700">Name</label>
-                    <input type="text" id="name" name="name" class="mt-2 p-2 w-full border border-gray-300 rounded-md" required>
+                    <input type="text" id="name" name="name" class="mt-2 p-3 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     <p id="name-error" class="text-red-500 text-sm mt-1" style="display: none;">Invalid name. Only letters and spaces are allowed.</p>
                 </div>
 
                 <div>
                     <label for="email" class="block text-gray-700">Email</label>
-                    <input type="email" id="email" name="email" class="mt-2 p-2 w-full border border-gray-300 rounded-md" required>
+                    <input type="email" id="email" name="email" class="mt-2 p-3 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 </div>
 
                 <div>
                     <label for="phone" class="block text-gray-700">Phone</label>
-                    <input type="text" id="phone" name="phone" class="mt-2 p-2 w-full border border-gray-300 rounded-md" required>
+                    <input type="text" id="phone" name="phone" class="mt-2 p-3 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     <p id="phone-error" class="text-red-500 text-sm mt-1" style="display: none;">Invalid phone number. Only digits are allowed.</p>
                 </div>
             </div>
 
             <!-- Right Column (Description, Upload Media, Submit) -->
-            <div class="space-y-4">
+            <div class="space-y-6">
                 <div>
                     <label for="description" class="block text-gray-700">Description</label>
-                    <textarea id="description" name="description" class="mt-2 p-2 w-full border border-gray-300 rounded-md" required></textarea>
+                    <textarea id="description" name="description" class="mt-2 p-3 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
                 </div>
 
                 <div>
                     <label for="media" class="block text-gray-700">Upload Media (Optional)</label>
-                    <input type="file" id="media" name="media" class="mt-2 p-2 w-full border border-gray-300 rounded-md">
+                    <input type="file" id="media" name="media" class="mt-2 p-3 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div>
-                    <button type="submit" class="w-full py-2 bg-blue-500 text-white rounded-md" id="submit-btn" disabled>Submit</button>
+                    <button type="submit" class="w-full py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition" id="submit-btn" disabled>Submit</button>
                 </div>
             </div>
         </div>
