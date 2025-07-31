@@ -30,6 +30,29 @@ class ChatRoom(db.Model):
             'is_active': self.is_active
         }
 
+class UploadedFile(db.Model):
+    __table_args__ = mysql_table_args
+    
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_data = db.Column(db.LargeBinary, nullable=False)
+    file_size = db.Column(db.Integer, nullable=False)
+    mime_type = db.Column(db.String(100), nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    scan_info = db.Column(db.Text, nullable=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'original_filename': self.original_filename,
+            'file_size': self.file_size,
+            'mime_type': self.mime_type,
+            'uploaded_at': self.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') if self.uploaded_at else '',
+            'scan_info': self.scan_info
+        }
+
 class Message(db.Model):
     __table_args__ = mysql_table_args
     
@@ -37,19 +60,29 @@ class Message(db.Model):
     user_name = db.Column(db.String(50), nullable=False)
     message = db.Column(db.String(500), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    file_name = db.Column(db.String(255), nullable=True)
-    file_url = db.Column(db.String(500), nullable=True)
+    file_id = db.Column(db.Integer, db.ForeignKey('uploaded_file.id'), nullable=True)
     
     room_id = db.Column(db.Integer, db.ForeignKey('chat_room.id'), nullable=False)
+    
+    # Relationship to uploaded file
+    uploaded_file = db.relationship('UploadedFile', backref='messages')
 
     def to_dict(self):
+        file_info = None
+        if self.uploaded_file:
+            file_info = {
+                'id': self.uploaded_file.id,
+                'filename': self.uploaded_file.original_filename,
+                'file_size': self.uploaded_file.file_size,
+                'mime_type': self.uploaded_file.mime_type
+            }
+        
         return {
             'id': self.id,
             'user_name': self.user_name,
             'message': self.message,
             'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.timestamp else '',
-            'file_name': self.file_name,
-            'file_url': self.file_url,
+            'file_info': file_info,
             'room_id': self.room_id
         }
 

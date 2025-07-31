@@ -5,10 +5,10 @@ import requests
 import time
 import re
 import json as json_module
-from flask import Blueprint, render_template, jsonify, request, url_for, redirect, flash
+from flask import Blueprint, render_template, jsonify, request, url_for, redirect, flash, send_file, Response
 from flask_socketio import emit, join_room, leave_room
 from werkzeug.utils import secure_filename
-from models import db, Message, ChatRoom, SecurityViolation, MutedUser
+from models import db, Message, ChatRoom, SecurityViolation, MutedUser, UploadedFile
 from datetime import datetime
 from markupsafe import escape
 from urllib.parse import urlparse
@@ -472,10 +472,24 @@ def upload_file(room_id):
             # Sanitize filename
             filename = secure_filename(file.filename)
             unique_filename = f"{uuid.uuid4()}_{filename}"
-            temp_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], f"temp_{unique_filename}")
-
-            # Save file temporarily for scanning
-            file.save(temp_file_path)
+            
+            # Read file data into memory for scanning and storage
+            file_data = file.read()
+            file_size = len(file_data)
+            mime_type = file.content_type or 'application/octet-stream'
+            
+            # Check file size limit (50MB max)
+            MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+            if file_size > MAX_FILE_SIZE:
+                return jsonify({
+                    'error': f'File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB, got {file_size // (1024*1024)}MB'
+                }), 400
+            
+            # Create a temporary file for VirusTotal scanning
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_file.write(file_data)
+                temp_file_path = temp_file.name
 
             try:
                 # Scan file with VirusTotal
@@ -498,19 +512,13 @@ def upload_file(room_id):
                     db.session.commit()
                     
                     # Remove the temporary file
-                    os.remove(temp_file_path)
+                    os.unlink(temp_file_path)
                     return jsonify({
                         'error': f'File upload blocked: {scan_message}',
                         'scan_details': scan_result
                     }), 400
 
-                # File is safe, move it to permanent location
-                final_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-                os.rename(temp_file_path, final_file_path)
-
-                # Create file URL
-                file_url = url_for('static', filename=f'uploads/{unique_filename}')
-
+                # File is safe, store in database
                 # Save to database with scan information based on whether scan actually occurred
                 if not VIRUSTOTAL_API_KEY:
                     scan_info = "⚠️ Uploaded without virus scan (API key not configured)"
@@ -519,18 +527,32 @@ def upload_file(room_id):
                 else:
                     scan_info = f"⚠️ Virus scan skipped: \n {scan_message}"
                 
+                # Store file in database
+                uploaded_file = UploadedFile(
+                    filename=unique_filename,
+                    original_filename=filename,
+                    file_data=file_data,
+                    file_size=file_size,
+                    mime_type=mime_type,
+                    scan_info=scan_info
+                )
+                db.session.add(uploaded_file)
+                db.session.flush()  # Get the file ID
+                
                 full_message = f"{message}\n\n{scan_info}" if message else scan_info
 
                 new_msg = Message(
                     user_name=user_name,
                     message=full_message,
                     timestamp=datetime.utcnow(),
-                    file_name=filename,
-                    file_url=file_url,
+                    file_id=uploaded_file.id,
                     room_id=room_id
                 )
                 db.session.add(new_msg)
                 db.session.commit()
+
+                # Remove the temporary file
+                os.unlink(temp_file_path)
 
                 # Emit message to room clients
                 socketio = current_app.extensions.get('socketio')
@@ -666,3 +688,17 @@ def handle_chat_message(socketio, json):
 
     # Emit message to room including timestamp from database
     emit('my response', new_msg.to_dict(), room=f'room_{room_id}')
+
+@chat_bp.route('/file/<int:file_id>')
+def serve_file(file_id):
+    """Serve file from database"""
+    uploaded_file = UploadedFile.query.get_or_404(file_id)
+    
+    return Response(
+        uploaded_file.file_data,
+        mimetype=uploaded_file.mime_type,
+        headers={
+            'Content-Disposition': f'inline; filename="{uploaded_file.original_filename}"',
+            'Content-Length': str(uploaded_file.file_size)
+        }
+    )
