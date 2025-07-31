@@ -357,7 +357,7 @@ body {
 
     <div class="rooms-grid">
         {% for room in rooms %}
-        <a href="{{ url_for('chat_session', room_id=room.id, username=username) }}" class="room-card">
+        <a href="{{ url_for('chat.chat_session', room_id=room.id, username=username) }}" class="room-card">
             <div class="room-header">
                 <div class="room-icon">
                     {% if room.name == "General Chat" %}💬
@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
             createButton.disabled = true;
             createButton.textContent = 'Creating...';
 
-            fetch("{{ url_for('create_room') }}", {
+            fetch("{{ url_for('chat.create_room') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
