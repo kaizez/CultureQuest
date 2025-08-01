@@ -21,6 +21,7 @@ class ChallengeSubmission(db.Model):
     media_filename = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(20), default='On Hold')  # 'On Hold', 'Approved', 'Rejected'
     comments = db.Column(db.Text, nullable=True)
+    points = db.Column(db.Integer, nullable=True)  # Points awarded for the submission
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -38,6 +39,7 @@ class ChallengeSubmission(db.Model):
             'media': self.media_filename,
             'status': self.status,
             'comments': self.comments,
+            'points': self.points,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else '',
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else '',
             # Legacy fields for backward compatibility

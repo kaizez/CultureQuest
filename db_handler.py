@@ -45,7 +45,7 @@ def fetch_challenges(status_filter=None):
         print(f"[ERROR] Failed to fetch challenges: {str(e)}")
         return []
 
-def update_challenge_status(challenge_id, status, comments):
+def update_challenge_status(challenge_id, status, comments, points):
     """Update the status and comments for a challenge."""
     try:
         challenge = ChallengeSubmission.query.get(challenge_id)
@@ -56,11 +56,12 @@ def update_challenge_status(challenge_id, status, comments):
         
         challenge.status = status
         challenge.comments = comments
+        challenge.points = points
         challenge.updated_at = datetime.utcnow()
         
         db.session.commit()
         
-        print(f"[OK] Challenge ID {challenge_id} updated: status='{status}'")
+        print(f"[OK] Challenge ID {challenge_id} updated: status='{status}', points='{points}'")
         return True
         
     except Exception as e:

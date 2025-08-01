@@ -14,17 +14,18 @@ def admin_page():
         challenge_id = request.form.get('challenge_id')
         status = request.form.get('status')  # This will be None if no button was pressed
         comments = request.form.get('comments')
+        points = request.form.get('points')
 
         # If a status is provided (Approve, Reject, or On Hold), update status and comments
         if status:
-            update_challenge_status(challenge_id, status, comments)
+            update_challenge_status(challenge_id, status, comments, points)
         else:
             # If only comments are provided, update comments without changing the status
             with sqlite3.connect('challenges.db') as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
                     UPDATE challenges
-                    SET comments = ?
+                    SET comments = ?, points = ?
                     WHERE id = ?
                 ''', (comments, challenge_id))
                 conn.commit()

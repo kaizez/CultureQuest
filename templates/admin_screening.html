@@ -40,6 +40,16 @@
                     <form action="{{ url_for('admin_screening.admin_page') }}" method="POST" style="border-top: 1px solid #e2e8f0; padding-top: 24px;">
                         <input type="hidden" name="challenge_id" value="{{ challenge['id'] }}">
                         
+                        <!-- Difficulty Level Dropdown -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <label for="points" class="form-label">Assign Points</label>
+                            <select name="points" id="points" class="form-input">
+                                <option value="30" {% if challenge['points'] == 30 %} selected {% endif %}>Easy (30 points)</option>
+                                <option value="60" {% if challenge['points'] == 60 %} selected {% endif %}>Medium (60 points)</option>
+                                <option value="90" {% if challenge['points'] == 90 %} selected {% endif %}>Hard (90 points)</option>
+                            </select>
+                        </div>
+
                         <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
                             <button type="submit" name="status" value="Approved" class="form-button" style="background: #10b981;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">Approve</button>
                             <button type="submit" name="status" value="Rejected" class="form-button" style="background: #ef4444;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Reject</button>

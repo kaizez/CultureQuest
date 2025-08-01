@@ -8,7 +8,7 @@ from challenge_models import db
 
 def load_env():
     """Load environment variables from .env file."""
-    basedir = os.path.abspath(os.path.dirname(__file__))
+    basedir = os.getcwd()
     # Look for .env file in current directory
     dotenv_path = os.path.join(basedir, '.env')
     if os.path.exists(dotenv_path):
