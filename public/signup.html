@@ -18,6 +18,7 @@
   
   <!-- Stylesheets -->
   <link rel="stylesheet" href="/static/signup.css" />
+  <script src="/static/lang.js"></script>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
   
   <style>
@@ -98,8 +99,8 @@
 
     <div class="signup-card">
       <div class="card-header">
-        <h2>Create Account</h2>
-        <p>Join our global cultural community</p>
+        <h2 id="create-account-title">Create Account</h2>
+        <p id="join-community">Join our global cultural community</p>
       </div>
 
       <!-- Enhanced Security Tip -->
@@ -164,7 +165,7 @@
         </div>
         
         <div class="input-group">
-          <label for="email" class="input-label">Email Address</label>
+          <label for="email" class="input-label" id="email-label">Email Address</label>
           <div class="input-wrapper">
             <input 
               type="email" 
@@ -1030,6 +1031,43 @@
       return errors;
     }
 
+    // Email validation function
+    async function validateEmailField() {
+      const emailInput = document.getElementById('email');
+      const emailValidation = document.getElementById('email-validation');
+      const email = emailInput.value.trim();
+      
+      if (!email) return;
+      
+      const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+      
+      if (!emailRegex.test(email)) {
+        emailValidation.textContent = 'Invalid email format';
+        emailValidation.className = 'validation-message error';
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const result = await response.json();
+        
+        if (result.taken) {
+          emailValidation.textContent = 'Email is already taken';
+          emailValidation.className = 'validation-message error';
+        } else {
+          emailValidation.textContent = 'Valid email format';
+          emailValidation.className = 'validation-message success';
+        }
+      } catch (error) {
+        emailValidation.textContent = '';
+        emailValidation.className = 'validation-message';
+      }
+    }
+
     // Enhanced form submission with comprehensive security checks
     async function handleFormSubmission(e) {
       e.preventDefault();
@@ -1166,6 +1204,19 @@
       const fingerprintField = document.getElementById('device_fingerprint');
       if (fingerprintField) {
         fingerprintField.value = securityState.deviceFingerprint;
+      }
+      
+      // Add email validation
+      const emailInput = document.getElementById('email');
+      if (emailInput) {
+        emailInput.addEventListener('blur', validateEmailField);
+        emailInput.addEventListener('input', function() {
+          const emailValidation = document.getElementById('email-validation');
+          if (emailValidation) {
+            emailValidation.textContent = '';
+            emailValidation.className = 'validation-message';
+          }
+        });
       }
 
       // Initialize CAPTCHA immediately

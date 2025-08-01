@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login | CultureQuest</title>
   <link rel="stylesheet" href="/static/login.css" />
+  <script src="/static/lang.js"></script>
 </head>
 
 <body>
@@ -58,8 +59,8 @@
 
     <div class="login-card">
       <div class="card-header">
-        <h2>Welcome Back</h2>
-        <p>Sign in to continue your cultural journey</p>
+        <h2 id="welcome-back">Welcome Back</h2>
+        <p id="sign-in-subtitle">Sign in to continue your cultural journey</p>
       </div>
 
       <!-- Flash Messages -->
@@ -77,7 +78,7 @@
 
       <form class="login-form" id="login-form" method="POST" action="/login">
         <div class="input-group">
-          <label for="username" class="input-label">Username</label>
+          <label for="username" class="input-label" id="username-label">Username</label>
           <div class="input-wrapper">
             <input 
               type="text" 
@@ -93,7 +94,7 @@
         </div>
         
         <div class="input-group">
-          <label for="password" class="input-label">Password</label>
+          <label for="password" class="input-label" id="password-label">Password</label>
           <div class="input-wrapper">
             <input 
               type="password" 
@@ -106,6 +107,7 @@
             <span class="input-icon" aria-hidden="true">🔒</span>
             <button 
               type="button" 
+              id="toggle-password-btn"
               class="toggle-password" 
               onclick="togglePassword()"
               aria-label="Show password"
@@ -120,26 +122,26 @@
           <label class="remember-checkbox">
             <input type="checkbox" checked />
             <span class="checkmark" aria-hidden="true"></span>
-            <span class="checkbox-text">Stay signed in</span>
+            <span class="checkbox-text" id="stay-signed-in">Stay signed in</span>
           </label>
-          <a href="/forgot-password" class="forgot-password-link">Forgot Password?</a>
+          <a href="/forgot-password" class="forgot-password-link" id="forgot-password-link">Forgot Password?</a>
         </div>
 
         <button type="submit" class="login-btn" id="login-btn">
-          <span class="btn-text">Sign In</span>
+          <span class="btn-text" id="sign-in-btn">Sign In</span>
           <span class="btn-loader" aria-hidden="true"></span>
         </button>
       </form>
 
       {% if config.GOOGLE_OAUTH_ENABLED %}
       <div class="divider">
-        <span>or continue with</span>
+        <span id="or-continue-with">or continue with</span>
       </div>
 
       <div class="social-login">
         <a href="/auth/google" class="social-btn" aria-label="Sign in with Google">
           <img src="https://developers.google.com/identity/images/g-logo.png" alt="" />
-          <span style="color: #1a202c; font-weight: 500;">Google</span>
+          <span style="color: #1a202c; font-weight: 500;" id="google-text">Google</span>
         </a>
       </div>
       {% endif %}
@@ -147,8 +149,8 @@
 
     <div class="bottom-section">
       <div class="signup-section">
-        <p>New to CultureQuest?</p>
-        <a href="/signup" id="signup" class="signup-btn">Create Account</a>
+        <p id="new-to-culturequest">New to CultureQuest?</p>
+        <a href="/signup" id="create-account" class="signup-btn">Create Account</a>
       </div>
     </div>
   </div>
@@ -160,13 +162,17 @@
       const toggleBtn = document.querySelector('.toggle-password');
       const toggleIcon = toggleBtn.querySelector('span');
       
+      // Get current language
+      const currentLang = localStorage.getItem('language') || 'en';
+      const textMap = translations[currentLang];
+      
       if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
-        toggleBtn.setAttribute('aria-label', 'Hide password');
+        toggleBtn.setAttribute('aria-label', textMap.hidePassword || 'Hide password');
         toggleIcon.textContent = '🙈';
       } else {
         passwordInput.type = 'password';
-        toggleBtn.setAttribute('aria-label', 'Show password');
+        toggleBtn.setAttribute('aria-label', textMap.showPassword || 'Show password');
         toggleIcon.textContent = '👁️';
       }
     }

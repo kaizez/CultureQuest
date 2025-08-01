@@ -1,70 +1,140 @@
 // Language translations object
 const translations = {
   en: {
-    title: "CULTUREQUEST",
-    idLogin: "ID Login",
+    title: "CultureQuest",
+    welcomeBack: "Welcome Back",
+    signInSubtitle: "Sign in to continue your cultural journey",
     username: "Username",
     password: "Password",
-    loginError: "Your ID or password is incorrect. Please try again.",
-    remember: "Remember Me",
-    loginBtn: "Sign in",
-    forgot: "Forgot your password or ID?",
-    signup: "Sign up"
+    usernamePlaceholder: "Enter your username or email",
+    passwordPlaceholder: "Enter your password",
+    staySignedIn: "Stay signed in",
+    forgotPassword: "Forgot Password?",
+    signIn: "Sign In",
+    orContinueWith: "or continue with",
+    google: "Google",
+    newToCultureQuest: "New to CultureQuest?",
+    createAccount: "Create Account",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    usernameHelp: "Enter the username or email you used to register",
+    passwordHelp: "Your password must be at least 8 characters long",
+    // Signup page translations
+    createAccount: "Create Account",
+    joinCommunity: "Join our global cultural community",
+    emailAddress: "Email Address",
+    emailPlaceholder: "Enter your email address",
+    emailHelp: "We'll send a verification link to this email",
+    emailValid: "Valid email format",
+    emailTaken: "Email is already taken",
+    signUp: "Sign Up"
   },
   ko: {
-    title: "CULTUREQUEST",
-    idLogin: "아이디 로그인",
-    username: "아이디",
+    title: "CultureQuest",
+    welcomeBack: "다시 오신 것을 환영합니다",
+    signInSubtitle: "문화 여행을 계속하려면 로그인하세요",
+    username: "사용자명",
     password: "비밀번호",
-    loginError: "아이디 또는 비밀번호가 올바르지 않습니다.",
-    remember: "로그인 상태 유지",
-    loginBtn: "로그인",
-    forgot: "비밀번호 또는 아이디 를 잊으셨나요?",
-    signup: "회원가입"
+    usernamePlaceholder: "사용자명 또는 이메일을 입력하세요",
+    passwordPlaceholder: "비밀번호를 입력하세요",
+    staySignedIn: "로그인 상태 유지",
+    forgotPassword: "비밀번호를 잊으셨나요?",
+    signIn: "로그인",
+    orContinueWith: "또는 다음으로 계속",
+    google: "Google",
+    newToCultureQuest: "CultureQuest가 처음이신가요?",
+    createAccount: "계정 만들기",
+    showPassword: "비밀번호 보기",
+    hidePassword: "비밀번호 숨기기",
+    usernameHelp: "등록할 때 사용한 사용자명 또는 이메일을 입력하세요",
+    passwordHelp: "비밀번호는 최소 8자 이상이어야 합니다",
+    joinCommunity: "글로벌 문화 커뮤니티에 참여하세요",
+    emailAddress: "이메일 주소",
+    emailPlaceholder: "이메일 주소를 입력하세요",
+    emailHelp: "이 이메일로 인증 링크를 보내드립니다",
+    emailValid: "유효한 이메일 형식",
+    emailTaken: "이미 사용 중인 이메일입니다",
+    signUp: "회원가입"
   },
   es: {
-    title: "CULTUREQUEST",
-    idLogin: "Iniciar sesión con ID",
+    title: "CultureQuest",
+    welcomeBack: "Bienvenido de vuelta",
+    signInSubtitle: "Inicia sesión para continuar tu viaje cultural",
     username: "Nombre de usuario",
     password: "Contraseña",
-    loginError: "El ID o la contraseña son incorrectos.",
-    remember: "Recuérdame",
-    loginBtn: "Iniciar sesión",
-    forgot: "¿Olvidaste tu contraseña o ID?",
-    signup: "Regístrate"
+    usernamePlaceholder: "Ingresa tu nombre de usuario o email",
+    passwordPlaceholder: "Ingresa tu contraseña",
+    staySignedIn: "Mantener sesión iniciada",
+    forgotPassword: "¿Olvidaste tu contraseña?",
+    signIn: "Iniciar sesión",
+    orContinueWith: "o continúa con",
+    google: "Google",
+    newToCultureQuest: "¿Nuevo en CultureQuest?",
+    createAccount: "Crear cuenta",
+    showPassword: "Mostrar contraseña",
+    hidePassword: "Ocultar contraseña",
+    usernameHelp: "Ingresa el nombre de usuario o email que usaste para registrarte",
+    passwordHelp: "Tu contraseña debe tener al menos 8 caracteres"
   },
   zh: {
-    title: "CULTUREQUEST",
-    idLogin: "ID 登录",
+    title: "CultureQuest",
+    welcomeBack: "欢迎回来",
+    signInSubtitle: "登录以继续您的文化之旅",
     username: "用户名",
     password: "密码",
-    loginError: "ID 或密码错误。请再试一次。",
-    remember: "记住我",
-    loginBtn: "登录",
-    forgot: "忘记了密码 或 ID？",
-    signup: "注册"
+    usernamePlaceholder: "输入您的用户名或邮箱",
+    passwordPlaceholder: "输入您的密码",
+    staySignedIn: "保持登录",
+    forgotPassword: "忘记密码？",
+    signIn: "登录",
+    orContinueWith: "或使用以下方式继续",
+    google: "Google",
+    newToCultureQuest: "初次使用 CultureQuest？",
+    createAccount: "创建账户",
+    showPassword: "显示密码",
+    hidePassword: "隐藏密码",
+    usernameHelp: "输入您注册时使用的用户名或邮箱",
+    passwordHelp: "您的密码必须至少包含8个字符"
   },
   ms: {
-    title: "CULTUREQUEST",
-    idLogin: "Log Masuk ID",
-    username: "Nama Pengguna",
-    password: "Kata Laluan",
-    loginError: "ID atau kata laluan salah. Sila cuba lagi.",
-    remember: "Ingat Saya",
-    loginBtn: "Log Masuk",
-    forgot: "Terlupa kata laluan atau ID anda?",
-    signup: "Daftar"
+    title: "CultureQuest",
+    welcomeBack: "Selamat kembali",
+    signInSubtitle: "Log masuk untuk meneruskan perjalanan budaya anda",
+    username: "Nama pengguna",
+    password: "Kata laluan",
+    usernamePlaceholder: "Masukkan nama pengguna atau email anda",
+    passwordPlaceholder: "Masukkan kata laluan anda",
+    staySignedIn: "Kekal log masuk",
+    forgotPassword: "Lupa kata laluan?",
+    signIn: "Log masuk",
+    orContinueWith: "atau teruskan dengan",
+    google: "Google",
+    newToCultureQuest: "Baru ke CultureQuest?",
+    createAccount: "Buat akaun",
+    showPassword: "Tunjukkan kata laluan",
+    hidePassword: "Sembunyikan kata laluan",
+    usernameHelp: "Masukkan nama pengguna atau email yang anda gunakan untuk mendaftar",
+    passwordHelp: "Kata laluan anda mestilah sekurang-kurangnya 8 aksara"
   },
   hi: {
-    title: "CULTUREQUEST",
-    idLogin: "आईडी लॉगिन",
+    title: "CultureQuest",
+    welcomeBack: "वापसी पर स्वागत है",
+    signInSubtitle: "अपनी सांस्कृतिक यात्रा जारी रखने के लिए साइन इन करें",
     username: "उपयोगकर्ता नाम",
     password: "पासवर्ड",
-    loginError: "आपकी ID या पासवर्ड गलत है। कृपया पुनः प्रयास करें।",
-    remember: "मुझे याद रखें",
-    loginBtn: "लॉगिन करें",
-    forgot: "क्या आपने पासवर्ड या ID भूल गए?",
-    signup: "साइन अप करें"
+    usernamePlaceholder: "अपना उपयोगकर्ता नाम या ईमेल दर्ज करें",
+    passwordPlaceholder: "अपना पासवर्ड दर्ज करें",
+    staySignedIn: "साइन इन रहें",
+    forgotPassword: "पासवर्ड भूल गए?",
+    signIn: "साइन इन करें",
+    orContinueWith: "या इसके साथ जारी रखें",
+    google: "Google",
+    newToCultureQuest: "CultureQuest पर नए हैं?",
+    createAccount: "खाता बनाएं",
+    showPassword: "पासवर्ड दिखाएं",
+    hidePassword: "पासवर्ड छुपाएं",
+    usernameHelp: "वह उपयोगकर्ता नाम या ईमेल दर्ज करें जिसका उपयोग आपने पंजीकरण के लिए किया था",
+    passwordHelp: "आपका पासवर्ड कम से कम 8 अक्षर का होना चाहिए"
   }
 };
 
@@ -81,20 +151,53 @@ function updateLanguage(lang) {
     }
   }
 
-  // Update all texts and placeholders
+  // Helper function to update attributes
+  function updateAttribute(id, attribute, key) {
+    const element = document.getElementById(id);
+    if (element && textMap[key]) {
+      element.setAttribute(attribute, textMap[key]);
+    }
+  }
+
+  // Update all text elements
   updateText("title", "title");
-  updateText("id-login-btn", "idLogin");
-  updateText("login-btn", "loginBtn");
-  updateText("forgot", "forgot");
-  updateText("signup", "signup");
+  updateText("welcome-back", "welcomeBack");
+  updateText("sign-in-subtitle", "signInSubtitle");
+  updateText("username-label", "username");
+  updateText("password-label", "password");
+  updateText("stay-signed-in", "staySignedIn");
+  updateText("forgot-password-link", "forgotPassword");
+  updateText("sign-in-btn", "signIn");
+  updateText("or-continue-with", "orContinueWith");
+  updateText("google-text", "google");
+  updateText("new-to-culturequest", "newToCultureQuest");
+  updateText("create-account", "createAccount");
+  updateText("username-help", "usernameHelp");
+  updateText("password-help", "passwordHelp");
+  
+  // Signup page elements
+  updateText("create-account-title", "createAccount");
+  updateText("join-community", "joinCommunity");
+  updateText("email-label", "emailAddress");
 
   // Update placeholders
-  document.querySelectorAll("input[name=username]").forEach(el => {
-    el.placeholder = textMap.username || el.placeholder;
-  });
-  document.querySelectorAll("input[name=password]").forEach(el => {
-    el.placeholder = textMap.password || el.placeholder;
-  });
+  const usernameInput = document.getElementById("username");
+  if (usernameInput && textMap.usernamePlaceholder) {
+    usernameInput.placeholder = textMap.usernamePlaceholder;
+  }
+
+  const passwordInput = document.getElementById("password");
+  if (passwordInput && textMap.passwordPlaceholder) {
+    passwordInput.placeholder = textMap.passwordPlaceholder;
+  }
+
+  const emailInput = document.getElementById("email");
+  if (emailInput && textMap.emailPlaceholder) {
+    emailInput.placeholder = textMap.emailPlaceholder;
+  }
+
+  // Update aria-labels for accessibility
+  updateAttribute("toggle-password-btn", "aria-label", "showPassword");
 }
 
 // Adding an event listener to initialize language selection on page load

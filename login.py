@@ -1,6 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
+try:
+    from datetime import UTC
+except ImportError:
+    # For Python < 3.11
+    from datetime import timezone
+    UTC = timezone.utc
 from dotenv import load_dotenv
 from flask_dance.contrib.google import make_google_blueprint, google
 import os
@@ -123,7 +129,6 @@ def init_database():
             """)
             
         connection.commit()
-        print("Database tables created successfully!")
         return True
     except Exception as e:
         print(f"Error creating database tables: {e}")
@@ -272,6 +277,21 @@ def delete_user_by_id(user_id):
     finally:
         connection.close()
 
+def load_users():
+    """Load all users from database"""
+    connection = get_db_connection()
+    if not connection:
+        return []
+    
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM users ORDER BY created_at DESC")
+            return cursor.fetchall()
+    except Exception as e:
+        return []
+    finally:
+        connection.close()
+
 def get_user_stats():
     """Get user statistics"""
     connection = get_db_connection()
@@ -357,10 +377,8 @@ def store_reset_code(email, code):
 
 def verify_reset_code_helper(email, provided_code):
     """Verify reset code and check expiration"""
-    print(f"DEBUG: verify_reset_code_helper called with email={email}, code={provided_code}")
     connection = get_db_connection()
     if not connection:
-        print("DEBUG: Database connection failed")
         return False, "Database connection failed"
     
     try:
@@ -368,56 +386,56 @@ def verify_reset_code_helper(email, provided_code):
             # Find reset code for this email
             cursor.execute("SELECT * FROM reset_codes WHERE email = %s", (email,))
             code_data = cursor.fetchone()
-            print(f"DEBUG: Retrieved reset code_data: {code_data}")
             
             if not code_data:
-                print("DEBUG: No reset code found")
                 return False, "No reset code found for this email"
             
-            print(f"DEBUG: Stored reset code={code_data['code']}, provided code={provided_code}")
-            print(f"DEBUG: Reset code expires at: {code_data['expires']}, current time: {datetime.now(UTC)}")
-            
-            # Check if code has expired (handle timezone properly)
-            current_time = datetime.now(UTC)
-            expires_time = code_data['expires']
-            
-            # If expires_time is naive (no timezone), assume it's UTC
-            if expires_time.tzinfo is None:
-                expires_time = expires_time.replace(tzinfo=UTC)
-            
-            if current_time > expires_time:
-                print("DEBUG: Reset code has expired")
-                # Remove expired code
-                cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
-                connection.commit()
-                return False, "Reset code has expired"
+            # Simple expiration check (convert to UTC if needed)
+            try:
+                current_time = datetime.now(UTC)
+                expires_time = code_data['expires']
+                
+                # Handle timezone conversion
+                if hasattr(expires_time, 'tzinfo'):
+                    if expires_time.tzinfo is None:
+                        expires_time = expires_time.replace(tzinfo=UTC)
+                else:
+                    # If it's a string, parse it
+                    if isinstance(expires_time, str):
+                        expires_time = datetime.fromisoformat(expires_time.replace('Z', '+00:00'))
+                
+                if current_time > expires_time:
+                    cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
+                    connection.commit()
+                    return False, "Reset code has expired"
+            except:
+                # If timezone handling fails, skip expiration check for now
+                pass
             
             # Check attempts limit
-            if code_data['attempts'] >= 3:
-                print("DEBUG: Too many reset attempts")
+            if code_data.get('attempts', 0) >= 3:
                 return False, "Too many failed attempts. Please request a new code."
             
-            # Check if code matches
-            if code_data['code'] != provided_code:
-                print("DEBUG: Reset code does not match")
-                # Increment attempts
+            # Simple string comparison - exact match
+            stored_code = str(code_data['code']).strip()
+            provided_code = str(provided_code).strip()
+            
+            if stored_code == provided_code:
+                # Code matches - remove it and return success
+                cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
+                connection.commit()
+                return True, "Code verified successfully"
+            else:
+                # Code doesn't match - increment attempts
                 cursor.execute(
-                    "UPDATE reset_codes SET attempts = attempts + 1 WHERE email = %s",
+                    "UPDATE reset_codes SET attempts = COALESCE(attempts, 0) + 1 WHERE email = %s",
                     (email,)
                 )
                 connection.commit()
                 return False, "Invalid reset code"
-            
-            print("DEBUG: Reset code matches! Processing success...")
-            # Code is valid - remove it to prevent reuse
-            cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
-            connection.commit()
-            return True, "Code verified successfully"
+                
     except Exception as e:
-        print(f"ERROR: Exception in verify_reset_code_helper: {e}")
-        import traceback
-        traceback.print_exc()
-        return False, "Error verifying code"
+        return False, f"Error verifying code: {str(e)}"
     finally:
         connection.close()
 
@@ -472,10 +490,8 @@ def store_verification_code(email, code, user_data):
 
 def verify_email_code_helper(email, provided_code):
     """Verify email verification code and check expiration"""
-    print(f"DEBUG: verify_email_code_helper called with email={email}, code={provided_code}")
     connection = get_db_connection()
     if not connection:
-        print("DEBUG: Database connection failed")
         return False, "Database connection failed", None
     
     try:
@@ -483,14 +499,9 @@ def verify_email_code_helper(email, provided_code):
             # Find verification code for this email
             cursor.execute("SELECT * FROM verification_codes WHERE email = %s", (email,))
             code_data = cursor.fetchone()
-            print(f"DEBUG: Retrieved code_data: {code_data}")
             
             if not code_data:
-                print("DEBUG: No verification code found")
                 return False, "No verification code found for this email", None
-            
-            print(f"DEBUG: Stored code={code_data['code']}, provided code={provided_code}")
-            print(f"DEBUG: Code expires at: {code_data['expires']}, current time: {datetime.now(UTC)}")
             
             # Check if code has expired (handle timezone properly)
             current_time = datetime.now(UTC)
@@ -500,10 +511,7 @@ def verify_email_code_helper(email, provided_code):
             if expires_time.tzinfo is None:
                 expires_time = expires_time.replace(tzinfo=UTC)
             
-            print(f"DEBUG: Current time: {current_time}, Expires time: {expires_time}")
-            
             if current_time > expires_time:
-                print("DEBUG: Code has expired")
                 # Remove expired code
                 cursor.execute("DELETE FROM verification_codes WHERE email = %s", (email,))
                 connection.commit()
@@ -511,12 +519,13 @@ def verify_email_code_helper(email, provided_code):
             
             # Check attempts limit
             if code_data['attempts'] >= 3:
-                print("DEBUG: Too many attempts")
                 return False, "Too many failed attempts. Please request a new code.", None
             
-            # Check if code matches
-            if code_data['code'] != provided_code:
-                print("DEBUG: Code does not match")
+            # Check if code matches (ensure proper string comparison)
+            stored_code = str(code_data['code']).strip()
+            provided_code = str(provided_code).strip()
+            
+            if stored_code != provided_code:
                 # Increment attempts
                 cursor.execute(
                     "UPDATE verification_codes SET attempts = attempts + 1 WHERE email = %s",
@@ -525,18 +534,13 @@ def verify_email_code_helper(email, provided_code):
                 connection.commit()
                 return False, "Invalid verification code", None
             
-            print("DEBUG: Code matches! Processing success...")
             # Code is valid - get user data and remove verification code
             import json
             user_data = json.loads(code_data['user_data']) if code_data['user_data'] else None
-            print(f"DEBUG: User data retrieved: {user_data}")
             cursor.execute("DELETE FROM verification_codes WHERE email = %s", (email,))
             connection.commit()
             return True, "Email verified successfully", user_data
     except Exception as e:
-        print(f"ERROR: Exception in verify_email_code_helper: {e}")
-        import traceback
-        traceback.print_exc()
         return False, "Error verifying code", None
     finally:
         connection.close()
@@ -572,7 +576,7 @@ def send_verification_via_gmail_api(email, code):
             
         # Create the email message
         msg = MIMEMultipart()
-        msg['From'] = gmail_user
+        msg['From'] = f"CultureQuest <{gmail_user}>"
         msg['To'] = email
         msg['Subject'] = "CultureQuest - Email Verification Code"
         
@@ -632,7 +636,7 @@ def send_verification_via_smtp(email, code):
         
         # Create message
         msg = MIMEMultipart()
-        msg['From'] = gmail_user
+        msg['From'] = f"CultureQuest <{gmail_user}>"
         msg['To'] = email
         msg['Subject'] = "CultureQuest - Email Verification Code"
         
@@ -714,7 +718,7 @@ def send_via_gmail_api(email, code):
             
         # Create the email message
         msg = MIMEMultipart()
-        msg['From'] = gmail_user
+        msg['From'] = f"CultureQuest <{gmail_user}>"
         msg['To'] = email
         msg['Subject'] = "CultureQuest - Password Reset Code"
         
@@ -778,7 +782,7 @@ def send_via_smtp(email, code):
         
         # Create message
         msg = MIMEMultipart()
-        msg['From'] = gmail_user
+        msg['From'] = f"CultureQuest <{gmail_user}>"
         msg['To'] = email
         msg['Subject'] = "CultureQuest - Password Reset Code"
         
@@ -843,7 +847,6 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'is_admin' not in session or not session['is_admin']:
-            flash('Admin access required.', 'danger')
             return redirect(url_for('login.login_page'))
         return f(*args, **kwargs)
     return decorated_function
@@ -864,10 +867,6 @@ if not os.getenv('GOOGLE_CLIENT_ID') or not os.getenv('GOOGLE_CLIENT_SECRET'):
     @login_bp.route('/auth/google')
     def google_login_not_configured():
         """Handle Google login when not configured"""
-        print("DEBUG: Google OAuth not configured - showing error message")
-        print(f"DEBUG: GOOGLE_CLIENT_ID exists: {bool(os.getenv('GOOGLE_CLIENT_ID'))}")
-        print(f"DEBUG: GOOGLE_CLIENT_SECRET exists: {bool(os.getenv('GOOGLE_CLIENT_SECRET'))}")
-        flash('Google login is not configured. You need to set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file.', 'error')
         return redirect(url_for('login.login_page'))
 
 
@@ -897,7 +896,13 @@ def signup():
         if request.is_json:
             return jsonify({'success': False, 'message': 'All fields are required'})
         else:
-            flash('All fields are required', 'danger')
+            return redirect(url_for('login.signup_page'))
+    
+    # Restrict admin username
+    if username.lower() == 'admin':
+        if request.is_json:
+            return jsonify({'success': False, 'message': 'Username "admin" is not allowed'})
+        else:
             return redirect(url_for('login.signup_page'))
     
     # Check if user already exists
@@ -905,14 +910,12 @@ def signup():
         if request.is_json:
             return jsonify({'success': False, 'message': 'Email already registered'})
         else:
-            flash('Email already registered', 'danger')
             return redirect(url_for('login.signup_page'))
     
     if find_user_by_username(username):
         if request.is_json:
             return jsonify({'success': False, 'message': 'Username already taken'})
         else:
-            flash('Username already taken', 'danger')
             return redirect(url_for('login.signup_page'))
     
     # Generate verification code and store user data temporarily
@@ -942,26 +945,22 @@ def signup():
             elif request.is_json:
                 return jsonify({'success': True, 'message': 'Verification email sent'})
             else:
-                flash('Verification code sent to your email. Please check your inbox.', 'success')
                 return redirect(url_for('login.verify_email_page', email=email))
         else:
             if request.is_json:
                 return jsonify({'success': False, 'message': 'Failed to send verification email'})
             else:
-                flash('Failed to send verification email. Please try again.', 'danger')
                 return redirect(url_for('login.signup_page'))
     else:
         if request.is_json:
             return jsonify({'success': False, 'message': 'Error processing signup'})
         else:
-            flash('Error processing signup. Please try again.', 'danger')
             return redirect(url_for('login.signup_page'))
 
 @login_bp.route('/signup2', methods=['GET'])
 def signup2_page():
     """Google user signup page (after Google OAuth)"""
     if 'google_email' not in session:
-        flash("Please log in with Google first.", "warning")
         return redirect(url_for('login.login_page'))
     
     # Clear any previous flash messages to avoid showing irrelevant messages
@@ -979,7 +978,6 @@ def signup2():
     if 'google_email' not in session:
         if is_ajax:
             return jsonify({'error': 'Session expired. Please log in again.'}), 401
-        flash("Session expired. Please log in again.", "warning")
         return redirect(url_for('login.login_page'))
     
     # Get form data
@@ -993,21 +991,24 @@ def signup2():
     if not username or not password:
         if is_ajax:
             return jsonify({'error': 'Username and password are required'}), 400
-        flash('Username and password are required', 'danger')
+        return redirect(url_for('login.signup2_page'))
+    
+    # Restrict admin username
+    if username.lower() == 'admin':
+        if is_ajax:
+            return jsonify({'error': 'Username "admin" is not allowed'}), 400
         return redirect(url_for('login.signup2_page'))
     
     # Check if username already exists
     if find_user_by_username(username):
         if is_ajax:
             return jsonify({'error': 'Username already taken'}), 400
-        flash('Username already taken', 'danger')
         return redirect(url_for('login.signup2_page'))
     
     # Check if email already exists
     if find_user_by_email(email):
         if is_ajax:
             return jsonify({'error': 'Email already registered'}), 400
-        flash('Email already registered', 'danger')
         return redirect(url_for('login.signup2_page'))
     
     # Create new Google user
@@ -1032,12 +1033,10 @@ def signup2():
                 'message': 'Account created successfully!',
                 'redirect_url': url_for('login.profile')
             })
-        flash('Account created successfully!', 'success')
         return redirect(url_for('login.profile'))
     else:
         if is_ajax:
             return jsonify({'error': 'Error creating account. Please try again.'}), 500
-        flash('Error creating account. Please try again.', 'danger')
         return redirect(url_for('login.signup2_page'))
 
 @login_bp.route('/login', methods=['POST'])
@@ -1047,14 +1046,12 @@ def login():
     password = request.form.get('password')
 
     if not username or not password:
-        flash("Username and password are required!", "danger")
         return redirect(url_for('login.login_page'))
 
     # Check for admin login
     if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
         session['username'] = username
         session['is_admin'] = True
-        flash("Welcome, Admin!", "success")
         return redirect(url_for('login.admin_dashboard'))
 
     # Check regular user login
@@ -1070,10 +1067,8 @@ def login():
         session['user_id'] = user['id']
         session['is_admin'] = False
         
-        flash(f"Welcome back, {username}!", "success")
         return redirect(url_for('login.profile'))
     else:
-        flash("Invalid credentials!", "danger")
         return redirect(url_for('login.login_page'))
 
 @login_bp.route('/profile')
@@ -1102,7 +1097,6 @@ def update_profile():
 
     user_id = session.get('user_id')
     if not user_id:
-        flash('Session error. Please log in again.', 'danger')
         return redirect(url_for('login.login_page'))
 
     # Get form data
@@ -1124,7 +1118,6 @@ def update_profile():
             updates['online_start_time'] = formatted_start_time
             updates['online_end_time'] = formatted_end_time
         except ValueError:
-            flash('Invalid time format', 'danger')
             return redirect(url_for('login.profile'))
     else:
         updates['online_start_time'] = None
@@ -1139,10 +1132,7 @@ def update_profile():
         updates['labels'] = labels.strip()
 
     # Save updates
-    if update_user(user_id, updates):
-        flash('Profile updated successfully!', 'success')
-    else:
-        flash('Error updating profile. Please try again.', 'danger')
+    update_user(user_id, updates)
     
     return redirect(url_for('login.profile'))
 
@@ -1150,39 +1140,28 @@ def update_profile():
 def logout():
     """Logout user"""
     session.clear()  # Clear all session data
-    flash("You have been logged out.", "info")
     return redirect(url_for('login.login_page'))
 
 @login_bp.route('/auth/google/callback')
 def google_callback():
     """Handle Google OAuth callback"""
-    print("Google callback triggered")
-    
     if not google.authorized:
-        print("Not authorized with Google")
-        flash("Authorization failed. Please try again.", "danger")
         return redirect(url_for('login.login_page'))
     
     try:
-        print("Fetching user info from Google...")
         # Get user data from Google
         user_info = google.get('/oauth2/v2/userinfo')
         
         if not user_info.ok:
-            print(f"Google API Error: {user_info.status_code} - {user_info.text}")
-            flash("Failed to fetch user info from Google.", "danger")
             return redirect(url_for('login.login_page'))
 
         user_data = user_info.json()
-        print(f"Google user data received: {user_data}")
         
         email = user_data.get('email')
         name = user_data.get('name')
         profile_picture = user_data.get('picture')
 
         if not email or not name:
-            print("Missing email or name from Google")
-            flash("Missing user information from Google.", "danger")
             return redirect(url_for('login.login_page'))
 
         # Check if user exists
@@ -1190,7 +1169,6 @@ def google_callback():
 
         if existing_user and existing_user.get('username') and existing_user.get('password'):
             # User exists and has completed signup - log them in
-            print(f"Existing user found with complete profile: {existing_user['username']}")
             
             # Update last login time
             update_user_login_time(existing_user['username'])
@@ -1203,25 +1181,17 @@ def google_callback():
             session['user_id'] = existing_user['id']
             session['is_admin'] = False
             
-            flash(f"Welcome back, {existing_user['username']}!", "success")
             return redirect(url_for('login.profile'))
         else:
             # New user or Google user without username/password - redirect to signup2
-            print(f"New Google user or incomplete profile for: {email}")
-            
             # Store Google info in session for signup2
             session['google_email'] = email
             session['google_name'] = name
             session['google_profile_picture'] = profile_picture
             
-            flash(f"Welcome! Please complete your account setup.", "info")
             return redirect(url_for('login.signup2_page'))
 
     except Exception as e:
-        print(f"Exception in google_callback: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        flash(f"An error occurred during Google login: {str(e)}", "danger")
         return redirect(url_for('login.login_page'))
 
 # Password Reset Routes
@@ -1236,57 +1206,48 @@ def forgot_password():
     email = request.form.get('email')
     
     if not email:
-        flash('Email address is required', 'error')
         return redirect(url_for('login.forgot_password_page'))
     
     # Validate email format
     import re
     email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if not re.match(email_regex, email):
-        flash('Please enter a valid email address', 'error')
         return redirect(url_for('login.forgot_password_page'))
     
     # Check if user exists
     user = find_user_by_email(email)
     if not user:
         # For security, don't reveal whether email exists or not
-        flash('If an account with this email exists and is verified, a verification code has been sent.', 'success')
         return redirect(url_for('login.forgot_password_page'))
     
     # Check if email is verified
     if not user.get('email_verified', False):
         # For security, don't reveal specific reason - use same message
-        flash('If an account with this email exists and is verified, a verification code has been sent.', 'success')
         return redirect(url_for('login.forgot_password_page'))
     
     # Check if user is Google user (they should reset via Google)
     if user.get('is_google_user', False):
         # For security, don't reveal specific reason - use same message but suggest Google
-        flash('If an account with this email exists and is verified, a verification code has been sent. If you signed up with Google, please use Google\'s password recovery.', 'info')
         return redirect(url_for('login.forgot_password_page'))
     
     # Generate and store reset code
     reset_code = generate_reset_code()
     
     if not store_reset_code(email, reset_code):
-        flash('Error generating reset code. Please try again.', 'error')
         return redirect(url_for('login.forgot_password_page'))
     
     # Send reset email
     if send_reset_email(email, reset_code):
-        flash('A 6-digit verification code has been sent to your email address.', 'success')
         # Store email in session for verification step
         session['reset_email'] = email
         return redirect(url_for('login.verify_reset_code_page'))
     else:
-        flash('Error sending reset email. Please check your email configuration.', 'error')
         return redirect(url_for('login.forgot_password_page'))
 
 @login_bp.route('/verify-code', methods=['GET'])
 def verify_reset_code_page():
     """Verify reset code page"""
     if 'reset_email' not in session:
-        flash('Please request a password reset first.', 'warning')
         return redirect(url_for('login.forgot_password_page'))
     
     return render_template('verify_code.html', email=session['reset_email'])
@@ -1295,33 +1256,28 @@ def verify_reset_code_page():
 def verify_reset_code():
     """Handle reset code verification"""
     if 'reset_email' not in session:
-        flash('Session expired. Please request a new reset code.', 'error')
         return redirect(url_for('login.forgot_password_page'))
     
     email = session['reset_email']
-    code = request.form.get('code')
+    code = request.form.get('code', '').strip()
     
     if not code:
-        flash('Verification code is required', 'error')
         return redirect(url_for('login.verify_reset_code_page'))
     
-    # Verify the code
+    # Verify the code against database
     is_valid, message = verify_reset_code_helper(email, code)
     
     if is_valid:
-        # Code is valid, proceed to password reset
         session['code_verified'] = True
-        flash('Code verified successfully. Please enter your new password.', 'success')
+        session.permanent = True
         return redirect(url_for('login.reset_password_page'))
     else:
-        flash(message, 'error')
         return redirect(url_for('login.verify_reset_code_page'))
 
 @login_bp.route('/reset-password', methods=['GET'])
 def reset_password_page():
     """Reset password page"""
     if 'reset_email' not in session or 'code_verified' not in session:
-        flash('Please complete the verification process first.', 'warning')
         return redirect(url_for('login.forgot_password_page'))
     
     return render_template('reset_password.html', email=session['reset_email'])
@@ -1330,7 +1286,6 @@ def reset_password_page():
 def reset_password():
     """Handle password reset"""
     if 'reset_email' not in session or 'code_verified' not in session:
-        flash('Session expired. Please start the reset process again.', 'error')
         return redirect(url_for('login.forgot_password_page'))
     
     email = session['reset_email']
@@ -1338,22 +1293,18 @@ def reset_password():
     confirm_password = request.form.get('confirm_password')
     
     if not new_password or not confirm_password:
-        flash('Both password fields are required', 'error')
         return redirect(url_for('login.reset_password_page'))
     
     if new_password != confirm_password:
-        flash('Passwords do not match', 'error')
         return redirect(url_for('login.reset_password_page'))
     
     # Validate password strength
     if len(new_password) < 8:
-        flash('Password must be at least 8 characters long', 'error')
         return redirect(url_for('login.reset_password_page'))
     
     # Find user and update password
     user = find_user_by_email(email)
     if not user:
-        flash('User not found', 'error')
         return redirect(url_for('login.forgot_password_page'))
     
     # Update password
@@ -1363,10 +1314,8 @@ def reset_password():
         session.pop('reset_email', None)
         session.pop('code_verified', None)
         
-        flash('Password reset successfully! You can now log in with your new password.', 'success')
         return redirect(url_for('login.login_page'))
     else:
-        flash('Error updating password. Please try again.', 'error')
         return redirect(url_for('login.reset_password_page'))
 
 @login_bp.route('/resend-code', methods=['POST'])
@@ -1394,16 +1343,13 @@ def resend_reset_code():
 def verify_email_page():
     """Email verification page"""
     email = request.args.get('email')
-    print(f"DEBUG: verify_email_page called with email: {email}")
     
     if not email:
-        flash('No email specified for verification', 'error')
         return redirect(url_for('login.signup_page'))
     
     # Check if verification code exists for this email
     connection = get_db_connection()
     if not connection:
-        flash('Database connection failed', 'error')
         return redirect(url_for('login.signup_page'))
     
     try:
@@ -1412,12 +1358,10 @@ def verify_email_page():
             code_data = cursor.fetchone()
             
         if not code_data:
-            flash('No verification code found. Please sign up again.', 'error')
             return redirect(url_for('login.signup_page'))
     finally:
         connection.close()
     
-    print(f"DEBUG: Rendering verify-email.html for {email}")
     return render_template('verify-email.html', email=email)
 
 @login_bp.route('/verify-email', methods=['POST'])
@@ -1427,7 +1371,6 @@ def verify_email():
     verification_code = request.form.get('verification_code')
     
     if not email or not verification_code:
-        flash('Email and verification code are required', 'error')
         return redirect(url_for('login.verify_email_page', email=email))
     
     # Verify the code
@@ -1445,13 +1388,10 @@ def verify_email():
         )
         
         if new_user:
-            flash('Email verified successfully! Your account has been created. Please log in.', 'success')
             return redirect(url_for('login.login_page'))
         else:
-            flash('Error creating account after verification. Please contact support.', 'error')
             return redirect(url_for('login.signup_page'))
     else:
-        flash(message, 'error')
         return redirect(url_for('login.verify_email_page', email=email))
 
 @login_bp.route('/resend-code')
@@ -1459,13 +1399,11 @@ def resend_code():
     """Resend verification code"""
     email = request.args.get('email')
     if not email:
-        flash('No email specified', 'error')
         return redirect(url_for('login.signup_page'))
     
     # Check if verification code exists for this email
     connection = get_db_connection()
     if not connection:
-        flash('Database connection failed', 'error')
         return redirect(url_for('login.signup_page'))
     
     try:
@@ -1474,14 +1412,12 @@ def resend_code():
             code_data = cursor.fetchone()
             
         if not code_data:
-            flash('No verification code found. Please sign up again.', 'error')
             return redirect(url_for('login.signup_page'))
         
         # Get existing user data
         import json
         user_data = json.loads(code_data['user_data']) if code_data['user_data'] else None
         if not user_data:
-            flash('Invalid verification session. Please sign up again.', 'error')
             return redirect(url_for('login.signup_page'))
     finally:
         connection.close()
@@ -1492,16 +1428,26 @@ def resend_code():
     # Update the stored code
     if store_verification_code(email, new_code, user_data):
         # Send new verification email
-        if send_verification_email(email, new_code):
-            flash('A new verification code has been sent to your email.', 'success')
-        else:
-            flash('Failed to send verification email. Please try again.', 'error')
-    else:
-        flash('Error generating new verification code. Please try again.', 'error')
+        send_verification_email(email, new_code)
     
     return redirect(url_for('login.verify_email_page', email=email))
 
 # API Routes
+@login_bp.route('/api/check-email', methods=['POST'])
+def check_email():
+    """Check if email is already taken"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip()
+        
+        if not email:
+            return jsonify({'taken': False})
+            
+        user = find_user_by_email(email)
+        return jsonify({'taken': user is not None})
+    except Exception as e:
+        return jsonify({'taken': False})
+
 @login_bp.route('/api/security-tokens', methods=['GET'])
 def get_security_tokens():
     """Generate security tokens for forms"""
@@ -1649,7 +1595,6 @@ def admin_user_detail(user_id):
     """Admin user detail page"""
     user = find_user_by_id(user_id)
     if not user:
-        flash('User not found.', 'danger')
         return redirect(url_for('login.admin_dashboard'))
     return render_template('admin_user_detail.html', user=user)
 
@@ -1659,12 +1604,7 @@ def admin_delete_user(user_id):
     """Admin delete user"""
     user = find_user_by_id(user_id)
     if user:
-        if delete_user_by_id(user_id):
-            flash(f'User {user["username"]} has been deleted successfully.', 'success')
-        else:
-            flash('Error deleting user. Please try again.', 'danger')
-    else:
-        flash('User not found.', 'danger')
+        delete_user_by_id(user_id)
     return redirect(url_for('login.admin_dashboard'))
 
 @login_bp.route('/admin/users/export')
