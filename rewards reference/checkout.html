@@ -1,0 +1,102 @@
+{% extends "base1.html" %}
+
+{% block title %}Checkout - EcoBike Rental{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h1>Select Rental Dates</h1>
+    <br>
+    <div class="order-summary">
+        <h2>Order Summary</h2>
+        {% for item in cart_items %}
+            <div class="cart-item" style="margin-top: auto; margin-bottom: auto;">
+                <p>{{ item.bike_name }}</p>
+                <p>Price per day: ${{ "%.2f"|format(item.price) }}</p>
+            </div>
+        {% endfor %}
+        
+        <br>
+        <form method="POST" id="rentalForm">
+            {{ form.csrf_token }}
+            
+            <div class="date-range-picker">
+                <h3>Select Rental Period</h3>
+                <div class="date-inputs">
+                    <input type="text" id="dateRange" name="dateRange" class="date-picker" required>
+                    {{ form.start_date(type="hidden", id="start_date") }}
+                    {{ form.end_date(type="hidden", id="end_date") }}
+                </div>
+                <div id="selected-dates"></div>
+                <div id="total-price">Base Price per Day: ${{ "%.2f"|format(total) }}</div>
+            </div>
+
+            <button type="submit" class="btn btn-submit" id="checkout-btn" style="background-color: #28a745; color: white;">Proceed to Checkout</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const basePrice = parseFloat({{ total|tojson }});
+        
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        const fp = flatpickr('#dateRange', {
+            enableTime: false,
+            dateFormat: "d-m-y",
+            mode: "range",
+            minDate: "today",
+            defaultDate: [today, today],
+            onChange: function(selectedDates, dateStr) {
+                if (selectedDates.length === 2) {
+                    const startDate = selectedDates[0];
+                    const endDate = selectedDates[1];
+                    
+                    document.getElementById('start_date').value = startDate.toISOString().split('T')[0];
+                    document.getElementById('end_date').value = endDate.toISOString().split('T')[0];
+                    
+                    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                    const totalPrice = basePrice * daysDiff;
+                    
+                    document.getElementById('selected-dates').textContent = 
+                        `Selected rental duration: ${daysDiff} day${daysDiff > 1 ? 's' : ''}`;
+                    document.getElementById('total-price').textContent = 
+                        `Total: $${totalPrice.toFixed(2)} (${daysDiff} day${daysDiff > 1 ? 's' : ''} at $${basePrice.toFixed(2)}/day)`;
+                }
+            }
+        });
+
+        const startDate = today;
+        const endDate = today;
+        document.getElementById('start_date').value = startDate.toISOString().split('T')[0];
+        document.getElementById('end_date').value = endDate.toISOString().split('T')[0];
+        
+        const daysDiff = 1;
+        const totalPrice = basePrice * daysDiff;
+        document.getElementById('selected-dates').textContent = 
+            `Selected rental duration: ${daysDiff} day`;
+        document.getElementById('total-price').textContent = 
+            `Total: $${totalPrice.toFixed(2)} (${daysDiff} day at $${basePrice.toFixed(2)}/day)`;
+
+        document.getElementById('rentalForm').onsubmit = function(e) {
+            const start = document.getElementById('start_date').value;
+            const end = document.getElementById('end_date').value;
+            if (!start || !end) {
+                e.preventDefault();
+                alert('Please select rental dates');
+                return false;
+            }
+            return true;
+        };
+    });
+</script>
+{% endblock %}

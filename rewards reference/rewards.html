@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Rewards{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Redeem Your Rewards</h2>
+
+    <!-- ✅ Bootstrap Alerts for Messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show text-center" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- ✅ Display User Points -->
+    <div class="alert alert-info text-center">
+        You have <strong>{{ points }}</strong> points.
+    </div>
+
+    <div class="row">
+        {% for key, reward in rewards.items() %}
+            <div class="col-md-4 mb-3">
+                <div class="card shadow">
+                    <img src="{{ url_for('static', filename=reward_images.get(key, 'images/default.png')) }}"
+                         class="card-img-top img-fluid"
+                         alt="{{ reward.get_name() }}"
+                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/default.png') }}';">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">{{ reward.get_name() }}</h5>
+                        <p class="card-text">Cost: <strong>{{ reward.get_cost() }} Points</strong></p>
+                        <p class="card-text">Stock: <strong>{{ reward.get_stock() }}</strong></p>
+
+                        {% if reward.get_stock() > 0 %}
+                            <form id="redeem-form-{{ key }}" action="{{ url_for('redeem_reward', reward_type=key) }}" method="POST">
+                                <button type="submit" class="btn btn-{% if points >= reward.get_cost() %}success{% else %}secondary{% endif %}"
+                                        {% if points < reward.get_cost() %}disabled{% endif %}>
+                                    Redeem
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="text-danger"><strong>Out of Stock</strong></p>
+                        {% endif %}
+
+                        <!-- ✅ Admin stock update form -->
+                        {% if is_admin %}
+                            <form action="{{ url_for('update_reward_stock') }}" method="POST" class="mt-2">
+                                <input type="hidden" name="reward_id" value="{{ key }}">
+                                <input type="number" name="stock" min="0" class="form-control mb-2" placeholder="New Stock" required>
+                                <button type="submit" class="btn btn-warning">Update Stock</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- ✅ Reward Redemption History -->
+
+    {% if history %}
+    <h3 class="text-center mt-5">Redemption History</h3>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped mt-3">
+            <thead class="table-dark">
+                <tr>
+                    <th>Reward</th>
+                    <th>Date</th>
+                    <th>Points Used</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in history %}
+                <tr>
+                    <td>{{ item.reward }}</td>
+                    <td>{{ item.date }}</td>
+                    <td>{{ item.points_used }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-center text-muted mt-3">No rewards redeemed yet.</p>
+    {% endif %}
+    </div>
+{% endblock %}

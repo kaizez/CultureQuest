@@ -1,0 +1,174 @@
+{% extends "base1.html" %}
+
+{% block title %}Order Confirmation - EcoBike Rental{% endblock %}
+
+{% block extra_css %}
+<style>
+    #confirmationMap {
+        height: 300px;
+        width: 100%;
+        border-radius: 10px;
+        margin-top: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .confirmation-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .confirmation-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .confirmation-details {
+        background-color: #ffffff;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .next-steps {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .next-steps ul {
+        padding-left: 20px;
+        list-style-type: none;
+
+    }
+
+    .next-steps li {
+        margin-bottom: 10px;
+    }
+
+    .pickup-location {
+        margin-top: 20px;
+    }
+
+    .home-button {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .home-button a {
+        padding: 10px 20px;
+        background-color: #2ecc71;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 20px;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+    }
+
+    .home-button a:hover {
+        background-color: #27ae60;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirmation-container">
+    <!-- Header -->
+    <div class="confirmation-header">
+        <h1 class="text-3xl font-bold">Order Confirmation</h1>
+        <hr>
+    </div>
+
+    <!-- Order Details -->
+    <div class="confirmation-details">
+        <h2 class="text-xl font-semibold mb-4">Thank you for your order!</h2>
+        <p>Your order has been successfully placed.</p>
+        <p><strong>Order ID:</strong> {{ order_id }}</p>
+
+        {% if order and order.get_rental_dates() %}
+            {% if order.get_rental_dates().get('start_date') %}
+                <div class="rental-info mt-4">
+                    <h3 class="text-lg font-semibold mb-3">Rental Information</h3>
+                    <p><strong>Start Date:</strong> {{ order.get_rental_dates()['start_date'] }}</p>
+                    <p><strong>End Date:</strong> {{ order.get_rental_dates()['end_date'] }}</p>
+                    <p><strong>Duration:</strong> {{ order.get_rental_dates()['days'] }} days</p>
+
+                    {% if order.get_customer_info().get('assigned_carpark') %}
+                        <div class="pickup-location">
+                            <h3 class="text-lg font-semibold mb-3">Pickup Location</h3>
+                            <p><strong>Carpark:</strong> {{ order.get_customer_info()['assigned_carpark']['name'] }}</p>
+                            <p><strong>Distance:</strong> {{ "%.2f"|format(order.get_customer_info()['assigned_carpark']['distance']) }} km from your location</p>
+                            <div id="confirmationMap"></div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endif %}
+
+    </div>
+
+    <!-- What's Next Section -->
+    <div class="next-steps mt-6">
+        <h3 class="text-lg font-semibold mb-3">What's Next?</h3>
+        <ul>
+            <li>You can track your order status using your Order ID</li>
+            <li>For any questions, please contact our customer support</li>
+        </ul>
+    </div>
+
+    <!-- Home Button -->
+    <div class="home-button">
+        <a href="{{ url_for('home') }}">Back to Home</a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}"></script>
+<script>
+function initMap() {
+    {% if order and order.get_customer_info().get('assigned_carpark') %}
+    const carparkLocation = {
+        lat: {{ order.get_customer_info()['assigned_carpark']['coordinates']['lat'] }},
+        lng: {{ order.get_customer_info()['assigned_carpark']['coordinates']['lng'] }}
+    };
+
+    const map = new google.maps.Map(document.getElementById('confirmationMap'), {
+        center: carparkLocation,
+        zoom: 16,
+        styles: [
+            {
+                featureType: "poi",
+                elementType: "labels",
+                stylers: [{ visibility: "off" }]
+            }
+        ]
+    });
+
+    const marker = new google.maps.Marker({
+        position: carparkLocation,
+        map: map,
+        title: "{{ order.get_customer_info()['assigned_carpark']['name'] }}",
+        animation: google.maps.Animation.DROP
+    });
+
+    marker.addListener('click', () => {
+        window.open(
+            `https://www.google.com/maps/dir/?api=1&destination=${carparkLocation.lat},${carparkLocation.lng}`,
+            '_blank'
+        );
+    });
+    {% endif %}
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}

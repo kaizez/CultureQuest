@@ -1,0 +1,77 @@
+{% extends "base1.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">My Bike Rentals</h2>
+    {% if orders %}
+    {% for order in orders %}
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><strong>Order ID:</strong> {{ order.order_id }}</span>
+            <span><strong>Order Date:</strong> {{ order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else
+                'N/A' }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Rental Details</h5>
+                    <p>
+                        <strong>Customer Name:</strong> {{ order.customer_name }}<br>
+                        <strong>Total Cost:</strong> ${{ "%.2f"|format(order.total) }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Rented Bike(s)</h5>
+                    {% if order.items %}
+                    <ul class="list-group">
+                        {% for item in order.get_bike_names() %}
+                        <li class="list-group-item">
+                            <strong>Bike Name:</strong> {{ item }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p>No bikes rented in this order.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12 d-flex justify-content-end">
+                    <a href="{{ url_for('view_order', order_id=order.order_id) }}" class="btn btn-primary me-2">
+                        <i class="bi bi-eye"></i> View Order
+                    </a>
+                    <a href="{{ url_for('edit_order', order_id=order.order_id) }}" class="btn btn-secondary me-2">
+                        <i class="bi bi-pencil"></i> Edit Order
+                    </a>
+                    <form action="{{ url_for('delete_order', order_id=order.order_id) }}" method="POST"
+                        style="display: inline;">
+                        <button type="submit" class="btn btn-danger"
+                            onclick="return confirm('Are you sure you want to delete this order?')">
+                            <i class="bi bi-trash"></i> Delete Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="alert alert-info">
+        <strong>No orders found.</strong> You have not placed any orders yet.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    function confirmDelete(orderId) {
+        return confirm('Are you sure you want to delete order ' + orderId + '?');
+    }
+</script>
+{% endblock %}

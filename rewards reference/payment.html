@@ -1,0 +1,314 @@
+{% extends "base1.html" %}
+
+{% block title %}Payment - EcoBike Rental{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+<style>
+    .payment-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .section-title {
+        color: #333;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #eee;
+    }
+
+    .form-section {
+        background: #fff;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-control {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 0.5rem;
+        width: 100%;
+    }
+
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    #map {
+        height: 400px;
+        width: 100%;
+        border-radius: 8px;
+        margin: 1rem 0;
+        border: 1px solid #ddd;
+    }
+
+    .submit-btn {
+        background-color: #28a745;
+        color: white;
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 1rem;
+    }
+
+    .submit-btn:hover {
+        background-color: #218838;
+    }
+
+    .location-info {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .card-input-container {
+        position: relative;
+    }
+
+    .card-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+    <h1 class="section-title">Complete Your Order</h1>
+
+    <form method="POST" id="payment-form">
+        {{ form.csrf_token }}
+
+        <div class="form-section">
+            <h2 class="h4 mb-4">Contact & Delivery Information</h2>
+
+            <div class="form-group">
+                {{ form.full_name.label(class="form-label") }}
+                {{ form.full_name(class="form-control") }}
+                {% if form.full_name.errors %}
+                <div class="error-message">{{ form.full_name.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.email.label(class="form-label") }}
+                {{ form.email(class="form-control") }}
+                {% if form.email.errors %}
+                <div class="error-message">{{ form.email.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.address.label(class="form-label") }}
+                {{ form.address(class="form-control", id="address-input") }}
+                {% if form.address.errors %}
+                <div class="error-message">{{ form.address.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.city.label(class="form-label") }}
+                        {{ form.city(class="form-control") }}
+                        {% if form.city.errors %}
+                        <div class="error-message">{{ form.city.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.postal_code.label(class="form-label") }}
+                        {{ form.postal_code(class="form-control", placeholder="569830", id="postal_code") }}
+                        {% if form.postal_code.errors %}
+                        <div class="error-message">{{ form.postal_code.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div id="map"></div>
+            {{ form.latitude(id="latitude-input") }}
+            {{ form.longitude(id="longitude-input") }}
+
+            <div id="selected-location" class="location-info" style="display: none;">
+                <strong>Selected Location:</strong> <span id="location-text"></span>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2 class="h4 mb-4">Payment Information</h2>
+
+            <div class="form-group">
+                {{ form.card_no.label(class="form-label") }}
+                <div class="card-input-container">
+                    {{ form.card_no(class="form-control", placeholder="1234 5678 9012 3456") }}
+                    <span class="card-icon" id="card-type-icon"></span>
+                </div>
+                {% if form.card_no.errors %}
+                <div class="error-message">{{ form.card_no.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.exp_date.label(class="form-label") }}
+                        {{ form.exp_date(class="form-control", placeholder="MM/YY") }}
+                        {% if form.exp_date.errors %}
+                        <div class="error-message">{{ form.exp_date.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        {{ form.cvv.label(class="form-label") }}
+                        {{ form.cvv(class="form-control", placeholder="123") }}
+                        {% if form.cvv.errors %}
+                        <div class="error-message">{{ form.cvv.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Complete Order</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let map;
+    let marker;
+
+    function initMap() {
+        // Initialize map centered on Singapore
+        const singaporeCenter = { lat: 1.3521, lng: 103.8198 };
+
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: singaporeCenter,
+            zoom: 12,
+            styles: [
+                {
+                    featureType: "poi",
+                    elementType: "labels",
+                    stylers: [{ visibility: "off" }]
+                }
+            ]
+        });
+
+        // Initialize the Places Autocomplete
+        const addressInput = document.getElementById('address-input');
+        const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+            componentRestrictions: { country: 'SG' },
+            fields: ['formatted_address', 'geometry', 'name']
+        });
+
+        autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+
+            if (!place.geometry) {
+                window.alert("No details available for this place");
+                return;
+            }
+
+            // Update map
+            map.setCenter(place.geometry.location);
+            map.setZoom(16);
+
+            // Update or create marker
+            if (marker) {
+                marker.setMap(null);
+            }
+
+            marker = new google.maps.Marker({
+                map: map,
+                position: place.geometry.location,
+                animation: google.maps.Animation.DROP
+            });
+
+            // Update hidden inputs
+            document.getElementById('latitude-input').value = place.geometry.location.lat();
+            document.getElementById('longitude-input').value = place.geometry.location.lng();
+
+            // Show selected location
+            document.getElementById('selected-location').style.display = 'block';
+            document.getElementById('location-text').textContent = place.formatted_address;
+        });
+    }
+
+    // Card number formatting
+    document.getElementById('card_no').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 16) value = value.substr(0, 16);
+
+        // Add spaces every 4 digits
+        let formattedValue = '';
+        for (let i = 0; i < value.length; i++) {
+            if (i > 0 && i % 4 === 0) formattedValue += ' ';
+            formattedValue += value[i];
+        }
+
+        e.target.value = formattedValue;
+    });
+
+    // Before form submission, remove spaces from card number
+    document.getElementById('payment-form').addEventListener('submit', function (e) {
+        let cardInput = document.getElementById('card_no');
+        cardInput.value = cardInput.value.replace(/\s/g, '');
+    });
+
+    // Expiration date formatting
+    document.getElementById('exp_date').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 4) value = value.substr(0, 4);
+
+        if (value.length > 2) {
+            value = value.substr(0, 2) + '/' + value.substr(2);
+        }
+
+        e.target.value = value;
+    });
+
+    // CVV input restriction
+    document.getElementById('cvv').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 4) value = value.substr(0, 4);
+        e.target.value = value;
+    });
+
+    // Postal code restriction
+    document.getElementById('postal_code').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 6) value = value.substr(0, 6);
+        e.target.value = value;
+    });
+
+    document.addEventListener('DOMContentLoaded', initMap);
+</script>
+
+{% endblock %}

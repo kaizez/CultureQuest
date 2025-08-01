@@ -1,0 +1,163 @@
+{% extends "base1.html" %}
+
+{% block title %}EcoBike - Order Details{% endblock %}
+
+{% block extra_head %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}"></script>
+<style>
+    #detailsMap {
+        height: 300px;
+        width: 100%;
+        border-radius: 0.5rem;
+    }
+
+    .container-centered {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .card-header {
+        background-color: #2ecc71 !important;
+        color: #fff;
+    }
+
+    .card {
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-secondary {
+        background-color: #2ecc71 !important;
+        border: none;
+    }
+
+    .btn-secondary:hover {
+        background-color: #27ae60 !important;
+    }
+
+    .total-price {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2ecc71;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 container-centered">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-6">Order Details</h1>
+        <a href="{{ url_for('view_orders') }}" class="btn btn-secondary">Back to Orders</a>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-success" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Customer Information -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h2 class="h6 mb-0">Customer Information</h2>
+        </div>
+        <div class="card-body">
+            <p><strong>Name:</strong> {{ order.customer_info.get('full_name') }}</p>
+            <p><strong>Email:</strong> {{ order.customer_info.get('email') }}</p>
+            <p><strong>Address:</strong> {{ order.customer_info.get('address') }}</p>
+            <p><strong>City:</strong> {{ order.customer_info.get('city') }}</p>
+            <p><strong>Postal Code:</strong> {{ order.customer_info.get('postal_code') }}</p>
+        </div>
+    </div>
+
+    {% if order.customer_info.get('assigned_carpark') %}
+    <!-- Collection Point -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h2 class="h6 mb-0">Collection Point</h2>
+        </div>
+        <div class="card-body">
+            <p><strong>Carpark:</strong> {{ order.customer_info['assigned_carpark']['name'] }}</p>
+            <p><strong>Distance:</strong> {{ "%.2f"|format(order.customer_info['assigned_carpark']['distance']) }} km</p>
+            <div id="detailsMap" class="mt-3 shadow rounded"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Rental Information -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h2 class="h6 mb-0">Rental Information</h2>
+        </div>
+        <div class="card-body">
+            <p><strong>Start Date:</strong> {{ order.rental_dates.get('start_date') }}</p>
+            <p><strong>End Date:</strong> {{ order.rental_dates.get('end_date') }}</p>
+            <p><strong>Total Days:</strong> {{ order.rental_dates.get('days') }}</p>
+        </div>
+    </div>
+
+    <!-- Order Items -->
+    <div class="card shadow">
+        <div class="card-header">
+            <h2 class="h6 mb-0">Order Items</h2>
+        </div>
+        <div class="card-body">
+            {% for item in order.items.values() %}
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                <span>{{ item['bike'].get('bike_name', 'Unknown Bike') }}</span>
+                <span>${{ item['bike'].get('price', 0) }} per day</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Total Price -->
+    <div class="text-end">
+        <p class="total-price">Total: ${{ order.total }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function initMap() {
+        {% if order.customer_info.get('assigned_carpark') %}
+        const carparkLocation = {
+            lat: {{ order.customer_info['assigned_carpark']['coordinates']['lat'] }},
+            lng: {{ order.customer_info['assigned_carpark']['coordinates']['lng'] }}
+        };
+
+        const map = new google.maps.Map(document.getElementById('detailsMap'), {
+            center: carparkLocation,
+            zoom: 16,
+            styles: [
+                {
+                    featureType: "poi",
+                    elementType: "labels",
+                    stylers: [{ visibility: "off" }]
+                }
+            ]
+        });
+
+        const marker = new google.maps.Marker({
+            position: carparkLocation,
+            map: map,
+            title: "{{ order.customer_info['assigned_carpark']['name'] }}",
+            animation: google.maps.Animation.DROP
+        });
+
+        marker.addListener('click', () => {
+            window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${carparkLocation.lat},${carparkLocation.lng}`,
+                '_blank'
+            );
+        });
+        {% endif %}
+    }
+
+    document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}
