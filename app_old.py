@@ -1,10 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import pymysql
 import uuid
+import os
 import json
 from login import login_bp, google_bp
+
+# Load environment variables from the .env file
+load_dotenv()
 
 # Initialize the Flask app
 app = Flask(__name__, template_folder='public')
@@ -16,11 +21,11 @@ app.register_blueprint(google_bp, url_prefix='/auth')
 
 # Database configuration
 DB_CONFIG = {
-    'host': 'staging.nypdsf.me',
-    'port': 8080,
-    'user': 'SQLUser',
-    'password': 'Pleasestopleakingenv',
-    'database': 'culturequest',
+    'host': os.getenv('DB_HOST'),
+    'port': int(os.getenv('DB_PORT')),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'database': os.getenv('DB_NAME'),
     'charset': 'utf8mb4',
     'cursorclass': pymysql.cursors.DictCursor
 }
