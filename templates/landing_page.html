@@ -1,37 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to the Challenge App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50">
+{% extends "base.html" %}
 
-    <header class="bg-blue-900 text-white py-12 shadow-lg">
-        <h1 class="text-4xl font-bold text-center">Welcome to the Challenge App</h1>
-    </header>
+{% block title %}Welcome to CultureQuest Challenge{% endblock %}
 
-    <main class="flex justify-center items-center h-screen">
-        <div class="text-center px-6">
-            <p class="text-xl mb-8 text-gray-700">Click the button below to create or participate in a challenge.</p>
+{% block content %}
+    <section class="hero-section">
+        <a href="#" class="announcement-banner">
+            <div class="announcement-icon">🎯</div>
+            <span>Join the cultural exchange challenge today!</span>
+            <span style="margin-left: 8px;">Get started →</span>
+        </a>
+        
+        <h1 class="hero-title">Welcome to CultureQuest</h1>
+        <h1 class="hero-subtitle">— Challenge Edition</h1>
+    </section>
+
+    <section class="content-grid">
+        <div class="left-content">
+            <h2 class="section-title">Create and participate in cultural challenges</h2>
             
-            <!-- Button to go to the Challenge Page -->
-            <a href="{{ url_for('challenge.create_challenge') }}">
-                <button class="px-8 py-4 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-all duration-300 ease-in-out">Go to Host a Challenge</button>
-            </a>
-
-            <!-- Button to go to the Admin Screening Page -->
-            <a href="{{ url_for('admin_screening.admin_page') }}">
-                <button class="px-8 py-4 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all duration-300 ease-in-out mt-6">Go to Admin Screening</button>
-            </a>
-
-             <!-- Button to go to the event Page -->
-            <a href="{{ url_for('event.event_page') }}">
-                <button class="px-8 py-4 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all duration-300 ease-in-out mt-6">Go to Event page</button>
-            </a>
+            <div style="display: flex; flex-direction: column; gap: 16px; max-width: 300px;">
+                <a href="{{ url_for('challenge.create_challenge') }}" class="chat-button" style="text-align: center;">Host a Challenge</a>
+                
+                <a href="{{ url_for('admin_screening.admin_page') }}" class="demo-btn" style="text-align: center; padding: 12px 24px; display: inline-block;">Admin Screening</a>
+                
+                <a href="{{ url_for('event.event_page') }}" class="demo-btn" style="text-align: center; padding: 12px 24px; display: inline-block; background: #10b981;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">View Events</a>
+            </div>
         </div>
-    </main>
 
-</body>
-</html>
+        <div class="right-content">
+            <h2 class="right-title">Ready to bridge cultures through challenges?</h2>
+            
+            <p style="margin-bottom: 24px; font-size: 16px; opacity: 0.9;">Create meaningful challenges that bring communities together and celebrate diversity.</p>
+            
+            <div class="ai-preview">
+                <div class="ai-message">
+                    <div class="ai-avatar">🌍</div>
+                    <div class="ai-content">
+                        <p class="ai-text">Discover how cultural challenges create connections and understanding across communities</p>
+                        
+                        <div class="status-indicators">
+                            <div class="status-item">
+                                <div class="status-dot"></div>
+                                <span>Create engaging challenges</span>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-dot"></div>
+                                <span>Connect with diverse communities</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to buttons
+        const buttons = document.querySelectorAll('.chat-button, .demo-btn');
+        buttons.forEach(button => {
+            button.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            button.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,54 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event - Approved Challenges</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50">
+{% extends "base.html" %}
 
-    <header class="bg-blue-900 text-white py-8 shadow-lg">
-        <h1 class="text-4xl font-bold text-center">Approved Challenges</h1>
+{% block title %}Approved Challenges - CultureQuest{% endblock %}
+
+{% block content %}
+    <header class="challenge-header">
+        <h1>Challenges</h1>
     </header>
 
-    <main class="max-w-7xl mx-auto p-8">
-        <!-- Latest Challenge (Large Rectangle) -->
-        {% if latest_challenge %}
-            <div class="bg-white rounded-lg shadow-xl p-8 mb-8">
-                <h2 class="text-3xl font-semibold text-blue-700">{{ latest_challenge['name'] }}</h2>
-                <p class="text-gray-700 mt-2"><strong>Email:</strong> {{ latest_challenge['email'] }}</p>
-                <p class="text-gray-700"><strong>Phone:</strong> {{ latest_challenge['phone'] }}</p>
-                <p class="text-gray-700 mt-4"><strong>Description:</strong> {{ latest_challenge['description'] }}</p>
-                
-                {% if latest_challenge['media'] %}
-                    <img src="{{ url_for('static', filename='uploads/' + latest_challenge['media']) }}" alt="Media" class="mt-6 rounded-xl shadow-md">
-                {% else %}
-                    <p class="text-gray-500 mt-6">No media uploaded</p>
-                {% endif %}
-            </div>
-        {% else %}
-            <p class="text-center text-xl font-semibold text-gray-600">No approved challenges available.</p>
-        {% endif %}
-
-        <!-- Other Approved Challenges (Smaller Rectangles) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {% for challenge in other_challenges %}
-                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition duration-300 ease-in-out">
-                    <h3 class="text-2xl font-semibold text-gray-800">{{ challenge['name'] }}</h3>
-                    <p class="text-gray-700 mt-2"><strong>Email:</strong> {{ challenge['email'] }}</p>
-                    <p class="text-gray-700"><strong>Phone:</strong> {{ challenge['phone'] }}</p>
-                    <p class="text-gray-700 mt-4"><strong>Description:</strong> {{ challenge['description'] }}</p>
-                    
-                    {% if challenge['media'] %}
-                        <img src="{{ url_for('static', filename='uploads/' + challenge['media']) }}" alt="Challenge Media" class="mt-6 rounded-xl shadow-md">
+    <div class="challenge-form-container" style="max-width: 1400px;">
+        <!-- Featured Challenge -->
+        {% if featured_challenge %}
+            <div class="featured-challenge">
+                <div class="featured-challenge-image-container">
+                    {% if featured_challenge['media'] %}
+                        <img src="{{ url_for('static', filename='uploads/' + featured_challenge['media']) }}" alt="{{ featured_challenge['challenge_name'] or featured_challenge['name'] }}" class="featured-challenge-image">
                     {% else %}
-                        <p class="text-gray-500 mt-6">No media uploaded</p>
+                        <div class="featured-challenge-image" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 16px;">
+                            No image available
+                        </div>
                     {% endif %}
                 </div>
-            {% endfor %}
-        </div>
-    </main>
+                
+                <div class="featured-challenge-content">
+                    <h2>{{ featured_challenge['challenge_name'] or featured_challenge['name'] }}</h2>
+                    
+                    <div class="featured-challenge-section">
+                        <div class="featured-section-title">Description</div>
+                        <div class="featured-section-content">{{ featured_challenge['description'] }}</div>
+                    </div>
+                    
+                    {% if featured_challenge['completion_criteria'] %}
+                        <div class="featured-challenge-section">
+                            <div class="featured-section-title">Completion Criteria</div>
+                            <div class="featured-section-content">{{ featured_challenge['completion_criteria'] }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
 
-</body>
-</html>
+        <!-- Challenge Grid -->
+        {% if challenges %}
+            <div class="challenges-grid">
+                {% for challenge in challenges %}
+                    <div class="challenge-card">
+                        <div class="challenge-card-image">
+                            {% if challenge['media'] %}
+                                <img src="{{ url_for('static', filename='uploads/' + challenge['media']) }}" alt="{{ challenge['challenge_name'] or challenge['name'] }}">
+                            {% else %}
+                                <!-- Show truncated description when no image -->
+                                <div class="challenge-card-description" style="padding: 16px; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;">
+                                    {{ challenge['description'][:120] }}{% if challenge['description']|length > 120 %}...{% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="challenge-card-content">
+                            <h3 class="challenge-card-title">{{ challenge['challenge_name'] or challenge['name'] }}</h3>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination and pagination.total_pages > 1 %}
+                <div class="pagination">
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('event.event_page', page=pagination.prev_num) }}" class="pagination-btn">← Previous</a>
+                    {% else %}
+                        <span class="pagination-btn disabled">← Previous</span>
+                    {% endif %}
+
+                    {% for page_num in range(1, pagination.total_pages + 1) %}
+                        {% if page_num == pagination.page %}
+                            <span class="pagination-btn active">{{ page_num }}</span>
+                        {% else %}
+                            <a href="{{ url_for('event.event_page', page=page_num) }}" class="pagination-btn">{{ page_num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('event.event_page', page=pagination.next_num) }}" class="pagination-btn">Next →</a>
+                    {% else %}
+                        <span class="pagination-btn disabled">Next →</span>
+                    {% endif %}
+                </div>
+
+                <div class="pagination-info">
+                    Showing {{ ((pagination.page - 1) * pagination.per_page + 1) if challenges else 0 }} - {{ ((pagination.page - 1) * pagination.per_page + challenges|length) if challenges else 0 }} of {{ pagination.total }} challenges
+                </div>
+            {% endif %}
+        {% elif not featured_challenge %}
+            <!-- Empty State -->
+            <div class="empty-state">
+                <h2>No challenges available</h2>
+                <p>Check back later for new cultural challenges!</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

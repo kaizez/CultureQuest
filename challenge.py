@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for
-from init_db import insert_challenge  # Use the insert function from init_db.py
-from validation import validate_name, validate_phone  # Import validation functions
+from db_handler import insert_challenge  # Use the insert function from db_handler.py
 from file_upload import save_file  # Import file upload logic
 
 # Create a Blueprint for the challenge form
@@ -12,17 +11,9 @@ UPLOAD_FOLDER = 'static/uploads/'
 @challenge_bp.route('/', methods=['GET', 'POST'])
 def create_challenge():
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        phone = request.form['phone']
+        challenge_name = request.form['challenge_name']
         description = request.form['description']
-
-        # Validate name and phone fields
-        if not validate_name(name):
-            return "Invalid name. Only letters and spaces are allowed.", 400
-
-        if not validate_phone(phone):
-            return "Invalid phone number. Only digits are allowed.", 400
+        completion_criteria = request.form['completion_criteria']
 
         # Handle media file upload
         media_file = request.files.get('media')
@@ -36,7 +27,8 @@ def create_challenge():
                 return str(e)
 
         # Insert challenge data into SQLite database using insert_challenge
-        insert_challenge(name, email, phone, description, media_filename)
+        # We'll need to modify this to match the new fields
+        insert_challenge(challenge_name, description, completion_criteria, media_filename)
 
         return redirect(url_for('challenge.success'))
 

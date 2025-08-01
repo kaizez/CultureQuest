@@ -1,21 +1,52 @@
-from flask import Blueprint, render_template
-from init_db import fetch_challenges  # Fetch function from init_db.py to get challenges
+from flask import Blueprint, render_template, request
+from db_handler import fetch_challenges  # Fetch function from db_handler.py to get challenges
+import math
 
 # Create a Blueprint for the event page
 event_bp = Blueprint('event', __name__, template_folder='templates')
 
 @event_bp.route('/')
 def event_page():
+    page = request.args.get('page', 1, type=int)
+    per_page = 8  # 8 challenges per page (2x4 grid)
+    
     # Fetch all approved challenges from the database
-    challenges = fetch_challenges()
-
-    # Filter out only the approved challenges
     challenges = fetch_challenges(status_filter='Approved')  # Only approved challenges
-
-    # Get the latest approved challenge (the first one in the list)
-    latest_challenge = challenges[0] if challenges else None
-
-    # Get the rest of the approved challenges (excluding the latest one)
-    other_challenges = challenges[1:5]  # Get up to 4 more
-
-    return render_template('event.html', latest_challenge=latest_challenge, other_challenges=other_challenges)
+    
+    if not challenges:
+        return render_template('event.html', 
+                             featured_challenge=None, 
+                             challenges=[], 
+                             pagination=None)
+    
+    # Always use the first challenge as featured
+    featured_challenge = challenges[0]
+    
+    # Get challenges for pagination (excluding the featured one)
+    other_challenges = challenges[1:] if len(challenges) > 1 else []
+    
+    # Calculate pagination
+    total_challenges = len(other_challenges)
+    total_pages = math.ceil(total_challenges / per_page) if total_challenges > 0 else 1
+    
+    # Get challenges for current page
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    current_page_challenges = other_challenges[start_idx:end_idx]
+    
+    # Pagination info
+    pagination = {
+        'page': page,
+        'per_page': per_page,
+        'total': total_challenges,
+        'total_pages': total_pages,
+        'has_prev': page > 1,
+        'has_next': page < total_pages,
+        'prev_num': page - 1 if page > 1 else None,
+        'next_num': page + 1 if page < total_pages else None
+    }
+    
+    return render_template('event.html', 
+                         featured_challenge=featured_challenge,
+                         challenges=current_page_challenges,
+                         pagination=pagination)

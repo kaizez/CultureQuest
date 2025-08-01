@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for
-from init_db import fetch_challenges, update_challenge_status  # Import necessary functions
-import sqlite3
+from db_handler import fetch_challenges, update_challenge_status  # Import necessary functions
 
 # Create a Blueprint for the admin screening page
 admin_screening_bp = Blueprint('admin_screening', __name__, template_folder='templates')
