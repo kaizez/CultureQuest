@@ -19,9 +19,9 @@ from flask import Flask
 
 def load_env():
     """Load environment variables from .env file."""
-    basedir = os.path.abspath(os.path.dirname(__file__))
+    basedir = os.getcwd()
     # Look for .env file in parent directory (main app directory)
-    dotenv_path = os.path.join(os.path.dirname(basedir), '.env')
+    dotenv_path = os.path.join(basedir, '.env')
     if os.path.exists(dotenv_path):
         print(f"Loading .env file from {dotenv_path}")
         load_dotenv(dotenv_path)
