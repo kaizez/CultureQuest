@@ -6,7 +6,7 @@ const translations = {
     signInSubtitle: "Sign in to continue your cultural journey",
     username: "Username",
     password: "Password",
-    usernamePlaceholder: "Enter your username or email",
+    usernamePlaceholder: "Enter your username",
     passwordPlaceholder: "Enter your password",
     staySignedIn: "Stay signed in",
     forgotPassword: "Forgot Password?",
@@ -17,7 +17,7 @@ const translations = {
     createAccount: "Create Account",
     showPassword: "Show password",
     hidePassword: "Hide password",
-    usernameHelp: "Enter the username or email you used to register",
+    usernameHelp: "Enter your username",
     passwordHelp: "Your password must be at least 8 characters long",
     // Signup page translations
     createAccount: "Create Account",
@@ -35,7 +35,7 @@ const translations = {
     signInSubtitle: "문화 여행을 계속하려면 로그인하세요",
     username: "사용자명",
     password: "비밀번호",
-    usernamePlaceholder: "사용자명 또는 이메일을 입력하세요",
+    usernamePlaceholder: "사용자명을 입력하세요",
     passwordPlaceholder: "비밀번호를 입력하세요",
     staySignedIn: "로그인 상태 유지",
     forgotPassword: "비밀번호를 잊으셨나요?",
@@ -46,7 +46,7 @@ const translations = {
     createAccount: "계정 만들기",
     showPassword: "비밀번호 보기",
     hidePassword: "비밀번호 숨기기",
-    usernameHelp: "등록할 때 사용한 사용자명 또는 이메일을 입력하세요",
+    usernameHelp: "사용자명을 입력하세요",
     passwordHelp: "비밀번호는 최소 8자 이상이어야 합니다",
     joinCommunity: "글로벌 문화 커뮤니티에 참여하세요",
     emailAddress: "이메일 주소",
@@ -62,7 +62,7 @@ const translations = {
     signInSubtitle: "Inicia sesión para continuar tu viaje cultural",
     username: "Nombre de usuario",
     password: "Contraseña",
-    usernamePlaceholder: "Ingresa tu nombre de usuario o email",
+    usernamePlaceholder: "Ingresa tu nombre de usuario",
     passwordPlaceholder: "Ingresa tu contraseña",
     staySignedIn: "Mantener sesión iniciada",
     forgotPassword: "¿Olvidaste tu contraseña?",
@@ -73,7 +73,7 @@ const translations = {
     createAccount: "Crear cuenta",
     showPassword: "Mostrar contraseña",
     hidePassword: "Ocultar contraseña",
-    usernameHelp: "Ingresa el nombre de usuario o email que usaste para registrarte",
+    usernameHelp: "Ingresa tu nombre de usuario",
     passwordHelp: "Tu contraseña debe tener al menos 8 caracteres"
   },
   zh: {
@@ -82,7 +82,7 @@ const translations = {
     signInSubtitle: "登录以继续您的文化之旅",
     username: "用户名",
     password: "密码",
-    usernamePlaceholder: "输入您的用户名或邮箱",
+    usernamePlaceholder: "输入您的用户名",
     passwordPlaceholder: "输入您的密码",
     staySignedIn: "保持登录",
     forgotPassword: "忘记密码？",
@@ -93,7 +93,7 @@ const translations = {
     createAccount: "创建账户",
     showPassword: "显示密码",
     hidePassword: "隐藏密码",
-    usernameHelp: "输入您注册时使用的用户名或邮箱",
+    usernameHelp: "输入您的用户名",
     passwordHelp: "您的密码必须至少包含8个字符"
   },
   ms: {
@@ -102,7 +102,7 @@ const translations = {
     signInSubtitle: "Log masuk untuk meneruskan perjalanan budaya anda",
     username: "Nama pengguna",
     password: "Kata laluan",
-    usernamePlaceholder: "Masukkan nama pengguna atau email anda",
+    usernamePlaceholder: "Masukkan nama pengguna anda",
     passwordPlaceholder: "Masukkan kata laluan anda",
     staySignedIn: "Kekal log masuk",
     forgotPassword: "Lupa kata laluan?",
@@ -113,7 +113,7 @@ const translations = {
     createAccount: "Buat akaun",
     showPassword: "Tunjukkan kata laluan",
     hidePassword: "Sembunyikan kata laluan",
-    usernameHelp: "Masukkan nama pengguna atau email yang anda gunakan untuk mendaftar",
+    usernameHelp: "Masukkan nama pengguna anda",
     passwordHelp: "Kata laluan anda mestilah sekurang-kurangnya 8 aksara"
   },
   hi: {
@@ -122,7 +122,7 @@ const translations = {
     signInSubtitle: "अपनी सांस्कृतिक यात्रा जारी रखने के लिए साइन इन करें",
     username: "उपयोगकर्ता नाम",
     password: "पासवर्ड",
-    usernamePlaceholder: "अपना उपयोगकर्ता नाम या ईमेल दर्ज करें",
+    usernamePlaceholder: "अपना उपयोगकर्ता नाम दर्ज करें",
     passwordPlaceholder: "अपना पासवर्ड दर्ज करें",
     staySignedIn: "साइन इन रहें",
     forgotPassword: "पासवर्ड भूल गए?",
@@ -133,7 +133,7 @@ const translations = {
     createAccount: "खाता बनाएं",
     showPassword: "पासवर्ड दिखाएं",
     hidePassword: "पासवर्ड छुपाएं",
-    usernameHelp: "वह उपयोगकर्ता नाम या ईमेल दर्ज करें जिसका उपयोग आपने पंजीकरण के लिए किया था",
+    usernameHelp: "अपना उपयोगकर्ता नाम दर्ज करें",
     passwordHelp: "आपका पासवर्ड कम से कम 8 अक्षर का होना चाहिए"
   }
 };

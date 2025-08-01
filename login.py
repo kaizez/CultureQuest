@@ -34,8 +34,9 @@ load_dotenv()
 login_bp = Blueprint('login', __name__, template_folder='public')
 
 # Admin credentials
-ADMIN_USERNAME = 'admin'
-ADMIN_PASSWORD = 'password'
+ADMIN_USERNAME = 'Jonas'
+ADMIN_PASSWORD = 'Cu@tureQues!2403'
+ADMIN_EMAIL = 'kwajunhao@gmail.com'
 
 # Database configuration
 DB_CONFIG = {
@@ -525,6 +526,9 @@ def verify_email_code_helper(email, provided_code):
             stored_code = str(code_data['code']).strip()
             provided_code = str(provided_code).strip()
             
+            print(f"DEBUG: Stored code: '{stored_code}', Provided code: '{provided_code}'")
+            print(f"DEBUG: Codes match: {stored_code == provided_code}")
+            
             if stored_code != provided_code:
                 # Increment attempts
                 cursor.execute(
@@ -532,6 +536,7 @@ def verify_email_code_helper(email, provided_code):
                     (email,)
                 )
                 connection.commit()
+                print(f"DEBUG: Code mismatch - returning False")
                 return False, "Invalid verification code", None
             
             # Code is valid - get user data and remove verification code
@@ -539,6 +544,7 @@ def verify_email_code_helper(email, provided_code):
             user_data = json.loads(code_data['user_data']) if code_data['user_data'] else None
             cursor.execute("DELETE FROM verification_codes WHERE email = %s", (email,))
             connection.commit()
+            print(f"DEBUG: Code verified successfully, returning user_data: {user_data}")
             return True, "Email verified successfully", user_data
     except Exception as e:
         return False, "Error verifying code", None
@@ -848,6 +854,11 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'is_admin' not in session or not session['is_admin']:
             return redirect(url_for('login.login_page'))
+        
+        # Check if 2FA is pending (admin logged in but 2FA not completed)
+        if session.get('admin_2fa_pending'):
+            return redirect(url_for('login.admin_2fa_page'))
+            
         return f(*args, **kwargs)
     return decorated_function
 
@@ -986,7 +997,7 @@ def signup2():
     
     email = session.get('google_email')
     # Use default profile picture instead of Google profile picture
-    profile_picture = 'default_picture.png'
+    profile_picture = 'default_profile.png'
     
     if not username or not password:
         if is_ajax:
@@ -1018,7 +1029,7 @@ def signup2():
         # Set session for login
         session['username'] = username
         session['email'] = email
-        session['profile_picture'] = 'default_picture.png'
+        session['profile_picture'] = 'default_profile.png'
         session['user_id'] = new_user['id']
         session['is_admin'] = False
         
@@ -1050,11 +1061,12 @@ def login():
 
     # Check for admin login
     if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-        session['username'] = username
+        session['username'] = username  
         session['is_admin'] = True
-        return redirect(url_for('login.admin_dashboard'))
+        session['admin_2fa_pending'] = True  # Set flag for 2FA requirement
+        return redirect(url_for('login.admin_2fa_page'))
 
-    # Check regular user login
+    # Check regular user login (including Google users with passwords)
     user = find_user_by_username(username)
 
     if user and user.get('password') and check_password_hash(user['password'], password):
@@ -1068,8 +1080,22 @@ def login():
         session['is_admin'] = False
         
         return redirect(url_for('login.profile'))
-    else:
-        return redirect(url_for('login.login_page'))
+    
+    # Check if it's a Google user trying to login manually by email
+    user_by_email = find_user_by_email(username)
+    if user_by_email and user_by_email.get('is_google_user') and user_by_email.get('password') and check_password_hash(user_by_email['password'], password):
+        # Update last login time
+        update_user_login_time(user_by_email['username'])
+        
+        session['username'] = user_by_email['username']
+        session['email'] = user_by_email['email']
+        session['profile_picture'] = user_by_email.get('profile_picture')
+        session['user_id'] = user_by_email['id']
+        session['is_admin'] = False
+        
+        return redirect(url_for('login.profile'))
+    
+    return redirect(url_for('login.login_page'))
 
 @login_bp.route('/profile')
 def profile():
@@ -1177,7 +1203,7 @@ def google_callback():
             session['username'] = existing_user['username']
             session['email'] = existing_user['email']
             # Use default picture if no custom profile picture is set
-            session['profile_picture'] = existing_user.get('profile_picture') or 'default_picture.png'
+            session['profile_picture'] = existing_user.get('profile_picture') or 'default_profile.png'
             session['user_id'] = existing_user['id']
             session['is_admin'] = False
             
@@ -1225,10 +1251,8 @@ def forgot_password():
         # For security, don't reveal specific reason - use same message
         return redirect(url_for('login.forgot_password_page'))
     
-    # Check if user is Google user (they should reset via Google)
-    if user.get('is_google_user', False):
-        # For security, don't reveal specific reason - use same message but suggest Google
-        return redirect(url_for('login.forgot_password_page'))
+    # Allow Google users to reset password if they have set one during signup2
+    # (Google users who completed signup2 have passwords and should be able to reset them)
     
     # Generate and store reset code
     reset_code = generate_reset_code()
@@ -1268,11 +1292,14 @@ def verify_reset_code():
     is_valid, message = verify_reset_code_helper(email, code)
     
     if is_valid:
-        session['code_verified'] = True
-        session.permanent = True
-        return redirect(url_for('login.reset_password_page'))
-    else:
-        return redirect(url_for('login.verify_reset_code_page'))
+        # Ensure the user exists and can reset password (including Google users)
+        user = find_user_by_email(email)
+        if user:  # Allow all users (regular and Google) to proceed
+            session['code_verified'] = True
+            session.permanent = True
+            return redirect(url_for('login.reset_password_page'))
+    
+    return redirect(url_for('login.verify_reset_code_page'))
 
 @login_bp.route('/reset-password', methods=['GET'])
 def reset_password_page():
@@ -1302,12 +1329,12 @@ def reset_password():
     if len(new_password) < 8:
         return redirect(url_for('login.reset_password_page'))
     
-    # Find user and update password
+    # Find user and update password (works for both regular and Google users)
     user = find_user_by_email(email)
     if not user:
         return redirect(url_for('login.forgot_password_page'))
     
-    # Update password
+    # Update password (Google users can now have/update passwords)
     new_password_hash = generate_password_hash(new_password)
     if update_user(user['id'], {'password': new_password_hash}):
         # Clear session data
@@ -1345,12 +1372,12 @@ def verify_email_page():
     email = request.args.get('email')
     
     if not email:
-        return redirect(url_for('login.signup_page'))
+        return redirect(url_for('login.login_page'))
     
     # Check if verification code exists for this email
     connection = get_db_connection()
     if not connection:
-        return redirect(url_for('login.signup_page'))
+        return redirect(url_for('login.login_page'))
     
     try:
         with connection.cursor() as cursor:
@@ -1358,7 +1385,8 @@ def verify_email_page():
             code_data = cursor.fetchone()
             
         if not code_data:
-            return redirect(url_for('login.signup_page'))
+            # Code might have been used already - redirect to login
+            return redirect(url_for('login.login_page'))
     finally:
         connection.close()
     
@@ -1375,24 +1403,25 @@ def verify_email():
     
     # Verify the code
     success, message, user_data = verify_email_code_helper(email, verification_code)
+    print(f"DEBUG: Verification result - Success: {success}, Message: {message}")
+    print(f"DEBUG: User data received: {user_data}")
     
-    if success and user_data:
-        # Create the user account now that email is verified
+    # Create user and redirect to login for non-Google users
+    if user_data and not user_data.get('is_google_user', False):
+        # This is a regular signup user - create account and go to login
         new_user = create_user(
             user_data['username'], 
             user_data['email'], 
             user_data['password'], 
-            user_data.get('is_google_user', False),
+            False,  # Not Google user
             user_data.get('profile_picture'),
             email_verified=True
         )
-        
-        if new_user:
-            return redirect(url_for('login.login_page'))
-        else:
-            return redirect(url_for('login.signup_page'))
-    else:
-        return redirect(url_for('login.verify_email_page', email=email))
+        # Redirect to login page
+        return redirect('/login')
+    
+    # For other cases, redirect back to verification
+    return redirect(url_for('login.verify_email_page', email=email))
 
 @login_bp.route('/resend-code')
 def resend_code():
@@ -1646,6 +1675,152 @@ def admin_export_users():
     response.headers['Content-Disposition'] = 'attachment; filename=users_export.csv'
     
     return response
+
+# Admin 2FA Routes
+@login_bp.route('/admin/2fa')
+def admin_2fa_page():
+    """Admin 2FA verification page"""
+    if not session.get('admin_2fa_pending'):
+        return redirect(url_for('login.login_page'))
+    
+    return render_template('admin_2fa.html')
+
+@login_bp.route('/admin/2fa/verify', methods=['POST'])
+def admin_2fa_verify():
+    """Verify 2FA code and complete admin login"""
+    if not session.get('admin_2fa_pending'):
+        return jsonify({'success': False, 'message': 'No 2FA session found'}), 400
+    
+    try:
+        data = request.get_json()
+        code = data.get('code', '').strip()
+        
+        valid_codes = [
+            '090808@DSF',
+            '071008@DSF', 
+            '170304@DSF',
+            '240301@DSF',
+            '240302@DSF',
+            '240303@DSF'
+        ]
+        
+        if code in valid_codes:
+            # 2FA successful - clear pending flag
+            session.pop('admin_2fa_pending', None)
+            return jsonify({'success': True, 'message': '2FA verification successful'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid 2FA code'}), 400
+            
+    except Exception as e:
+        print(f"Error verifying 2FA: {e}")
+        return jsonify({'success': False, 'message': 'Server error'}), 500
+
+@login_bp.route('/admin/security-alert', methods=['POST'])
+def admin_security_alert():
+    """Handle 2FA security breach notifications"""
+    try:
+        data = request.get_json()
+        
+        if data and data.get('event') == '2FA_BREACH_ATTEMPT':
+            # Send security alert email
+            success = send_security_breach_email(
+                ADMIN_EMAIL, 
+                data.get('attempts', 0),
+                data.get('timestamp', '')
+            )
+            
+            if success:
+                return jsonify({'success': True, 'message': 'Security alert sent'})
+            else:
+                return jsonify({'success': False, 'message': 'Failed to send alert'}), 500
+        
+        return jsonify({'success': False, 'message': 'Invalid request'}), 400
+        
+    except Exception as e:
+        print(f"Error handling security alert: {e}")
+        return jsonify({'success': False, 'message': 'Server error'}), 500
+
+def send_security_breach_email(admin_email, attempts, timestamp):
+    """Send security breach notification email"""
+    try:
+        # Get Gmail credentials from environment variables
+        gmail_user = os.getenv('GMAIL_USER')
+        gmail_password = os.getenv('GMAIL_APP_PASSWORD')
+        
+        if not gmail_user or not gmail_password:
+            print("Gmail credentials not found for security alert")
+            return False
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = f"CultureQuest Security <{gmail_user}>"
+        msg['To'] = admin_email
+        msg['Subject'] = "🚨 SECURITY ALERT: Admin 2FA Breach Attempt - CultureQuest"
+        
+        # Email body with security alert
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="text-align: center; margin-bottom: 30px; background: #dc3545; color: white; padding: 20px; border-radius: 8px;">
+                    <h1 style="margin: 0; font-size: 24px;">🚨 SECURITY ALERT</h1>
+                    <p style="margin: 10px 0 0; font-size: 16px;">Possible Security Breach Detected</p>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #dc3545;">
+                    <h2 style="color: #dc3545; margin-top: 0;">Admin 2FA Access Attempt Blocked</h2>
+                    <p><strong>Event:</strong> Multiple failed 2FA attempts on admin account</p>
+                    <p><strong>Failed Attempts:</strong> {attempts} consecutive failures</p>
+                    <p><strong>Timestamp:</strong> {timestamp}</p>
+                    <p><strong>Status:</strong> ❌ Access DENIED - Account temporarily locked</p>
+                </div>
+                
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="color: #856404; margin-top: 0;">⚠️ Immediate Actions Required</h3>
+                    <ul style="color: #856404; margin: 10px 0;">
+                        <li>Review server access logs immediately</li>
+                        <li>Check for suspicious network activity</li>
+                        <li>Verify admin account security</li>
+                        <li>Consider changing admin credentials if compromise is suspected</li>
+                        <li>Monitor system for unusual activity</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="color: #0c5460; margin-top: 0;">🔒 Security Details</h3>
+                    <p style="color: #0c5460; margin: 5px 0;"><strong>System:</strong> CultureQuest Admin Panel</p>
+                    <p style="color: #0c5460; margin: 5px 0;"><strong>Protection:</strong> 2FA Authentication System</p>
+                    <p style="color: #0c5460; margin: 5px 0;"><strong>Action:</strong> Automated lockout after 5 failed attempts</p>
+                </div>
+                
+                <div style="text-align: center; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
+                    <p><strong>This is an automated security notification from CultureQuest</strong></p>
+                    <p>Please do not reply to this email. Contact your system administrator if you need assistance.</p>
+                    <p>Generated at: {timestamp}</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        # Gmail SMTP setup
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(gmail_user, gmail_password)
+        
+        # Send email
+        text = msg.as_string()
+        server.sendmail(gmail_user, admin_email, text)
+        server.quit()
+        
+        print(f"Security breach alert sent to {admin_email}")
+        return True
+        
+    except Exception as e:
+        print(f"Failed to send security breach email: {e}")
+        return False
 
 # Initialize database when blueprint is imported
 try:
