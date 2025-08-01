@@ -143,3 +143,69 @@ class MutedUser(db.Model):
         if self.muted_until is None:  # Permanent mute
             return True
         return datetime.utcnow() < self.muted_until
+
+class UserPoints(db.Model):
+    __table_args__ = mysql_table_args
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), nullable=False, unique=True)
+    points = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'points': self.points,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else '',
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else ''
+        }
+
+class RewardItem(db.Model):
+    __table_args__ = mysql_table_args
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    cost = db.Column(db.Integer, nullable=False)
+    stock = db.Column(db.Integer, default=0)
+    image_url = db.Column(db.String(255), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    redemptions = db.relationship('RewardRedemption', backref='reward_item', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'cost': self.cost,
+            'stock': self.stock,
+            'image_url': self.image_url,
+            'is_active': self.is_active,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else '',
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else ''
+        }
+
+class RewardRedemption(db.Model):
+    __table_args__ = mysql_table_args
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), nullable=False)
+    reward_item_id = db.Column(db.Integer, db.ForeignKey('reward_item.id'), nullable=False)
+    points_spent = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, completed, cancelled
+    redeemed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'reward_item_id': self.reward_item_id,
+            'points_spent': self.points_spent,
+            'status': self.status,
+            'redeemed_at': self.redeemed_at.strftime('%Y-%m-%d %H:%M:%S') if self.redeemed_at else ''
+        }

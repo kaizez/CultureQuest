@@ -87,6 +87,60 @@ def fix_file_table_safe():
                 connection.execute(text(create_table_sql))
                 print("✅ Created new uploaded_file table with LONGBLOB support")
                 
+                # 4.5. Create new rewards-related tables
+                print("\nCreating rewards system tables...")
+                
+                # Create user_points table
+                user_points_sql = """
+                CREATE TABLE IF NOT EXISTS user_points (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) NOT NULL UNIQUE,
+                    points INT DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB 
+                DEFAULT CHARSET=utf8mb4 
+                COLLATE=utf8mb4_unicode_ci
+                """
+                connection.execute(text(user_points_sql))
+                print("✅ Created user_points table")
+                
+                # Create reward_item table
+                reward_item_sql = """
+                CREATE TABLE IF NOT EXISTS reward_item (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL,
+                    description TEXT,
+                    cost INT NOT NULL,
+                    stock INT DEFAULT 0,
+                    image_url VARCHAR(255),
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB 
+                DEFAULT CHARSET=utf8mb4 
+                COLLATE=utf8mb4_unicode_ci
+                """
+                connection.execute(text(reward_item_sql))
+                print("✅ Created reward_item table")
+                
+                # Create reward_redemption table
+                reward_redemption_sql = """
+                CREATE TABLE IF NOT EXISTS reward_redemption (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) NOT NULL,
+                    reward_item_id INT NOT NULL,
+                    points_spent INT NOT NULL,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    redeemed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (reward_item_id) REFERENCES reward_item(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB 
+                DEFAULT CHARSET=utf8mb4 
+                COLLATE=utf8mb4_unicode_ci
+                """
+                connection.execute(text(reward_redemption_sql))
+                print("✅ Created reward_redemption table")
+                
                 # 5. Add the foreign key constraint back
                 add_fk_sql = """
                 ALTER TABLE message 
@@ -109,6 +163,7 @@ def fix_file_table_safe():
                 trans.commit()
                 print("\n✅ Table structure fixed successfully!")
                 print("You can now upload larger files (up to LONGBLOB limit)")
+                print("✅ Rewards system tables created and ready to use")
                 print("\nIf you still get packet size errors, you may need to:")
                 print("1. Add 'max_allowed_packet=1G' to your MySQL config file")
                 print("2. Restart MySQL service")
@@ -126,9 +181,10 @@ def fix_file_table_safe():
 
 def confirm_action():
     """Ask user to confirm the action"""
-    print("⚠️  WARNING: This will recreate the uploaded_file table!")
+    print("⚠️  WARNING: This will recreate the uploaded_file table and create rewards tables!")
     print("Any existing files stored in the database will be LOST!")
     print("Existing message file references will be cleared.")
+    print("New rewards system tables will be created (user_points, reward_item, reward_redemption).")
     
     response = input("\nAre you sure you want to proceed? Type 'YES' to confirm: ")
     

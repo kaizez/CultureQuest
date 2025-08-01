@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block title %}Rewards Redemption{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.page-title {
+    font-size: 48px;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+}
+
+.points-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 24px;
+    padding: 16px 24px;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.points-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.rewards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+    margin-bottom: 48px;
+}
+
+.reward-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+}
+
+.reward-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+}
+
+.reward-image {
+    width: 100%;
+    height: 200px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.reward-content {
+    padding: 24px;
+}
+
+.reward-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.reward-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.reward-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.reward-cost {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.cost-icon {
+    color: #6366f1;
+}
+
+.reward-stock {
+    font-size: 12px;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.stock-low {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.stock-out {
+    background: #f3f4f6;
+    color: #9ca3af;
+}
+
+.redeem-button {
+    width: 100%;
+    background: #6366f1;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.redeem-button:hover:not(:disabled) {
+    background: #5856eb;
+    transform: translateY(-1px);
+}
+
+.redeem-button:disabled {
+    background: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.insufficient-points {
+    background: #fbbf24;
+    color: #92400e;
+}
+
+.insufficient-points:hover {
+    background: #f59e0b;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    margin-bottom: 24px;
+}
+
+.back-link:hover {
+    color: #1f2937;
+}
+
+.username-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f0f9ff;
+    border: 1px solid #e0f2fe;
+    border-radius: 24px;
+    padding: 8px 16px;
+    color: #0369a1;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.username-icon {
+    width: 20px;
+    height: 20px;
+    background: #0369a1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.admin-link {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1f2937;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.admin-link:hover {
+    background: #111827;
+    transform: translateY(-2px);
+}
+
+/* Flash Messages */
+.flash-message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.flash-success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.flash-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 24px 16px;
+    }
+
+    .page-title {
+        font-size: 36px;
+    }
+
+    .rewards-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .reward-card {
+        margin-bottom: 16px;
+    }
+
+    .admin-link {
+        bottom: 16px;
+        right: 16px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <a href="/chat_rooms?username={{ username }}" class="back-link">
+        <span>←</span>
+        Back to Chat Rooms
+    </a>
+
+    <div class="page-header">
+        <h1 class="page-title">Redeem Your Rewards</h1>
+        <div class="username-display">
+            <div class="username-icon">{{ username[0].upper() }}</div>
+            <span>Welcome, {{ username }}</span>
+        </div>
+        <div class="points-display" id="user-points">
+            <div class="points-icon">💎</div>
+            <span>You have <strong>{{ user_points }}</strong> points</span>
+        </div>
+    </div>
+
+    <div id="flash-messages"></div>
+
+    <div class="rewards-grid">
+        {% for item in reward_items %}
+        <div class="reward-card">
+            <div class="reward-image" {% if item.image_url %}style="background-image: url('{{ item.image_url }}')"{% endif %}>
+                {% if not item.image_url %}
+                    {% if item.name == '$1 Voucher' %}🎫
+                    {% elif 'Bag' in item.name %}👜
+                    {% elif 'Plush' in item.name %}🧸
+                    {% elif 'Keychain' in item.name %}🔑
+                    {% elif 'Tree' in item.name %}🌱
+                    {% else %}🎁{% endif %}
+                {% endif %}
+            </div>
+            <div class="reward-content">
+                <h3 class="reward-name">{{ item.name }}</h3>
+                <p class="reward-description">{{ item.description or 'A wonderful reward item' }}</p>
+                
+                <div class="reward-footer">
+                    <div class="reward-cost">
+                        <span class="cost-icon">💎</span>
+                        <span>{{ item.cost }} Points</span>
+                    </div>
+                    <div class="reward-stock {% if item.stock == 0 %}stock-out{% elif item.stock < 10 %}stock-low{% endif %}">
+                        Stock: {{ item.stock }}
+                    </div>
+                </div>
+                
+                <button class="redeem-button" 
+                        onclick="redeemReward({{ item.id }}, '{{ item.name }}', {{ item.cost }})"
+                        {% if item.stock == 0 %}disabled{% endif %}
+                        {% if user_points < item.cost and item.stock > 0 %}disabled class="redeem-button insufficient-points"{% endif %}>
+                    {% if item.stock == 0 %}
+                        Out of Stock
+                    {% elif user_points < item.cost %}
+                        Need {{ item.cost - user_points }} more points
+                    {% else %}
+                        Redeem
+                    {% endif %}
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <a href="/rewards/admin?username={{ username }}" class="admin-link">
+        Admin Panel
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+let currentPoints = {{ user_points }};
+
+function showNotification(message, type) {
+    // Remove existing notifications
+    $('.notification').remove();
+    
+    const notification = $('<div>').addClass('notification').addClass(type).text(message);
+    
+    // Style the notification
+    notification.css({
+        'position': 'fixed',
+        'top': '20px',
+        'right': '20px',
+        'padding': '12px 20px',
+        'border-radius': '8px',
+        'color': 'white',
+        'font-weight': 'bold',
+        'z-index': '9999',
+        'max-width': '300px',
+        'word-wrap': 'break-word'
+    });
+    
+    if (type === 'success') {
+        notification.css('background-color', '#6366f1');
+    } else if (type === 'error') {
+        notification.css('background-color', '#dc3545');
+    } else if (type === 'warning') {
+        notification.css('background-color', '#ffc107');
+        notification.css('color', '#212529');
+    }
+    
+    $('body').append(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(function() {
+        notification.fadeOut(500, function() {
+            notification.remove();
+        });
+    }, 5000);
+}
+
+function redeemReward(rewardId, rewardName, cost) {
+    if (currentPoints < cost) {
+        showNotification('Insufficient points to redeem this reward', 'error');
+        return;
+    }
+    
+    const button = event.target;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Redeeming...';
+    
+    fetch('/rewards/redeem', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: '{{ username }}',
+            reward_id: rewardId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            
+            // Update points display
+            currentPoints = data.remaining_points;
+            document.getElementById('user-points').innerHTML = `
+                <div class="points-icon">💎</div>
+                <span>You have <strong>${currentPoints}</strong> points</span>
+            `;
+            
+            // Update stock display
+            const card = button.closest('.reward-card');
+            const stockElement = card.querySelector('.reward-stock');
+            stockElement.textContent = `Stock: ${data.remaining_stock}`;
+            
+            // Update button states for all cards
+            updateAllButtonStates();
+            
+            // If this item is now out of stock, disable its button
+            if (data.remaining_stock === 0) {
+                button.textContent = 'Out of Stock';
+                button.disabled = true;
+                stockElement.classList.add('stock-out');
+            } else {
+                button.textContent = 'Redeem';
+                button.disabled = false;
+            }
+        } else {
+            showNotification(data.error, 'error');
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to redeem reward. Please try again.', 'error');
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+}
+
+function updateAllButtonStates() {
+    const buttons = document.querySelectorAll('.redeem-button');
+    buttons.forEach(button => {
+        const card = button.closest('.reward-card');
+        const costText = card.querySelector('.reward-cost span:last-child').textContent;
+        const cost = parseInt(costText.match(/\d+/)[0]);
+        const stockText = card.querySelector('.reward-stock').textContent;
+        const stock = parseInt(stockText.match(/\d+/)[0]);
+        
+        if (stock === 0) {
+            button.textContent = 'Out of Stock';
+            button.disabled = true;
+            button.className = 'redeem-button';
+        } else if (currentPoints < cost) {
+            button.textContent = `Need ${cost - currentPoints} more points`;
+            button.disabled = true;
+            button.className = 'redeem-button insufficient-points';
+        } else {
+            button.textContent = 'Redeem';
+            button.disabled = false;
+            button.className = 'redeem-button';
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -6,7 +6,8 @@ from flask_socketio import SocketIO
 # from event import event_bp
 from chat import chat_bp, handle_join, handle_leave, handle_chat_message
 from chat_manage import chat_manage_bp
-from models import db, ChatRoom
+from rewards import rewards_bp
+from models import db, ChatRoom, RewardItem, UserPoints
 from dotenv import load_dotenv
 
 def load_env():
@@ -74,6 +75,51 @@ with app.app_context():
             db.session.add(room)
         db.session.commit()
         print("[OK] Default chat rooms created")
+    
+    # Create default reward items if they don't exist
+    if RewardItem.query.count() == 0:
+        default_rewards = [
+            RewardItem(
+                name="$1 Voucher",
+                description="A $1 discount voucher for your next purchase",
+                cost=100,
+                stock=9999999,
+                is_active=True
+            ),
+            RewardItem(
+                name="Reusable Bag",
+                description="Eco-friendly reusable bag with stylish motorcycle design",
+                cost=300,
+                stock=2,
+                is_active=True
+            ),
+            RewardItem(
+                name="Eco-friendly Plush",
+                description="Soft and cuddly eco-friendly plush toy made from recycled materials",
+                cost=500,
+                stock=49,
+                is_active=True
+            ),
+            RewardItem(
+                name="Keychain",
+                description="Stylish motorcycle helmet keychain",
+                cost=150,
+                stock=10,
+                is_active=True
+            ),
+            RewardItem(
+                name="Tree Donation",
+                description="Plant a tree in your name to help the environment",
+                cost=100,
+                stock=999999,
+                is_active=True
+            )
+        ]
+        
+        for reward in default_rewards:
+            db.session.add(reward)
+        db.session.commit()
+        print("[OK] Default reward items created")
 
 # Register Blueprints
 # app.register_blueprint(challenge_bp, url_prefix='/host')
@@ -81,6 +127,7 @@ with app.app_context():
 # app.register_blueprint(event_bp, url_prefix='/event')
 app.register_blueprint(chat_bp)
 app.register_blueprint(chat_manage_bp)
+app.register_blueprint(rewards_bp)
 
 # SocketIO event handlers
 @socketio.on('join')
@@ -101,4 +148,4 @@ def handle_my_custom_event(json):
 # Landing page is handled by chat blueprint
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5500, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}You.com Chat - Select Room{% endblock %}
+{% block title %}Chat Rooms{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -282,6 +282,26 @@ body {
     color: #1f2937;
 }
 
+.rewards-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 12px 20px;
+    border-radius: 24px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.rewards-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .main-content {
@@ -342,6 +362,11 @@ body {
         <div class="username-display">
             <div class="username-icon">{{ username[0].upper() }}</div>
             <span>Welcome, {{ username }}</span>
+        </div>
+        <div style="margin-top: 16px;">
+            <a href="/rewards?username={{ username }}" class="rewards-link">
+                💎 View Rewards
+            </a>
         </div>
     </div>
 

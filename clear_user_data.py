@@ -41,28 +41,43 @@ def clear_user_data():
                 print("Starting data cleanup for CultureQuest tables...")
                 
                 # Clear data in order (respecting foreign key constraints)
-                # 1. Messages (references chat_room and uploaded_file)
+                # 1. Reward redemptions (references reward_item)
+                result = connection.execute(text("DELETE FROM reward_redemption"))
+                print(f"Cleared {result.rowcount} reward redemptions")
+                
+                # 2. Reward items (can be cleared independently)
+                result = connection.execute(text("DELETE FROM reward_item"))
+                print(f"Cleared {result.rowcount} reward items")
+                
+                # 3. User points (can be cleared independently)
+                result = connection.execute(text("DELETE FROM user_points"))
+                print(f"Cleared {result.rowcount} user points records")
+                
+                # 4. Messages (references chat_room and uploaded_file)
                 result = connection.execute(text("DELETE FROM message"))
                 print(f"Cleared {result.rowcount} messages")
                 
-                # 2. Security violations (references chat_room)
+                # 5. Security violations (references chat_room)
                 result = connection.execute(text("DELETE FROM security_violation"))
                 print(f"Cleared {result.rowcount} security violations")
                 
-                # 3. Muted users (references chat_room)
+                # 6. Muted users (references chat_room)
                 result = connection.execute(text("DELETE FROM muted_user"))
                 print(f"Cleared {result.rowcount} muted users")
                 
-                # 4. Uploaded files (can be cleared independently)
+                # 7. Uploaded files (can be cleared independently)
                 result = connection.execute(text("DELETE FROM uploaded_file"))
                 print(f"Cleared {result.rowcount} uploaded files")
                 
-                # 5. Chat rooms (parent table)
+                # 8. Chat rooms (parent table)
                 result = connection.execute(text("DELETE FROM chat_room"))
                 print(f"Cleared {result.rowcount} chat rooms")
                 
                 # Reset auto-increment counters to 1
                 print("\nResetting auto-increment counters...")
+                connection.execute(text("ALTER TABLE reward_redemption AUTO_INCREMENT = 1"))
+                connection.execute(text("ALTER TABLE reward_item AUTO_INCREMENT = 1"))
+                connection.execute(text("ALTER TABLE user_points AUTO_INCREMENT = 1"))
                 connection.execute(text("ALTER TABLE message AUTO_INCREMENT = 1"))
                 connection.execute(text("ALTER TABLE security_violation AUTO_INCREMENT = 1"))
                 connection.execute(text("ALTER TABLE muted_user AUTO_INCREMENT = 1"))
@@ -90,6 +105,9 @@ def confirm_action():
     """Ask user to confirm the destructive action"""
     print("⚠️  WARNING: This will permanently delete ALL CultureQuest user data!")
     print("This includes:")
+    print("- All reward redemptions")
+    print("- All reward items")
+    print("- All user points records")
     print("- All chat messages")
     print("- All uploaded files")
     print("- All chat rooms")

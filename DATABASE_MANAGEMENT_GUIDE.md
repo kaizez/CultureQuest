@@ -11,18 +11,21 @@ This guide explains when and how to use the database management scripts in your 
 
 ## When to Use `fix_file_table_safe.py`
 
-**Purpose**: Sets up or fixes the database table structure for file storage functionality.
+**Purpose**: Sets up or fixes the database table structure for file storage and rewards system functionality.
 
 ### Use this script when:
 
 ✅ **First-time setup**: Setting up the application on a new database
 - Creates the `uploaded_file` table with proper LONGBLOB support
+- Creates rewards system tables (`user_points`, `reward_item`, `reward_redemption`)
 - Adds the `file_id` column to the `message` table
 - Sets up foreign key relationships
 
 ✅ **Database structure issues**: Getting errors like:
 - `"Unknown column 'file_id' in 'field list'"`
 - `"Table 'uploaded_file' doesn't exist"`
+- `"Table 'user_points' doesn't exist"`
+- `"Table 'reward_item' doesn't exist"`
 - `"Data too long for column 'file_data'"`
 
 ✅ **After major database changes**: 
@@ -33,6 +36,7 @@ This guide explains when and how to use the database management scripts in your 
 ### What it does:
 - Removes old foreign key constraints safely
 - Drops and recreates the `uploaded_file` table with LONGBLOB support
+- Creates rewards system tables with proper relationships
 - Adds proper foreign key relationships
 - Attempts to increase MySQL packet size for large files
 
@@ -61,6 +65,9 @@ This guide explains when and how to use the database management scripts in your 
 - Remove development/test data before going live
 
 ### What it does:
+- Deletes all reward redemptions
+- Deletes all reward items
+- Deletes all user points records
 - Deletes all messages
 - Deletes all uploaded files  
 - Deletes all chat rooms
