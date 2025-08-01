@@ -210,11 +210,42 @@ body {
   }
 }
 
+/* ==================== BACK TO HOME ARROW ==================== */
+.back-home-arrow {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 999;
+}
+
+.back-home-arrow a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.back-home-arrow a:hover {
+  border-color: var(--focus-color);
+  box-shadow: 0 2px 8px var(--focus-shadow);
+  transform: translateX(-2px);
+}
+
 /* ==================== LANGUAGE SELECTOR ==================== */
 .language-box {
   position: fixed;
   top: 24px;
-  left: 24px;
+  right: 24px;
   z-index: 999;
 }
 
@@ -382,6 +413,9 @@ h1 {
   display: flex;
   align-items: center;
   transition: all 0.3s ease;
+  border-radius: 16px;
+  background: transparent;
+  border: none;
 }
 
 .input-wrapper:hover {
@@ -391,14 +425,18 @@ h1 {
 .input-wrapper input {
   width: 100%;
   padding: 16px 50px 16px 20px;
-  border: 2px solid transparent;
-  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px !important;
   font-size: 16px;
   color: var(--text-input) !important;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.9);
   transition: all 0.3s ease;
   outline: none;
+  -webkit-border-radius: 16px !important;
+  -moz-border-radius: 16px !important;
+  box-sizing: border-box;
+  background-clip: padding-box;
 }
 
 .input-wrapper input::placeholder {
@@ -409,33 +447,37 @@ h1 {
 .input-wrapper input:focus {
   border-color: var(--focus-color);
   background: #ffffff;
+  background-clip: padding-box;
   box-shadow: 0 0 0 3px var(--focus-shadow);
+  border-radius: 16px !important;
+  -webkit-border-radius: 16px !important;
+  -moz-border-radius: 16px !important;
+  overflow: hidden;
 }
 
 /* ==================== INPUT VALIDATION STATES ==================== */
 .input-wrapper.focused {
-  border-color: var(--focus-color);
-  box-shadow: 0 0 0 3px var(--focus-shadow);
-  background: #ffffff;
+  background: transparent;
 }
 
 .input-wrapper.valid input {
   border-color: var(--success-color) !important;
   box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.25) !important;
-  background: #1a1a2e !important;
+  background: transparent !important;
   color: #ffffff !important;
+  border-radius: 16px !important;
 }
 
 .input-group.error .input-wrapper {
-  border-color: var(--error-color);
-  box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.25);
+  background: transparent;
 }
 
 .input-group.error .input-wrapper input {
   border-color: var(--error-color) !important;
   box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.25) !important;
-  background: #1a1a2e !important;
+  background: transparent !important;
   color: #ffffff !important;
+  border-radius: 16px !important;
 }
 
 /* ==================== INPUT ICONS ==================== */
@@ -516,11 +558,11 @@ h1 {
   transition: all 0.3s ease;
   padding: 8px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: transparent;
 }
 
 .remember-checkbox:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
 }
 
 .remember-checkbox input {
@@ -855,7 +897,7 @@ h1 {
 }
 
 .error-message::before {
-  content: ' ';
+  content: 'ï¿½';
   font-size: 14px;
 }
 
@@ -943,6 +985,19 @@ h1 {
 }
 
 /* ==================== ADDITIONAL ENHANCEMENTS ==================== */
+
+/* Force rounded corners on all input states */
+input[type="text"], 
+input[type="email"], 
+input[type="password"] {
+  border-radius: 16px !important;
+  -webkit-border-radius: 16px !important;
+  -moz-border-radius: 16px !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
 /* Improved focus ring for accessibility */
 input:focus-visible,
 button:focus-visible,
