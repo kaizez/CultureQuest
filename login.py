@@ -360,18 +360,21 @@ def store_reset_code(email, code):
         with connection.cursor() as cursor:
             # Remove any existing reset code for this email
             cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
+            print(f"DEBUG: Deleted existing reset codes for {email}")
             
             # Insert new reset code
             expires = datetime.now(UTC) + timedelta(minutes=15)
+            print(f"DEBUG: Inserting reset code - Email: {email}, Code: {code}, Expires: {expires}")
             cursor.execute("""
                 INSERT INTO reset_codes (email, code, expires, attempts) 
                 VALUES (%s, %s, %s, 0)
             """, (email, code, expires))
             
             connection.commit()
+            print(f"DEBUG: Reset code committed to database successfully")
             return True
     except Exception as e:
-        print(f"Error storing reset code: {e}")
+        print(f"ERROR storing reset code: {e}")
         return False
     finally:
         connection.close()
@@ -388,7 +391,13 @@ def verify_reset_code_helper(email, provided_code):
             cursor.execute("SELECT * FROM reset_codes WHERE email = %s", (email,))
             code_data = cursor.fetchone()
             
+            print(f"DEBUG VERIFY: Looking for reset code for email: {email}")
+            print(f"DEBUG VERIFY: Code data found: {code_data is not None}")
+            if code_data:
+                print(f"DEBUG VERIFY: Stored code: {code_data.get('code')}, Provided: {provided_code}")
+            
             if not code_data:
+                print(f"DEBUG VERIFY: No reset code found in database for {email}")
                 return False, "No reset code found for this email"
             
             # Simple expiration check (convert to UTC if needed)
@@ -1242,13 +1251,18 @@ def forgot_password():
     
     # Check if user exists
     user = find_user_by_email(email)
+    print(f"DEBUG: User found for email {email}: {user is not None}")
+    if user:
+        print(f"DEBUG: User email_verified: {user.get('email_verified', False)}")
+        print(f"DEBUG: User is_google_user: {user.get('is_google_user', False)}")
+    
     if not user:
-        # For security, don't reveal whether email exists or not
+        flash('Email address not found. Please check your email or sign up.', 'error')
         return redirect(url_for('login.forgot_password_page'))
     
     # Check if email is verified
     if not user.get('email_verified', False):
-        # For security, don't reveal specific reason - use same message
+        flash('Email not verified. Please verify your email first.', 'error')
         return redirect(url_for('login.forgot_password_page'))
     
     # Allow Google users to reset password if they have set one during signup2
@@ -1256,16 +1270,24 @@ def forgot_password():
     
     # Generate and store reset code
     reset_code = generate_reset_code()
+    print(f"DEBUG: Generated reset code: {reset_code} for email: {email}")
     
     if not store_reset_code(email, reset_code):
+        print(f"DEBUG: Failed to store reset code for {email}")
+        flash('Error generating reset code. Please try again.', 'error')
         return redirect(url_for('login.forgot_password_page'))
+    
+    print(f"DEBUG: Reset code stored successfully for {email}")
     
     # Send reset email
     if send_reset_email(email, reset_code):
+        print(f"DEBUG: Reset email sent successfully to {email}")
         # Store email in session for verification step
         session['reset_email'] = email
         return redirect(url_for('login.verify_reset_code_page'))
     else:
+        print(f"DEBUG: Failed to send reset email to {email}")
+        flash('Error sending reset email. Please try again.', 'error')
         return redirect(url_for('login.forgot_password_page'))
 
 @login_bp.route('/verify-code', methods=['GET'])
@@ -1286,6 +1308,7 @@ def verify_reset_code():
     code = request.form.get('code', '').strip()
     
     if not code:
+        flash('Please enter the verification code', 'error')
         return redirect(url_for('login.verify_reset_code_page'))
     
     # Verify the code against database
@@ -1298,8 +1321,12 @@ def verify_reset_code():
             session['code_verified'] = True
             session.permanent = True
             return redirect(url_for('login.reset_password_page'))
-    
-    return redirect(url_for('login.verify_reset_code_page'))
+        else:
+            flash('User not found', 'error')
+            return redirect(url_for('login.verify_reset_code_page'))
+    else:
+        flash(message or 'Invalid verification code', 'error')
+        return redirect(url_for('login.verify_reset_code_page'))
 
 @login_bp.route('/reset-password', methods=['GET'])
 def reset_password_page():
@@ -1345,11 +1372,12 @@ def reset_password():
     else:
         return redirect(url_for('login.reset_password_page'))
 
-@login_bp.route('/resend-code', methods=['POST'])
+@login_bp.route('/resend-reset-code', methods=['POST'])
 def resend_reset_code():
     """Resend reset code"""
     if 'reset_email' not in session:
-        return jsonify({'success': False, 'message': 'Session expired'})
+        flash('Session expired. Please start over.', 'error')
+        return redirect(url_for('login.forgot_password_page'))
     
     email = session['reset_email']
     
@@ -1357,13 +1385,16 @@ def resend_reset_code():
     reset_code = generate_reset_code()
     
     if not store_reset_code(email, reset_code):
-        return jsonify({'success': False, 'message': 'Error generating reset code'})
+        flash('Error generating new code. Please try again.', 'error')
+        return redirect(url_for('login.verify_reset_code_page'))
     
     # Send reset email
     if send_reset_email(email, reset_code):
-        return jsonify({'success': True, 'message': 'New verification code sent successfully'})
+        flash('New verification code sent successfully!', 'success')
+        return redirect(url_for('login.verify_reset_code_page'))
     else:
-        return jsonify({'success': False, 'message': 'Error sending reset email'})
+        flash('Error sending email. Please try again.', 'error')
+        return redirect(url_for('login.verify_reset_code_page'))
 
 # Email Verification Routes
 @login_bp.route('/verify-email', methods=['GET'])
