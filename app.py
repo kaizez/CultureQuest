@@ -1,13 +1,14 @@
 import os
 from flask import Flask, render_template
 from flask_socketio import SocketIO
-# from challenge import challenge_bp
-# from admin_screening import admin_screening_bp
-# from event import event_bp
+from challenge import challenge_bp
+from admin_screening import admin_screening_bp
+from event import event_bp
 from chat import chat_bp, handle_join, handle_leave, handle_chat_message
 from chat_manage import chat_manage_bp
 from rewards import rewards_bp
 from models import db, ChatRoom, RewardItem, UserPoints
+import challenge_models
 from dotenv import load_dotenv
 
 def load_env():
@@ -38,13 +39,21 @@ app = Flask(__name__)
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-long-and-random-secret-key')
+
 # Build database URI from individual environment variables
 db_host = os.environ.get('DB_HOST')
 db_port = os.environ.get('DB_PORT')
 db_user = os.environ.get('DB_USER')
 db_password = os.environ.get('DB_PASSWORD')
 db_name = os.environ.get('DB_NAME')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+
+if not all([db_host, db_port, db_user, db_password, db_name]):
+    print("Warning: Database environment variables not found. Please check your .env file.")
+    print("Required variables: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME")
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+    print(f"[OK] Connected to MySQL database: {db_host}:{db_port}/{db_name}")
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # File upload configuration
@@ -58,9 +67,10 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db.init_app(app)
 socketio = SocketIO(app)
 
-# Create tables if not exist and seed default chat rooms
+# Create tables if not exist and seed default chat rooms and rewards
 with app.app_context():
     db.create_all()
+    print("[OK] Database tables created/verified")
     
     # Create default chat rooms if they don't exist
     if ChatRoom.query.count() == 0:
@@ -122,9 +132,9 @@ with app.app_context():
         print("[OK] Default reward items created")
 
 # Register Blueprints
-# app.register_blueprint(challenge_bp, url_prefix='/host')
-# app.register_blueprint(admin_screening_bp, url_prefix='/admin')
-# app.register_blueprint(event_bp, url_prefix='/event')
+app.register_blueprint(challenge_bp, url_prefix='/host')
+app.register_blueprint(admin_screening_bp, url_prefix='/admin')
+app.register_blueprint(event_bp, url_prefix='/event')
 app.register_blueprint(chat_bp)
 app.register_blueprint(chat_manage_bp)
 app.register_blueprint(rewards_bp)
@@ -145,7 +155,9 @@ def handle_my_custom_event(json):
     """Handle chat messages"""
     handle_chat_message(socketio, json)
 
-# Landing page is handled by chat blueprint
+@app.route('/')
+def landing_page():
+    return render_template('landing_page.html')
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)

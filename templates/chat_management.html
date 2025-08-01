@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
+{% set use_login_navbar = true %}
+
 {% block title %}Chat Admin{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
     <style>
         .admin-container {
             width: 100%;

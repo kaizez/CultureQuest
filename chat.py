@@ -290,10 +290,6 @@ def is_user_muted(user_name, room_id):
     return mute.is_muted()
 
 # Routes
-@chat_bp.route('/')
-def landing():
-    """Landing page route"""
-    return render_template('landing.html')
 
 @chat_bp.route('/chat')
 def chat_rooms():
@@ -350,6 +346,48 @@ def create_room():
     db.session.commit()
     
     return jsonify(new_room.to_dict()), 201
+
+@chat_bp.route('/delete_room', methods=['POST'])
+def delete_room():
+    """API endpoint to delete a chat room"""
+    data = request.get_json()
+    
+    if not data or 'room_id' not in data:
+        return jsonify({'error': 'Room ID is required'}), 400
+    
+    room_id = data['room_id']
+    
+    # Find the room
+    room = ChatRoom.query.get(room_id)
+    if not room:
+        return jsonify({'error': 'Room not found'}), 404
+    
+    # Check if room is active
+    if not room.is_active:
+        return jsonify({'error': 'Room is already inactive'}), 400
+    
+    try:
+        # Hard delete: Remove all related data first, then delete the room
+        room_name = room.name
+        
+        # Delete related messages (cascade will handle this through the relationship)
+        Message.query.filter_by(room_id=room_id).delete()
+        
+        # Delete related security violations
+        SecurityViolation.query.filter_by(room_id=room_id).delete()
+        
+        # Delete related muted users
+        MutedUser.query.filter_by(room_id=room_id).delete()
+        
+        # Finally delete the room itself
+        db.session.delete(room)
+        db.session.commit()
+        
+        return jsonify({'message': f'Room "{room_name}" deleted successfully'}), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete room'}), 500
 
 @chat_bp.route('/history/<int:room_id>')
 def history(room_id):

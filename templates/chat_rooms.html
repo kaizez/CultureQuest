@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% set use_login_navbar = true %}
+
 {% block title %}Chat Rooms{% endblock %}
 
 {% block extra_css %}
@@ -159,6 +161,12 @@ body {
     background: #10b981;
 }
 
+.room-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .room-enter {
     background: #1f2937;
     color: white;
@@ -172,6 +180,27 @@ body {
 
 .room-enter:hover {
     background: #111827;
+}
+
+.room-delete {
+    background: #ef4444;
+    color: white;
+    border: none;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+}
+
+.room-delete:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
 }
 
 .create-room-section {
@@ -346,6 +375,192 @@ body {
     border: 1px solid #fecaca;
     color: #dc2626;
 }
+
+/* Custom Modal Styles */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    overflow: hidden;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-icon {
+    font-size: 24px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #fef2f2;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.modal-body {
+    padding: 20px 24px;
+}
+
+.modal-body p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #4b5563;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px 20px;
+    justify-content: flex-end;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.modal-btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.modal-btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+.modal-btn-primary {
+    background: #ef4444;
+    color: white;
+}
+
+.modal-btn-primary:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+/* Notification Modal Styles */
+.notification-overlay {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+    animation: notificationSlideIn 0.3s ease;
+}
+
+@keyframes notificationSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.notification-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 16px 20px;
+    min-width: 300px;
+    max-width: 400px;
+    border-left: 4px solid #10b981;
+    position: relative;
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.notification-icon {
+    font-size: 20px;
+    color: #10b981;
+}
+
+.notification-message {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+    flex: 1;
+}
+
+.notification-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+}
+
+.notification-close:hover {
+    color: #6b7280;
+}
+
+.notification-error {
+    border-left-color: #ef4444;
+}
+
+.notification-error .notification-icon {
+    color: #ef4444;
+}
 </style>
 {% endblock %}
 
@@ -382,7 +597,7 @@ body {
 
     <div class="rooms-grid">
         {% for room in rooms %}
-        <a href="{{ url_for('chat.chat_session', room_id=room.id, username=username) }}" class="room-card">
+        <div class="room-card">
             <div class="room-header">
                 <div class="room-icon">
                     {% if room.name == "General Chat" %}💬
@@ -408,9 +623,12 @@ body {
                     <div class="activity-dot"></div>
                     <span>Active now</span>
                 </div>
-                <div class="room-enter">Join Room</div>
+                <div class="room-actions">
+                    <a href="{{ url_for('chat.chat_session', room_id=room.id, username=username) }}" class="room-enter">Join Room</a>
+                    <button onclick="deleteRoom({{ room.id }}, '{{ room.name }}')" class="room-delete" title="Delete Room">🗑️</button>
+                </div>
             </div>
-        </a>
+        </div>
         {% endfor %}
     </div>
 
@@ -432,6 +650,34 @@ body {
             
             <button type="submit" class="create-room-btn">Create Room</button>
         </form>
+    </div>
+
+    <!-- Custom Popup Modals -->
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalIcon" class="modal-icon">❗</span>
+                <h3 id="modalTitle" class="modal-title">Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage">Are you sure you want to perform this action?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="modalCancel" class="modal-btn modal-btn-secondary">Cancel</button>
+                <button id="modalConfirm" class="modal-btn modal-btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Popup -->
+    <div id="notificationModal" class="notification-overlay">
+        <div class="notification-content">
+            <div class="notification-header">
+                <span id="notificationIcon" class="notification-icon">✅</span>
+                <span id="notificationMessage" class="notification-message">Action completed successfully</span>
+            </div>
+            <button id="notificationClose" class="notification-close">&times;</button>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -456,11 +702,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const createButton = this.querySelector('button[type="submit"]');
 
             if (!roomName) {
-                alert('Please enter a room name');
+                showNotification('Please enter a room name', true);
                 return;
             }
             if (roomName.length > 100) {
-                alert('Room name is too long (max 100 characters)');
+                showNotification('Room name is too long (max 100 characters)', true);
                 return;
             }
 
@@ -487,12 +733,116 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error creating room:', error);
-                alert('Error creating room: ' + error.message);
+                showNotification('Error creating room: ' + error.message, true);
                 createButton.disabled = false;
                 createButton.textContent = 'Create Room';
             });
         });
     }
+
+    // Custom popup functions
+    window.showModal = function(title, message, icon, onConfirm) {
+        const modal = document.getElementById('customModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalIcon = document.getElementById('modalIcon');
+        const confirmBtn = document.getElementById('modalConfirm');
+        const cancelBtn = document.getElementById('modalCancel');
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modalIcon.textContent = icon;
+
+        modal.style.display = 'flex';
+
+        // Remove any existing event listeners
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+        // Add new event listeners
+        newConfirmBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+            if (onConfirm) onConfirm();
+        });
+
+        newCancelBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+    };
+
+    window.showNotification = function(message, isError = false) {
+        const notification = document.getElementById('notificationModal');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const notificationIcon = document.getElementById('notificationIcon');
+        const notificationContent = notification.querySelector('.notification-content');
+        const closeBtn = document.getElementById('notificationClose');
+
+        notificationMessage.textContent = message;
+        
+        if (isError) {
+            notificationIcon.textContent = '❌';
+            notificationContent.classList.add('notification-error');
+        } else {
+            notificationIcon.textContent = '✅';
+            notificationContent.classList.remove('notification-error');
+        }
+
+        notification.style.display = 'block';
+
+        // Auto-hide after 4 seconds
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 4000);
+
+        closeBtn.addEventListener('click', function() {
+            notification.style.display = 'none';
+        });
+    };
+
+    // Close modal when clicking outside
+    document.getElementById('customModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+        }
+    });
+
+    // Delete room function
+    window.deleteRoom = function(roomId, roomName) {
+        showModal(
+            'Delete Room',
+            `Are you sure you want to delete the room "${roomName}"? This action cannot be undone.`,
+            '🗑️',
+            function() {
+                // Proceed with deletion
+                fetch("{{ url_for('chat.delete_room') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        room_id: roomId
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    // Success: show notification and reload the page
+                    showNotification('Room deleted successfully');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.error('Error deleting room:', error);
+                    showNotification('Error deleting room: ' + error.message, true);
+                });
+            }
+        );
+    };
 });
 </script>
 {% endblock %}

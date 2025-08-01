@@ -2,9 +2,7 @@
     <div class="navbar-container">
         <div class="navbar-brand">
             <a href="{{ url_for('landing_page') }}">
-                <div class="logo">
-                    <img src="{{ url_for('static', filename='img/file.svg') }}">
-                </div>
+                <div class="logo">C</div>
                 <h1>CultureQuest</h1>
             </a>
         </div>
@@ -12,14 +10,14 @@
         <div class="navbar-menu">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Bridging Cultures</a>
+                    <a href="{{ url_for('event.event_page') }}" class="nav-link">View Challenges</a>
                 </li>
             </ul>
         </div>
         
         <div class="navbar-actions">
-            <a href="#" class="sign-in-btn">Sign up</a>
-            <a href="#" class="demo-btn">Sign in</a>
+            <a href="{{ url_for('challenge.create_challenge') }}" class="sign-in-btn">Host Challenge</a>
+            <a href="{{ url_for('admin_screening.admin_page') }}" class="demo-btn">Admin</a>
         </div>
     </div>
 </nav>
