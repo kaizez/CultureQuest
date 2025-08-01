@@ -1,7 +1,7 @@
 <nav class="navbar">
     <div class="navbar-container">
         <div class="navbar-brand">
-            <a href="{{ url_for('landing_page') }}">
+            <a href="{{ url_for('login.landing_page') }}">
                 <div class="logo">Y</div>
                 <h1>CultureQuest</h1>
             </a>
@@ -16,8 +16,8 @@
         </div>
         
         <div class="navbar-actions">
-            <a href="{{ url_for('signup_page') }}" class="sign-in-btn">Sign up</a>
-            <a href="{{ url_for('login_page') }}" class="demo-btn">Sign in</a>
+            <a href="{{ url_for('login.signup_page') }}" class="sign-in-btn">Sign up</a>
+            <a href="{{ url_for('login.login_page') }}" class="demo-btn">Sign in</a>
         </div>
     </div>
 </nav>

@@ -1,39 +1,6 @@
-# Core Flask Framework
-Flask==2.3.3
-Werkzeug==2.3.7
+# Core Flask Framework (Python 3.13 compatible)
+Flask==3.0.0
+Werkzeug==3.0.1
 
-# Flask Extensions
-Flask-Dance==7.0.0
-
-# Environment Variables
-python-dotenv==1.0.0
-
-# Google API Libraries
-google-api-python-client==2.103.0
-google-auth==2.23.3
-google-auth-oauthlib==1.1.0
-google-auth-httplib2==0.1.1
-
-# Date and Time Utilities
-python-dateutil==2.8.2
-
-# UUID Generation
-uuid==1.30
-
-# JSON Handling (built-in, but for explicit documentation)
-# json (built-in Python module)
-
-# Security and Password Hashing (built-in in Werkzeug, but explicit)
-# werkzeug.security (included in Werkzeug)
-
-# Email Libraries
-# smtplib (built-in Python module)
-# email (built-in Python module)
-
-# Additional utilities
-requests==2.31.0
-urllib3==2.0.4
-
-# Development Tools (optional)
-# pytest==7.4.2
-# flask-testing==0.8.1
+# Database - Raw PyMySQL (no SQLAlchemy needed)
+PyMySQL==1.1.0

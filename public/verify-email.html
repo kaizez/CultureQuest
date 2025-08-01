@@ -56,7 +56,7 @@
                                     {% else %}
                                         <span class="flash-icon">ℹ️</span>
                                     {% endif %}
-                                    <span class="flash-text">{{ message }}</span>
+                                    <span class="flash-text">{{ message|e }}</span>
                                 </div>
                             {% endfor %}
                         </div>

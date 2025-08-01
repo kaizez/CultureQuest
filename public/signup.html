@@ -20,6 +20,33 @@
   <link rel="stylesheet" href="/static/signup.css" />
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
   
+  <style>
+    .flash-messages {
+      margin-bottom: 1rem;
+    }
+    .flash-message {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    .flash-success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .flash-danger {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .flash-info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+  </style>
+  
 </head>
 
 <body>
@@ -81,6 +108,19 @@
           <strong>Security First:</strong> We use AES-256 encryption, secure password hashing, and multi-factor authentication to protect your data.
         </div>
       </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash-message flash-{{ category }}">
+                <span class="flash-text">{{ message|e }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
 
       <!-- Rate Limit Warning -->
       <div class="rate-limit-warning" id="rate-limit-warning">
@@ -257,6 +297,7 @@
         Check your email for a verification link before signing in.
       </div>
 
+      {% if config.GOOGLE_OAUTH_ENABLED %}
       <div class="divider">
         <span>or sign up with</span>
       </div>
@@ -267,6 +308,7 @@
           <span style="color: #1a202c; font-weight: 500;">Google</span>
         </a>
       </div>
+      {% endif %}
     </div>
 
     <div class="signin-section">
@@ -453,7 +495,6 @@
               securityState.captchaToken = data.captcha;
               challengeElement.textContent = data.captcha;
               challengeElement.classList.remove('loading');
-              logSecurityEvent('server_captcha_generated');
               return;
             } else {
               throw new Error('Invalid CAPTCHA response format');
@@ -464,7 +505,6 @@
         } catch (error) {
           // Server failed, immediately use client fallback
           console.warn('Server CAPTCHA failed, using client fallback:', error.message);
-          logSecurityEvent('captcha_server_failed', { error: error.message });
         }
         
         // Fallback to client-side CAPTCHA
@@ -501,7 +541,6 @@
           captchaInput.focus();
         }
         
-        logSecurityEvent('client_captcha_generated', { fallback: true });
       }
     }
 
@@ -515,7 +554,6 @@
         
         // Generate new CAPTCHA
         generateCaptcha();
-        showSecurityMessage('CAPTCHA refreshed', 'info');
         
         setTimeout(() => {
           refreshBtn.textContent = originalText;
@@ -524,7 +562,6 @@
       } else {
         // Fallback if no button reference
         generateCaptcha();
-        showSecurityMessage('CAPTCHA refreshed', 'info');
       }
     }
 
@@ -543,12 +580,10 @@
         field.type = 'text';
         eyeIcon.textContent = '🙈'; // Hide emoji
         button.setAttribute('aria-label', 'Hide password');
-        logSecurityEvent('password_visibility_toggled', { field: fieldId, action: 'show' });
       } else {
         field.type = 'password';
         eyeIcon.textContent = '👁️'; // Show emoji
         button.setAttribute('aria-label', 'Show password');
-        logSecurityEvent('password_visibility_toggled', { field: fieldId, action: 'hide' });
       }
     }
 
@@ -775,7 +810,6 @@
         setTimeout(() => firstFocusable.focus(), 100);
       }
       
-      logSecurityEvent('modal_opened', { modalId });
     }
 
     function closeModal(modalId) {
@@ -784,7 +818,6 @@
       
       modal.style.display = 'none';
       document.body.style.overflow = 'auto';
-      logSecurityEvent('modal_closed', { modalId });
     }
 
     function acceptTerms() {
@@ -802,14 +835,10 @@
         }
       }
       closeModal('terms-modal');
-      showSecurityMessage('Terms of Service accepted', 'success');
-      logSecurityEvent('terms_accepted');
     }
 
     function acceptPrivacy() {
       closeModal('privacy-modal');
-      showSecurityMessage('Privacy Policy acknowledged', 'info');
-      logSecurityEvent('privacy_policy_viewed');
     }
 
     // Real-time validation with debouncing
@@ -917,11 +946,6 @@
         securityState.isLocked = true;
         securityState.lastSubmitTime = now;
         showRateLimitWarning(SECURITY_CONFIG.LOCKOUT_DURATION / 60000);
-        logSecurityEvent('rate_limit_exceeded', { 
-          attempts: securityState.submitAttempts,
-          ip: 'client-side',
-          userAgent: navigator.userAgent 
-        });
         return false;
       }
       
@@ -945,24 +969,9 @@
       updateSecurityIndicator('secure', '🔒 Secure Connection');
     }
 
-    // Security event logging
+    // Security event logging (disabled for user privacy)
     function logSecurityEvent(event, data = {}) {
-      const logEntry = {
-        event,
-        timestamp: new Date().toISOString(),
-        sessionId: securityState.deviceFingerprint,
-        ...data
-      };
-      
-      // Send to security monitoring endpoint in production
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        // Only log security events in production to monitoring service
-        fetch('/api/security-events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(logEntry)
-        }).catch(() => {}); // Fail silently
-      }
+      // Security logging disabled - no user notifications or tracking
     }
 
     // Security indicator management
@@ -974,31 +983,6 @@
       }
     }
 
-    function showSecurityMessage(message, type = 'info') {
-      // Create temporary notification
-      const notification = document.createElement('div');
-      notification.className = `security-notification ${type}`;
-      notification.textContent = message;
-      notification.style.cssText = `
-        position: fixed;
-        top: 70px;
-        right: 20px;
-        background: ${type === 'error' ? '#f56565' : type === 'success' ? '#48bb78' : '#4a90e2'};
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 14px;
-        z-index: 1001;
-        animation: slideIn 0.3s ease;
-      `;
-      
-      document.body.appendChild(notification);
-      
-      setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-      }, 3000);
-    }
 
     // Enhanced form validation
     function validateForm() {
@@ -1019,7 +1003,6 @@
 
       // Validate bot prevention field (should be empty)
       if (formData.get('website')) {
-        logSecurityEvent('bot_prevention_triggered', { value: formData.get('website') });
         errors.push('Security check failed');
       }
 
@@ -1067,8 +1050,6 @@
       console.log('DEBUG: Form validation result:', errors);
       if (errors.length > 0) {
         console.log('DEBUG: Form validation failed:', errors[0]);
-        showSecurityMessage(errors[0], 'error');
-        logSecurityEvent('form_validation_failed', { errors });
         return false;
       }
 
@@ -1093,9 +1074,7 @@
         
         // Success feedback
         if (btnText) btnText.textContent = 'Email Sent! ✓';
-        showSecurityMessage('Verification email sent! Check your inbox.', 'success');
         
-        logSecurityEvent('verification_email_sent');
         
         // Redirect to verification page if URL provided
         if (result.redirect_url) {
@@ -1127,8 +1106,6 @@
           btnLoader.style.display = 'none';
         }
         
-        showSecurityMessage('Account creation failed. Please try again.', 'error');
-        logSecurityEvent('account_creation_failed', { error: error.message });
         
         // Generate new CAPTCHA on failure
         generateCaptcha();
@@ -1176,7 +1153,6 @@
         }
       } catch (error) {
         // Fail securely - form cannot be submitted without tokens
-        logSecurityEvent('token_fetch_failed', { error: error.message });
       }
     }
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify Code - CultureQuest</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='forget.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='verify_code.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -46,7 +46,7 @@
                                 {% else %}
                                     <span class="flash-icon">ℹ️</span>
                                 {% endif %}
-                                <span class="flash-text">{{ message }}</span>
+                                <span class="flash-text">{{ message|e }}</span>
                             </div>
                         {% endfor %}
                     </div>
@@ -54,7 +54,7 @@
             {% endwith %}
 
             <!-- Verification Form -->
-            <form method="POST" action="{{ url_for('verify_reset_code') }}" class="verify-form" id="verifyForm">
+            <form method="POST" action="{{ url_for('login.verify_reset_code') }}" class="verify-form" id="verifyForm">
                 <div class="input-group">
                     <label for="code" class="input-label">Verification Code</label>
                     <div class="code-input-container">
@@ -95,7 +95,7 @@
 
             <!-- Back Link -->
             <div class="back-section">
-                <a href="{{ url_for('forgot_password_page') }}" class="back-link">
+                <a href="{{ url_for('login.forgot_password_page') }}" class="back-link">
                     ← Back to Email Entry
                 </a>
             </div>
@@ -154,7 +154,7 @@
             resendBtn.disabled = true;
 
             // Make AJAX request to resend code
-            fetch('{{ url_for("resend_reset_code") }}', {
+            fetch('{{ url_for("login.resend_reset_code") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -253,187 +253,5 @@
         }, 10000);
     </script>
 
-    <style>
-        /* Additional styles for verify code page */
-        .code-input-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .code-input {
-            width: 100%;
-            padding: 20px 50px 20px 20px;
-            border: 2px solid transparent;
-            border-radius: 12px;
-            font-size: 24px;
-            font-weight: 600;
-            color: #ffffff !important;
-            background: rgba(255, 255, 255, 0.9);
-            transition: all 0.3s ease;
-            outline: none;
-            text-align: center;
-            letter-spacing: 8px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .code-input::placeholder {
-            color: var(--text-light) !important;
-            font-weight: 400;
-            letter-spacing: 4px;
-        }
-
-        .code-input:focus {
-            border-color: var(--focus-color);
-            box-shadow: 0 0 0 3px var(--focus-shadow);
-            background: #ffffff;
-            color: #1a202c !important;
-        }
-
-        .resend-section {
-            text-align: center;
-            margin: 24px 0;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .resend-text {
-            color: var(--text-white);
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-
-        .resend-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .resend-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .resend-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .resend-timer {
-            color: var(--text-white);
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .back-section {
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .back-link {
-            color: var(--text-white);
-            text-decoration: none;
-            font-size: 14px;
-            opacity: 0.8;
-            transition: opacity 0.3s ease;
-        }
-
-        .back-link:hover {
-            opacity: 1;
-        }
-
-        .security-notice {
-            background: rgba(74, 144, 226, 0.1);
-            border: 1px solid rgba(74, 144, 226, 0.2);
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 24px;
-            display: flex;
-            gap: 12px;
-        }
-
-        .security-icon {
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .security-content {
-            color: var(--text-white);
-            font-size: 13px;
-        }
-
-        .security-content strong {
-            display: block;
-            margin-bottom: 8px;
-            color: #4a90e2;
-        }
-
-        .security-content ul {
-            margin: 0;
-            padding-left: 16px;
-            line-height: 1.5;
-        }
-
-        .flash-message {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            font-weight: 500;
-            animation: slideIn 0.3s ease;
-        }
-
-        .flash-message.success {
-            background: rgba(72, 187, 120, 0.1);
-            border: 1px solid rgba(72, 187, 120, 0.3);
-            color: #48bb78;
-        }
-
-        .flash-message.error {
-            background: rgba(245, 101, 101, 0.1);
-            border: 1px solid rgba(245, 101, 101, 0.3);
-            color: #f56565;
-        }
-
-        .flash-icon {
-            font-size: 18px;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 480px) {
-            .code-input {
-                font-size: 20px;
-                letter-spacing: 4px;
-                padding: 16px 40px 16px 16px;
-            }
-
-            .security-notice {
-                flex-direction: column;
-                text-align: center;
-            }
-        }
-    </style>
 </body>
 </html>

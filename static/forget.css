@@ -913,3 +913,43 @@ body {
     border-color: rgba(255, 255, 255, 0.8);
   }
 }
+
+/* Security tips styling */
+.security-tips {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(74, 144, 226, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.security-tips h4 {
+  margin: 0 0 1rem 0;
+  color: #4a90e2;
+  font-size: 16px;
+}
+
+.security-tips ul {
+  margin: 0;
+  padding-left: 0;
+  line-height: 1.5;
+  list-style: none;
+}
+
+.security-tips li {
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+  position: relative;
+  color: var(--text-white);
+  font-size: 14px;
+}
+
+.security-tips li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #4a90e2;
+  font-weight: bold;
+}

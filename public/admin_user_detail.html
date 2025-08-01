@@ -27,11 +27,11 @@
                 <span class="admin-badge">{{ user.username }}</span>
             </div>
             <div class="admin-actions">
-                <a href="{{ url_for('admin_dashboard') }}" class="admin-btn">
+                <a href="{{ url_for('login.admin_dashboard') }}" class="admin-btn">
                     <span>←</span>
                     Back to Dashboard
                 </a>
-                <a href="{{ url_for('logout') }}" class="admin-btn danger">
+                <a href="{{ url_for('login.logout') }}" class="admin-btn danger">
                     <span>🚪</span>
                     Logout
                 </a>
@@ -54,7 +54,7 @@
                             {% else %}
                                 <span>ℹ️</span>
                             {% endif %}
-                            {{ message }}
+                            {{ message|e }}
                         </div>
                     {% endfor %}
                 </div>
@@ -245,12 +245,12 @@
         <!-- Action Buttons -->
         <div class="admin-actions-section">
             <div class="action-buttons">
-                <a href="{{ url_for('admin_dashboard') }}" class="action-btn secondary">
+                <a href="{{ url_for('login.admin_dashboard') }}" class="action-btn secondary">
                     <span>←</span>
                     Back to Dashboard
                 </a>
                 
-                <form style="display: inline;" method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" 
+                <form style="display: inline;" method="POST" action="{{ url_for('login.admin_delete_user', user_id=user.id) }}" 
                       onsubmit="return confirm('⚠️ DANGER: Are you sure you want to permanently delete {{ user.username }}?\n\nThis action cannot be undone and will remove:\n• All user data\n• Profile information\n• Account access\n\nType DELETE to confirm:') && prompt('Type DELETE to confirm:') === 'DELETE';">
                     <button type="submit" class="action-btn danger">
                         <span>🗑️</span>

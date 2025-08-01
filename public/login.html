@@ -27,6 +27,13 @@
     </div>
   </div>
 
+  <!-- Back to Home Arrow -->
+  <div class="back-home-arrow">
+    <a href="/" aria-label="Back to Home">
+      <span aria-hidden="true">← Home</span>
+    </a>
+  </div>
+
   <!-- Language Selector -->
   <div class="language-box">
     <label for="languageSelector" class="sr-only">Select Language</label>
@@ -54,6 +61,19 @@
         <h2>Welcome Back</h2>
         <p>Sign in to continue your cultural journey</p>
       </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash-message flash-{{ category }}">
+                <span class="flash-text">{{ message|e }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
 
       <form class="login-form" id="login-form" method="POST" action="/login">
         <div class="input-group">
@@ -111,6 +131,7 @@
         </button>
       </form>
 
+      {% if config.GOOGLE_OAUTH_ENABLED %}
       <div class="divider">
         <span>or continue with</span>
       </div>
@@ -121,6 +142,7 @@
           <span style="color: #1a202c; font-weight: 500;">Google</span>
         </a>
       </div>
+      {% endif %}
     </div>
 
     <div class="bottom-section">

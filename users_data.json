@@ -12,22 +12,38 @@
     "online_end_time": null,
     "is_google_user": false,
     "created_at": "2025-07-29T18:11:34.333055",
-    "last_login": "2025-07-30T19:11:44.151384"
+    "last_login": "2025-08-01T09:13:33.725174"
   },
   {
-    "id": "0f2b72d9-125a-4bfb-bccf-0be66a90b5f9",
+    "id": "c1c73e15-f861-44d7-a6bd-17ffda38ba02",
     "username": "junhao",
     "email": "kwajunhao@gmail.com",
-    "password": "pbkdf2:sha256:600000$hDKHBwngnupKsYoY$3f170825748fee01e43cecff3393b97f5d218acb930679da58e0da9e96234470",
+    "password": "scrypt:32768:8:1$W8592NjZHuAuNsn5$fb203461fd4f07237a63e06c215e1bd4505ae7df6a79f9281dbb70e050a7024111749967bc1d29e1c36b1ebd42b9cbf330f1dda6557051d55c65ce5e775b78fe",
     "profile_picture": null,
+    "occupation": "Student",
+    "birthday": null,
+    "labels": null,
+    "online_start_time": "05:14pm",
+    "online_end_time": "05:17pm",
+    "is_google_user": false,
+    "email_verified": true,
+    "created_at": "2025-08-01T09:12:41.529982",
+    "last_login": "2025-08-01T09:13:21.520381"
+  },
+  {
+    "id": "9f26e7a9-b946-48b2-9f6f-b585d2e3d613",
+    "username": "junhao3",
+    "email": "hsoeun1734@gmail.com",
+    "password": "scrypt:32768:8:1$YcvryvV8wmWr6Sv5$2188768cf1e042560318a33358dd428919cfd1d44e66cd93e0afa663e2541ca6cb7c3c1c6bd9f2e0a0dbce4fd3b7ed3aa72ba52682409cb19827eb66d9d33454",
+    "profile_picture": "https://lh3.googleusercontent.com/a/ACg8ocLWtBs73fAiz8aXnIG1h9vUdqqQ2dIA_HjJepIbPmir7B-m9h0=s96-c",
     "occupation": null,
     "birthday": null,
     "labels": null,
     "online_start_time": null,
     "online_end_time": null,
-    "is_google_user": false,
+    "is_google_user": true,
     "email_verified": true,
-    "created_at": "2025-07-31T07:16:39.197249",
-    "last_login": "2025-07-31T07:16:47.769311"
+    "created_at": "2025-08-01T09:53:57.454425",
+    "last_login": null
   }
 ]

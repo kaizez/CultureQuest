@@ -27,11 +27,11 @@
                 <span class="admin-badge">Admin</span>
             </div>
             <div class="admin-actions">
-                <a href="{{ url_for('admin_export_users') }}" class="admin-btn">
+                <a href="{{ url_for('login.admin_export_users') }}" class="admin-btn">
                     <span>📊</span>
                     Export Users
                 </a>
-                <a href="{{ url_for('logout') }}" class="admin-btn danger">
+                <a href="{{ url_for('login.logout') }}" class="admin-btn danger">
                     <span>🚪</span>
                     Logout
                 </a>
@@ -54,7 +54,7 @@
                             {% else %}
                                 <span>ℹ️</span>
                             {% endif %}
-                            {{ message }}
+                            {{ message|e }}
                         </div>
                     {% endfor %}
                 </div>
@@ -154,7 +154,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="action-btn view">
+                                    <a href="{{ url_for('login.admin_user_detail', user_id=user.id) }}" class="action-btn view">
                                         <span>👁️</span>
                                         View More
                                     </a>
@@ -215,7 +215,7 @@
                 <div class="sidebar-card">
                     <h3 class="sidebar-title">Quick Actions</h3>
                     <div class="quick-actions">
-                        <a href="{{ url_for('admin_export_users') }}" class="quick-action-btn">
+                        <a href="{{ url_for('login.admin_export_users') }}" class="quick-action-btn">
                             <span>📊</span>
                             Export All Users
                         </a>
@@ -223,7 +223,7 @@
                             <span>🔄</span>
                             Refresh Dashboard
                         </button>
-                        <a href="{{ url_for('login_page') }}" class="quick-action-btn">
+                        <a href="{{ url_for('login.login_page') }}" class="quick-action-btn">
                             <span>👁️</span>
                             View Login Page
                         </a>
