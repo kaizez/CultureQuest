@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password | CultureQuest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='forget.css') }}">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-container">
+        <div class="gradient-bg"></div>
+        <div class="floating-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+        <div class="shooting-stars">
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="auth-wrapper">
+            <!-- Back to Login Link -->
+            <div class="back-link">
+                <a href="{{ url_for('login.login_page') }}" class="back-btn">
+                    <span>←</span>
+                    Back to Login
+                </a>
+            </div>
+
+            <!-- Forgot Password Card -->
+            <div class="auth-card">
+                <div class="card-header">
+                    <h2>Forgot Password?</h2>
+                    <p>No worries! Enter your email address and we'll send you a verification code to reset your password.</p>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}">
+                                    {% if category == 'success' %}
+                                        <span class="flash-icon">✅</span>
+                                    {% elif category == 'error' or category == 'danger' %}
+                                        <span class="flash-icon">❌</span>
+                                    {% else %}
+                                        <span class="flash-icon">ℹ️</span>
+                                    {% endif %}
+                                    <span class="flash-text">{{ message|e }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Forgot Password Form -->
+                <form method="POST" action="{{ url_for('login.forgot_password') }}" class="login-form" id="forgotPasswordForm">
+                    <div class="input-group">
+                        <label for="email" class="input-label">Email Address</label>
+                        <div class="input-wrapper">
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                placeholder="Enter your email address"
+                                required
+                                autocomplete="email"
+                            >
+                            <span class="input-icon" aria-hidden="true">📧</span>
+                        </div>
+                        <span class="input-help">We'll send a 6-digit verification code to this email</span>
+                    </div>
+
+                    <button type="submit" class="login-btn" id="submitButton">
+                        <span class="btn-text">Send Verification Code</span>
+                        <span class="btn-loader" aria-hidden="true"></span>
+                    </button>
+                </form>
+
+                <!-- Additional Info -->
+                <div class="auth-footer">
+                    <div class="divider">
+                        <span>Or</span>
+                    </div>
+                    
+                    <div class="auth-links">
+                        <a href="{{ url_for('login.login_page') }}" class="auth-link">
+                            <span>🔐</span>
+                            Remember your password? Sign In
+                        </a>
+                        
+                        <a href="{{ url_for('login.signup_page') }}" class="auth-link">
+                            <span>👤</span>
+                            Don't have an account? Sign Up
+                        </a>
+                    </div>
+
+                    <!-- Security Note -->
+                    <div class="security-tip">
+                        <strong>Security Notice:</strong> 
+                        The verification code will expire in 15 minutes. 
+                        Check your spam folder if you don't receive it.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form submission with loading state
+        document.getElementById('forgotPasswordForm').addEventListener('submit', function(e) {
+            const submitButton = document.getElementById('submitButton');
+            const btnText = submitButton.querySelector('.btn-text');
+            const btnIcon = submitButton.querySelector('.btn-icon');
+            const btnLoader = submitButton.querySelector('.btn-loader');
+            
+            // Show loading state
+            submitButton.classList.add('loading');
+            btnText.style.display = 'none';
+            btnIcon.style.display = 'none';
+            btnLoader.style.display = 'block';
+            submitButton.disabled = true;
+            
+            // Reset form state after 30 seconds (in case of slow response)
+            setTimeout(() => {
+                submitButton.classList.remove('loading');
+                btnText.style.display = 'inline';
+                btnIcon.style.display = 'inline';
+                btnLoader.style.display = 'none';
+                submitButton.disabled = false;
+            }, 30000);
+        });
+
+        // Input interaction like style.css
+        const emailInput = document.getElementById('email');
+        const inputWrapper = emailInput.closest('.input-wrapper');
+        const inputGroup = emailInput.closest('.input-group');
+        
+        // Focus and blur effects
+        emailInput.addEventListener('focus', function() {
+            inputWrapper.classList.add('focused');
+            inputGroup.classList.add('active');
+        });
+        
+        emailInput.addEventListener('blur', function() {
+            inputWrapper.classList.remove('focused');
+            inputGroup.classList.remove('active');
+            
+            // Simple validation feedback
+            if (this.value && this.checkValidity()) {
+                inputWrapper.classList.add('valid');
+            } else {
+                inputWrapper.classList.remove('valid');
+            }
+        });
+        
+        // Email validation with visual feedback
+        emailInput.addEventListener('input', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            // Remove previous states
+            inputWrapper.classList.remove('valid', 'invalid');
+            
+            // Real-time typing animation
+            if (email.length > 0) {
+                this.classList.add('has-content');
+            } else {
+                this.classList.remove('has-content');
+            }
+            
+            if (email && emailRegex.test(email)) {
+                inputWrapper.classList.add('valid');
+            } else if (email) {
+                inputWrapper.classList.add('invalid');
+            }
+        });
+
+        // Auto-focus email input with subtle delay
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                document.getElementById('email').focus();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f8f9fa;
+  }
+  
+  .admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #fff;
+    border-bottom: 1px solid #ccc;
+    padding: 10px 20px;
+  }
+  
+  .logo {
+    height: 40px;
+  }
+  
+  h1 {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+    font-size: 1.5em;
+  }
+  
+  .signout-btn {
+    color: #fff;
+    background-color: #dc3545;
+    padding: 6px 12px;
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  
+  main {
+    padding: 20px;
+  }
+  
+  .stats, .recent-users {
+    background: #fff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  ul#recentUsersList {
+    list-style: none;
+    padding-left: 0;
+  }
+  
+  ul#recentUsersList li {
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+  }
+  

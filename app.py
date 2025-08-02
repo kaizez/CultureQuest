@@ -1,19 +1,58 @@
 import os
-from flask import Flask, render_template
+import sys
+import uuid
+import pymysql
+from flask import Flask, render_template, send_from_directory, abort
 from flask_socketio import SocketIO
+from dotenv import load_dotenv
+from jinja2 import FileSystemLoader, ChoiceLoader
+
+# Add current directory and module directories to Python path for proper imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+sys.path.insert(0, os.path.join(current_dir, 'challenge'))
+sys.path.insert(0, os.path.join(current_dir, 'chatapp_rewards'))  
+sys.path.insert(0, os.path.join(current_dir, 'login'))
+
+# Import blueprints from each module
+# Change working directory temporarily to import from each module
+import os
+old_cwd = os.getcwd()
+
+# Import shared database
+from shared_db import db
+
+# Import challenge module
+os.chdir(os.path.join(current_dir, 'challenge'))
 from challenge import challenge_bp
 from admin_screening import admin_screening_bp
 from event import event_bp
+
+# Import chatapp_rewards module
+os.chdir(os.path.join(current_dir, 'chatapp_rewards'))
 from chat import chat_bp, handle_join, handle_leave, handle_chat_message
 from chat_manage import chat_manage_bp
 from rewards import rewards_bp
-from models import db, ChatRoom, RewardItem, UserPoints
-import challenge_models
-from dotenv import load_dotenv
+from models import ChatRoom, RewardItem, UserPoints
+
+# Import login module
+os.chdir(os.path.join(current_dir, 'login'))
+import sys
+login_module_path = os.path.join(current_dir, 'login', 'login.py')
+import importlib.util
+spec = importlib.util.spec_from_file_location("login_module", login_module_path)
+login_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(login_module)
+login_bp = login_module.login_bp
+google_bp = login_module.google_bp
+init_database = login_module.init_database
+
+# Restore original working directory
+os.chdir(old_cwd)
 
 def load_env():
     """Load environment variables from .env file."""
-    basedir = os.path.abspath(os.path.dirname(__file__))
+    basedir = os.getcwd()
     dotenv_path = os.path.join(basedir, '.env')
     if os.path.exists(dotenv_path):
         print(f"Loading .env file from {dotenv_path}")
@@ -24,21 +63,36 @@ def load_env():
         if api_key:
             print(f"[OK] VirusTotal API key loaded (length: {len(api_key)})")
         else:
-            print("[ERROR] VirusTotal API key not found in environment")
+            print("[WARNING] VirusTotal API key not found in environment")
     else:
         print("Warning: .env file not found.")
         print(f"Looking for .env at: {dotenv_path}")
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Files in directory: {os.listdir('.')}")
 
 # Load environment variables
 load_env()
 
 # Initialize the Flask app
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='static')
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production-' + str(uuid.uuid4()))
+
+# Configure multiple template directories
+template_loaders = [
+    FileSystemLoader(os.path.join(current_dir, 'challenge/templates')),
+    FileSystemLoader(os.path.join(current_dir, 'chatapp_rewards/templates')),  
+    FileSystemLoader(os.path.join(current_dir, 'login/public'))
+]
+app.jinja_loader = ChoiceLoader(template_loaders)
 
 # Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-very-long-and-random-secret-key')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
+
+# Configure OAuth settings
+app.config['OAUTHLIB_INSECURE_TRANSPORT'] = os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', 'False').lower() == 'true'
+app.config['OAUTHLIB_RELAX_TOKEN_SCOPE'] = True
+
+# Force HTTPS and correct hostname for OAuth redirects
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+app.config['SERVER_NAME'] = os.environ.get('OAUTH_HOSTNAME', '127.0.0.1:5000')
 
 # Build database URI from individual environment variables
 db_host = os.environ.get('DB_HOST')
@@ -67,10 +121,10 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db.init_app(app)
 socketio = SocketIO(app)
 
-# Create tables if not exist and seed default chat rooms and rewards
+# Create tables if not exist
 with app.app_context():
     db.create_all()
-    print("[OK] Database tables created/verified")
+    print("[OK] All database tables created/verified")
     
     # Create default chat rooms if they don't exist
     if ChatRoom.query.count() == 0:
@@ -131,15 +185,40 @@ with app.app_context():
         db.session.commit()
         print("[OK] Default reward items created")
 
-# Register Blueprints
-app.register_blueprint(challenge_bp, url_prefix='/host')
-app.register_blueprint(admin_screening_bp, url_prefix='/admin')
-app.register_blueprint(event_bp, url_prefix='/event')
-app.register_blueprint(chat_bp)
-app.register_blueprint(chat_manage_bp)
-app.register_blueprint(rewards_bp)
+# Register Blueprints without URL prefixes so routes are accessible directly
+# Challenge module blueprints
+app.register_blueprint(challenge_bp, url_prefix='/host')  # Keep /host for challenge routes
+app.register_blueprint(admin_screening_bp, url_prefix='/admin')  # Keep /admin for admin routes  
+app.register_blueprint(event_bp, url_prefix='/event')  # Keep /event for event routes
 
-# SocketIO event handlers
+# Chat/Rewards module blueprints - remove prefixes to make routes accessible directly
+app.register_blueprint(chat_bp)  # This will make /chat routes accessible directly
+app.register_blueprint(chat_manage_bp)  # This will make chat management routes accessible  
+app.register_blueprint(rewards_bp)  # This will make /rewards routes accessible directly
+
+# Login module blueprints
+app.register_blueprint(login_bp)  # Login routes accessible directly
+
+# Register Google blueprint if it was created (i.e., if credentials are available)
+if google_bp is not None:
+    app.register_blueprint(google_bp, url_prefix='/auth')
+    app.config['GOOGLE_OAUTH_ENABLED'] = True
+else:
+    app.config['GOOGLE_OAUTH_ENABLED'] = False
+
+# Static files are now served automatically by Flask from the 'static' folder
+
+# Handle uploaded files from challenge module specifically
+@app.route('/uploads/<filename>')
+def serve_challenge_uploads(filename):
+    """Serve uploaded files from challenge module"""
+    upload_path = os.path.join(current_dir, 'challenge/static/uploads')
+    if os.path.exists(os.path.join(upload_path, filename)):
+        return send_from_directory(upload_path, filename)
+    abort(404)
+
+
+# SocketIO event handlers for chat functionality
 @socketio.on('join')
 def on_join(data):
     """Handle user joining a chat room"""
@@ -155,9 +234,27 @@ def handle_my_custom_event(json):
     """Handle chat messages"""
     handle_chat_message(socketio, json)
 
-@app.route('/')
-def landing_page():
-    return render_template('landing_page.html')
-
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    # Initialize login database with timeout handling
+    print("Initializing database...")
+    try:
+        init_database()
+        print("[OK] Database initialized successfully")
+    except Exception as e:
+        print(f"[WARNING] Database initialization failed: {e}")
+        print("Continuing without database initialization...")
+    
+    # Use mkcert certificates for HTTPS
+    cert_file = 'login/localhost+1.pem'
+    key_file = 'login/localhost+1-key.pem'
+    
+    # For now, let's use HTTP to debug the connection issues
+    print("* Starting application in HTTP mode for debugging...")
+    print("* Application starting at: http://127.0.0.1:5000")
+    
+    try:
+        socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+    except Exception as e:
+        print(f"X Failed to start server: {e}")
+        import traceback
+        traceback.print_exc()

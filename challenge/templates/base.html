@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CultureQuest{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Base CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/challenge-style.css') }}">
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    
+    <!-- Page-specific CSS -->
+    {% block extra_css %}{% endblock %}
+    
+    <!-- Head Scripts -->
+    {% block scripts_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    
+    <!-- Navigation Bar -->
+    {% if not hide_navbar %}
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <a href="{{ url_for('login.landing_page') }}">
+                    <div class="logo">C</div>
+                    <h1>CultureQuest</h1>
+                </a>
+            </div>
+            
+            <div class="navbar-menu">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a href="{{ url_for('event.event_page') }}" class="nav-link">View Challenges</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="navbar-actions">
+                <a href="{{ url_for('challenge.create_challenge') }}" class="sign-in-btn">Host Challenge</a>
+                <a href="{{ url_for('admin_screening.admin_page') }}" class="demo-btn">Admin</a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    {% block footer %}{% endblock %}
+    
+    <!-- Base JavaScript -->
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    
+    <!-- Page-specific JavaScript -->
+    {% block extra_js %}{% endblock %}
+    
+</body>
+</html>

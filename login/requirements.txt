@@ -1,0 +1,6 @@
+# Core Flask Framework (Python 3.13 compatible)
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Database - Raw PyMySQL (no SQLAlchemy needed)
+PyMySQL==1.1.0

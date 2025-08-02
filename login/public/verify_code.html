@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Code - CultureQuest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='verify_code.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Security Indicator -->
+    <div class="security-indicator" id="security-indicator">
+        🔒 Secure Connection
+    </div>
+
+    <!-- Animated Background -->
+    <div class="bg-container">
+        <div class="gradient-bg"></div>
+        <div class="floating-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="signup-card">
+            <div class="card-header">
+                <h2>🔐 Verify Your Code</h2>
+                <p>We've sent a 6-digit verification code to <strong>{{ email }}</strong></p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">
+                                {% if category == 'success' %}
+                                    <span class="flash-icon">✅</span>
+                                {% elif category == 'error' or category == 'danger' %}
+                                    <span class="flash-icon">❌</span>
+                                {% else %}
+                                    <span class="flash-icon">ℹ️</span>
+                                {% endif %}
+                                <span class="flash-text">{{ message|e }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Verification Form -->
+            <form method="POST" action="{{ url_for('login.verify_reset_code') }}" class="verify-form" id="verifyForm">
+                <div class="input-group">
+                    <label for="code" class="input-label">Verification Code</label>
+                    <div class="code-input-container">
+                        <input 
+                            type="text" 
+                            id="code" 
+                            name="code" 
+                            class="code-input" 
+                            placeholder="000000"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            required
+                            autocomplete="off"
+                            spellcheck="false"
+                        />
+                        <span class="input-icon" aria-hidden="true">🔢</span>
+                    </div>
+                    <span class="input-help">Enter the 6-digit code sent to your email</span>
+                </div>
+
+                <button type="submit" class="signup-btn-primary" id="verifyBtn">
+                    <span class="btn-text">Verify Code</span>
+                    <span class="btn-loader" aria-hidden="true" style="display: none;"></span>
+                </button>
+            </form>
+
+            <!-- Resend Code -->
+            <div class="resend-section">
+                <p class="resend-text">Didn't receive the code?</p>
+                <button type="button" class="resend-btn" id="resendBtn" onclick="resendCode()">
+                    <span class="resend-text">Resend Code</span>
+                    <span class="resend-loader" style="display: none;">Sending...</span>
+                </button>
+                <div class="resend-timer" id="resendTimer" style="display: none;">
+                    Resend available in <span id="countdown">60</span> seconds
+                </div>
+            </div>
+
+            <!-- Back Link -->
+            <div class="back-section">
+                <a href="{{ url_for('login.forgot_password_page') }}" class="back-link">
+                    ← Back to Email Entry
+                </a>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="security-notice">
+                <div class="security-icon">🛡️</div>
+                <div class="security-content">
+                    <strong>Security Notice:</strong>
+                    <ul>
+                        <li>This code expires in 15 minutes</li>
+                        <li>You have 3 attempts to enter the correct code</li>
+                        <li>Check your spam folder if you don't see the email</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-format code input
+        const codeInput = document.getElementById('code');
+        
+        codeInput.addEventListener('input', function(e) {
+            // Only allow numbers
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Auto-submit when 6 digits are entered
+            if (this.value.length === 6) {
+                // Add small delay for user feedback
+                setTimeout(() => {
+                    document.getElementById('verifyForm').submit();
+                }, 500);
+            }
+        });
+
+        // Auto-focus code input
+        window.addEventListener('load', function() {
+            codeInput.focus();
+        });
+
+        // Resend functionality with timer
+        let resendTimer = null;
+        let countdown = 60;
+
+        function resendCode() {
+            const resendBtn = document.getElementById('resendBtn');
+            const resendText = resendBtn.querySelector('.resend-text');
+            const resendLoader = resendBtn.querySelector('.resend-loader');
+            const timerDiv = document.getElementById('resendTimer');
+            const countdownSpan = document.getElementById('countdown');
+
+            // Show loading state
+            resendText.style.display = 'none';
+            resendLoader.style.display = 'inline';
+            resendBtn.disabled = true;
+
+            // Make AJAX request to resend code
+            fetch('{{ url_for("login.resend_reset_code") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showMessage(data.message, 'success');
+                    startResendTimer();
+                } else {
+                    // Show error message
+                    showMessage(data.message, 'error');
+                    // Reset button state
+                    resendText.style.display = 'inline';
+                    resendLoader.style.display = 'none';
+                    resendBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Error resending code. Please try again.', 'error');
+                // Reset button state
+                resendText.style.display = 'inline';
+                resendLoader.style.display = 'none';
+                resendBtn.disabled = false;
+            });
+        }
+
+        function startResendTimer() {
+            const resendBtn = document.getElementById('resendBtn');
+            const resendText = resendBtn.querySelector('.resend-text');
+            const resendLoader = resendBtn.querySelector('.resend-loader');
+            const timerDiv = document.getElementById('resendTimer');
+            const countdownSpan = document.getElementById('countdown');
+
+            // Hide button and show timer
+            resendBtn.style.display = 'none';
+            timerDiv.style.display = 'block';
+            
+            countdown = 60;
+            countdownSpan.textContent = countdown;
+
+            resendTimer = setInterval(() => {
+                countdown--;
+                countdownSpan.textContent = countdown;
+
+                if (countdown <= 0) {
+                    clearInterval(resendTimer);
+                    // Show button again
+                    timerDiv.style.display = 'none';
+                    resendBtn.style.display = 'inline-block';
+                    resendText.style.display = 'inline';
+                    resendLoader.style.display = 'none';
+                    resendBtn.disabled = false;
+                }
+            }, 1000);
+        }
+
+        function showMessage(message, type) {
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flash-message ${type}`;
+            messageDiv.innerHTML = `
+                <span class="flash-icon">${type === 'success' ? '✅' : '❌'}</span>
+                <span class="flash-text">${message}</span>
+            `;
+
+            // Insert at top of card
+            const card = document.querySelector('.signup-card');
+            const header = document.querySelector('.card-header');
+            card.insertBefore(messageDiv, header.nextSibling);
+
+            // Remove after 5 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Form submission handling
+        document.getElementById('verifyForm').addEventListener('submit', function() {
+            const verifyBtn = document.getElementById('verifyBtn');
+            const btnText = verifyBtn.querySelector('.btn-text');
+            const btnLoader = verifyBtn.querySelector('.btn-loader');
+
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline-block';
+            verifyBtn.disabled = true;
+        });
+
+        // Clear any flash messages after 10 seconds
+        setTimeout(() => {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(msg => msg.remove());
+        }, 10000);
+    </script>
+
+</body>
+</html>

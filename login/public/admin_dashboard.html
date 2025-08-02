@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Modern Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <!-- Animated Background - Same as your style.css -->
+    <div class="admin-bg">
+        <div class="gradient-bg"></div>
+        <div class="floating-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <nav class="admin-nav">
+            <div class="admin-logo">
+                <h1>Admin Dashboard</h1>
+                <span class="admin-badge">Admin</span>
+            </div>
+            <div class="admin-actions">
+                <a href="{{ url_for('login.admin_export_users') }}" class="admin-btn">
+                    <span>📊</span>
+                    Export Users
+                </a>
+                <a href="{{ url_for('login.logout') }}" class="admin-btn danger">
+                    <span>🚪</span>
+                    Logout
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            {% if category == 'success' %}
+                                <span>✅</span>
+                            {% elif category == 'danger' %}
+                                <span>❌</span>
+                            {% else %}
+                                <span>ℹ️</span>
+                            {% endif %}
+                            {{ message|e }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Statistics Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_users }}</div>
+                <div class="stat-label">Total Users</div>
+                <div class="stat-change">
+                    <span>📈</span>
+                    +{{ users_this_week }} this week
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ google_users }}</div>
+                <div class="stat-label">Google Users</div>
+                <div class="stat-change">
+                    <span>🌐</span>
+                    {{ "%.1f"|format((google_users/total_users*100) if total_users > 0 else 0) }}% of total
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ regular_users }}</div>
+                <div class="stat-label">Regular Users</div>
+                <div class="stat-change">
+                    <span>👤</span>
+                    {{ "%.1f"|format((regular_users/total_users*100) if total_users > 0 else 0) }}% of total
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ users_today }}</div>
+                <div class="stat-label">New Today</div>
+                <div class="stat-change">
+                    <span>✨</span>
+                    Fresh registrations
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <div class="content-header">
+                    <h2 class="content-title">All Users</h2>
+                    <span class="content-badge">{{ total_users }} users</span>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="🔍 Search users..." id="userSearch">
+                </div>
+
+                {% if all_users %}
+                    <table class="users-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in all_users %}
+                            <tr>
+                                <td>
+                                    <div class="user-info">
+                                        {% if user.profile_picture %}
+                                            <img src="{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar">
+                                        {% else %}
+                                            <div class="user-avatar-placeholder">
+                                                {{ user.username[0].upper() }}
+                                            </div>
+                                        {% endif %}
+                                        <div class="user-details">
+                                            <h4>{{ user.username }}</h4>
+                                            <p>{{ user.email }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if user.is_google_user %}
+                                        <span class="user-badge google">Google</span>
+                                    {% else %}
+                                        <span class="user-badge regular">Regular</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.created_at %}
+                                        {% set created_date = user.created_at[:10] if user.created_at is string else user.created_at.strftime('%Y-%m-%d') %}
+                                        {{ created_date }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('login.admin_user_detail', user_id=user.id) }}" class="action-btn view">
+                                        <span>👁️</span>
+                                        View More
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <p>No users found</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Recent Users -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Recent Users</h3>
+                    {% if recent_users %}
+                        <div class="recent-users-list">
+                            {% for user in recent_users %}
+                            <div class="recent-user-item">
+                                {% if user.profile_picture %}
+                                    <img src="{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar">
+                                {% else %}
+                                    <div class="user-avatar-placeholder">
+                                        {{ user.username[0].upper() }}
+                                    </div>
+                                {% endif %}
+                                <div class="user-details">
+                                    <h4>{{ user.username }}</h4>
+                                    <p>
+                                        {% if user.created_at %}
+                                            {% set created_date = user.created_at[:10] if user.created_at is string else user.created_at.strftime('%b %d, %Y') %}
+                                            {{ created_date }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                {% if user.is_google_user %}
+                                    <span class="user-badge google">G</span>
+                                {% else %}
+                                    <span class="user-badge regular">R</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>No recent users</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Quick Actions</h3>
+                    <div class="quick-actions">
+                        <a href="{{ url_for('login.admin_export_users') }}" class="quick-action-btn">
+                            <span>📊</span>
+                            Export All Users
+                        </a>
+                        <button onclick="refreshDashboard()" class="quick-action-btn">
+                            <span>🔄</span>
+                            Refresh Dashboard
+                        </button>
+                        <a href="{{ url_for('login.login_page') }}" class="quick-action-btn">
+                            <span>👁️</span>
+                            View Login Page
+                        </a>
+                    </div>
+                </div>
+
+                <!-- System Info -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">System Info</h3>
+                    <div class="system-info">
+                        <div class="system-info-item">
+                            <span class="system-info-label">Storage</span>
+                            <span class="system-info-value">JSON Files</span>
+                        </div>
+                        <div class="system-info-item">
+                            <span class="system-info-label">Authentication</span>
+                            <span class="system-info-value">Google OAuth</span>
+                        </div>
+                        <div class="system-info-item">
+                            <span class="system-info-label">Status</span>
+                            <span class="system-info-value">🟢 Online</span>
+                        </div>
+                        <div class="system-info-item">
+                            <span class="system-info-label">Version</span>
+                            <span class="system-info-value">v2.0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        // Search functionality
+        document.getElementById('userSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const tableRows = document.querySelectorAll('#usersTable tbody tr');
+            
+            tableRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Refresh dashboard
+        function refreshDashboard() {
+            const btn = event.target;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="loading-spinner"></span> Refreshing...';
+            
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(() => {
+            location.reload();
+        }, 300000);
+
+        // Add loading states to export button
+        document.querySelector('a[href*="export"]')?.addEventListener('click', function(e) {
+            const btn = this;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="loading-spinner"></span> Exporting...';
+            
+            // Reset after 3 seconds
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+            }, 3000);
+        });
+
+        // Check session validity on page load and visibility change
+        function checkSessionValidity() {
+            fetch('/api/check-session', {
+                method: 'GET',
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.valid) {
+                    console.log('Session invalid, redirecting to:', data.redirect);
+                    window.location.href = data.redirect;
+                }
+            })
+            .catch(error => {
+                console.error('Session check failed:', error);
+                // If session check fails, redirect to login
+                window.location.href = '/login';
+            });
+        }
+
+        // Check session on page load
+        window.addEventListener('load', function() {
+            checkSessionValidity();
+            
+            const cards = document.querySelectorAll('.stat-card, .sidebar-card, .main-content');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.6s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Check session when page becomes visible (back button)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkSessionValidity();
+            }
+        });
+
+        // Check session on page focus (back button)
+        window.addEventListener('focus', function() {
+            checkSessionValidity();
+        });
+
+        // Prevent browser back/forward cache
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                checkSessionValidity();
+            }
+        });
+    </script>
+</body>
+</html>

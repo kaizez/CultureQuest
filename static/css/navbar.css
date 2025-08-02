@@ -1,22 +1,23 @@
-/* Navigation Bar Styles */
+/* Navbar styles */
 .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    position: sticky;
-    top: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+    padding: 0;
 }
 
 .navbar-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 64px;
+    padding: 12px 20px;
 }
 
 .navbar-brand {
@@ -25,113 +26,124 @@
 }
 
 .navbar-brand a {
-    text-decoration: none;
-    color: inherit;
     display: flex;
     align-items: center;
-    gap: 8px;
+    text-decoration: none;
+    color: #333;
 }
 
 .logo {
-    width: 24px;
-    height: 24px;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 18px;
+    margin-right: 12px;
 }
 
 .navbar-brand h1 {
-    font-size: 20px;
-    font-weight: 500;
-    color: #1f2937;
-    margin: 0;
-    letter-spacing: -0.02em;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
 }
 
 .navbar-menu {
+    flex: 1;
     display: flex;
-    align-items: center;
-    gap: 32px;
+    justify-content: center;
 }
 
 .navbar-nav {
     display: flex;
     list-style: none;
-    gap: 32px;
     margin: 0;
     padding: 0;
 }
 
 .nav-item {
-    position: relative;
+    margin: 0 20px;
 }
 
 .nav-link {
+    color: #666;
     text-decoration: none;
-    color: #6b7280;
-    font-weight: 400;
-    font-size: 15px;
-    padding: 8px 0;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
     transition: all 0.2s ease;
-    display: block;
-    position: relative;
 }
 
 .nav-link:hover {
-    color: #1f2937;
-}
-
-.nav-link.active {
-    color: #1f2937;
-    font-weight: 500;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
 }
 
 .navbar-actions {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 12px;
 }
 
-.sign-in-btn {
-    color: #6b7280;
-    text-decoration: none;
-    font-weight: 400;
-    font-size: 15px;
-    transition: color 0.2s ease;
-}
-
-.sign-in-btn:hover {
-    color: #1f2937;
-}
-
-.demo-btn {
-    background: #1f2937;
-    color: white;
+.sign-in-btn, .demo-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
     text-decoration: none;
     font-weight: 500;
-    font-size: 15px;
-    padding: 8px 16px;
-    border-radius: 8px;
     transition: all 0.2s ease;
 }
 
-.demo-btn:hover {
-    background: #111827;
-    transform: translateY(-1px);
+.sign-in-btn {
+    color: #666;
+    background: transparent;
+    border: 1px solid #e5e7eb;
 }
 
-/* Mobile Responsive */
+.sign-in-btn:hover {
+    color: #333;
+    background: #f9fafb;
+}
+
+.demo-btn {
+    color: white;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+}
+
+.demo-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Add padding to body to account for fixed navbar */
+body {
+    padding-top: 80px;
+}
+
+/* Responsive design */
 @media (max-width: 768px) {
     .navbar-container {
-        padding: 0 16px;
+        padding: 12px 16px;
     }
-
-    .navbar-nav {
+    
+    .navbar-menu {
         display: none;
+    }
+    
+    .navbar-brand h1 {
+        font-size: 20px;
+    }
+    
+    .navbar-actions {
+        gap: 8px;
+    }
+    
+    .sign-in-btn, .demo-btn {
+        padding: 6px 12px;
+        font-size: 14px;
     }
 }

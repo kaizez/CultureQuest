@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | CultureQuest</title>
+  <link rel="stylesheet" href="/static/login.css" />
+  <script src="/static/lang.js"></script>
+</head>
+
+<body>
+  <!-- Subtle Animated Background -->
+  <div class="bg-container">
+    <div class="gradient-bg"></div>
+    <div class="floating-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+    <div class="shooting-stars">
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+    </div>
+  </div>
+
+  <!-- Back to Home Arrow -->
+  <div class="back-home-arrow">
+    <a href="/" aria-label="Back to Home">
+      <span aria-hidden="true">← Home</span>
+    </a>
+  </div>
+
+  <!-- Language Selector -->
+  <div class="language-box">
+    <label for="languageSelector" class="sr-only">Select Language</label>
+    <select id="languageSelector" aria-label="Language Selection">
+      <option value="en">English</option>
+      <option value="ko">한국어</option>
+      <option value="es">Español</option>
+      <option value="zh">中文</option>
+      <option value="ms">Bahasa Melayu</option>
+      <option value="hi">हिन्दी</option>
+    </select>
+  </div>
+
+  <div class="container">
+    <div class="logo-section">
+      <div class="logo-container">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="CultureQuest Logo" />
+        <div class="logo-glow"></div>
+      </div>
+      <h1 id="title">CultureQuest</h1>
+    </div>
+
+    <div class="login-card">
+      <div class="card-header">
+        <h2 id="welcome-back">Welcome Back</h2>
+        <p id="sign-in-subtitle">Sign in to continue your cultural journey</p>
+      </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+              <div class="flash-message flash-{{ category }}">
+                <span class="flash-text">{{ message|e }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form class="login-form" id="login-form" method="POST" action="/login">
+        <div class="input-group">
+          <label for="username" class="input-label" id="username-label">Username</label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="username" 
+              name="username" 
+              placeholder="Enter your username" 
+              required 
+              aria-describedby="username-help"
+            />
+            <span class="input-icon" aria-hidden="true">👤</span>
+          </div>
+          <span id="username-help" class="input-help sr-only">Enter your username</span>
+        </div>
+        
+        <div class="input-group">
+          <label for="password" class="input-label" id="password-label">Password</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              placeholder="Enter your password" 
+              required 
+              aria-describedby="password-help"
+            />
+            <span class="input-icon" aria-hidden="true">🔒</span>
+            <button 
+              type="button" 
+              id="toggle-password-btn"
+              class="toggle-password" 
+              onclick="togglePassword()"
+              aria-label="Show password"
+            >
+              <span aria-hidden="true">👁️</span>
+            </button>
+          </div>
+          <span id="password-help" class="input-help sr-only">Your password must be at least 8 characters long</span>
+        </div>
+
+        <div class="form-options">
+          <label class="remember-checkbox">
+            <input type="checkbox" checked />
+            <span class="checkmark" aria-hidden="true"></span>
+            <span class="checkbox-text" id="stay-signed-in">Stay signed in</span>
+          </label>
+          <a href="/forgot-password" class="forgot-password-link" id="forgot-password-link">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="login-btn" id="login-btn">
+          <span class="btn-text" id="sign-in-btn">Sign In</span>
+          <span class="btn-loader" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      {% if config.GOOGLE_OAUTH_ENABLED %}
+      <div class="divider">
+        <span id="or-continue-with">or continue with</span>
+      </div>
+
+      <div class="social-login">
+        <a href="/auth/google" class="social-btn" aria-label="Sign in with Google">
+          <img src="https://developers.google.com/identity/images/g-logo.png" alt="" />
+          <span style="color: #1a202c; font-weight: 500;" id="google-text">Google</span>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="bottom-section">
+      <div class="signup-section">
+        <p id="new-to-culturequest">New to CultureQuest?</p>
+        <a href="/signup" id="create-account" class="signup-btn">Create Account</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Password toggle functionality with accessibility
+    function togglePassword() {
+      const passwordInput = document.getElementById('password');
+      const toggleBtn = document.querySelector('.toggle-password');
+      const toggleIcon = toggleBtn.querySelector('span');
+      
+      // Get current language
+      const currentLang = localStorage.getItem('language') || 'en';
+      const textMap = translations[currentLang];
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleBtn.setAttribute('aria-label', textMap.hidePassword || 'Hide password');
+        toggleIcon.textContent = '🙈';
+      } else {
+        passwordInput.type = 'password';
+        toggleBtn.setAttribute('aria-label', textMap.showPassword || 'Show password');
+        toggleIcon.textContent = '👁️';
+      }
+    }
+
+    // Enhanced form submission with loading state
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      const btn = document.getElementById('login-btn');
+      const btnText = btn.querySelector('.btn-text');
+      const btnLoader = btn.querySelector('.btn-loader');
+      
+      // Show loading state
+      btn.classList.add('loading');
+      btnText.textContent = 'Signing In...';
+      btnLoader.style.display = 'inline-block';
+      btn.disabled = true;
+      
+      // Simulate loading (remove this in production)
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        btnText.textContent = 'Sign In';
+        btnLoader.style.display = 'none';
+        btn.disabled = false;
+      }, 2000);
+    });
+
+    // Input focus and validation feedback
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('focus', function() {
+        this.closest('.input-wrapper').classList.add('focused');
+        this.closest('.input-group').classList.add('active');
+      });
+      
+      input.addEventListener('blur', function() {
+        this.closest('.input-wrapper').classList.remove('focused');
+        this.closest('.input-group').classList.remove('active');
+        
+        // Simple validation feedback
+        if (this.value && this.checkValidity()) {
+          this.closest('.input-wrapper').classList.add('valid');
+        } else {
+          this.closest('.input-wrapper').classList.remove('valid');
+        }
+      });
+    });
+
+    // Subtle parallax effect (reduced for accessibility)
+    let reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    if (!reduceMotion) {
+      document.addEventListener('mousemove', (e) => {
+        const orbs = document.querySelectorAll('.orb');
+        const x = e.clientX / window.innerWidth;
+        const y = e.clientY / window.innerHeight;
+        
+        orbs.forEach((orb, index) => {
+          const speed = (index + 1) * 0.02; // Very subtle movement
+          const xMove = (x - 0.5) * 10 * speed;
+          const yMove = (y - 0.5) * 10 * speed;
+          
+          orb.style.transform = `translate(${xMove}px, ${yMove}px)`;
+        });
+      });
+    }
+
+    // Keyboard navigation enhancement
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        document.body.classList.add('keyboard-nav');
+      }
+    });
+
+    document.addEventListener('mousedown', function() {
+      document.body.classList.remove('keyboard-nav');
+    });
+
+    // Form validation with accessible error messages
+    document.getElementById('username').addEventListener('invalid', function(e) {
+      e.preventDefault();
+      this.closest('.input-group').classList.add('error');
+      this.setAttribute('aria-describedby', 'username-error');
+      
+      let errorMsg = document.getElementById('username-error');
+      if (!errorMsg) {
+        errorMsg = document.createElement('span');
+        errorMsg.id = 'username-error';
+        errorMsg.className = 'error-message';
+        this.closest('.input-group').appendChild(errorMsg);
+      }
+      errorMsg.textContent = 'Please enter a valid username or email address.';
+    });
+
+    document.getElementById('password').addEventListener('invalid', function(e) {
+      e.preventDefault();
+      this.closest('.input-group').classList.add('error');
+      this.setAttribute('aria-describedby', 'password-error');
+      
+      let errorMsg = document.getElementById('password-error');
+      if (!errorMsg) {
+        errorMsg = document.createElement('span');
+        errorMsg.id = 'password-error';
+        errorMsg.className = 'error-message';
+        this.closest('.input-group').appendChild(errorMsg);
+      }
+      errorMsg.textContent = 'Please enter your password.';
+    });
+
+    // Clear error states on input
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', function() {
+        this.closest('.input-group').classList.remove('error');
+        const errorMsg = this.closest('.input-group').querySelector('.error-message');
+        if (errorMsg) {
+          errorMsg.remove();
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
