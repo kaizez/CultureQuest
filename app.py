@@ -1,6 +1,7 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, session
 from dotenv import load_dotenv
+from db_handler import RateLimit
 from challenge import challenge_bp
 from admin_screening import admin_screening_bp
 from event import event_bp
@@ -25,7 +26,7 @@ load_env()
 app = Flask(__name__)
 
 # Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 # Build database URI from individual environment variables
 db_host = os.environ.get('DB_HOST')
@@ -65,6 +66,12 @@ app.register_blueprint(event_bp, url_prefix='/event')
 
 @app.route('/')
 def landing_page():
+    email = session.get('email')  # Get the user's email from the session
+    
+    # Check if the user has exceeded the rate limit before allowing the page load
+    if email and not check_and_update_rate_limit(email):
+        return "Too Many Requests", 429  # Return 429 if rate limit is exceeded
+
     return render_template('landing_page.html')
 
 if __name__ == '__main__':

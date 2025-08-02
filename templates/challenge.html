@@ -10,29 +10,44 @@
     <div class="challenge-form-container">
         <div class="create-challenge-section">
             <form action="{{ url_for('challenge.create_challenge') }}" method="POST" enctype="multipart/form-data" class="create-challenge-form">
-            <div class="form-group">
-                <label for="challenge_name" class="form-label">Challenge Name</label>
-                <input type="text" id="challenge_name" name="challenge_name" class="form-input" placeholder="Enter the name of your challenge" required>
-            </div>
+                {{ form.hidden_tag() }}
 
-            <div class="form-group">
-                <label for="description" class="form-label">Challenge Description</label>
-                <textarea id="description" name="description" class="form-textarea" placeholder="Describe your challenge in detail. What is it about? What will participants learn or experience?" required></textarea>
-            </div>
+                <div class="form-group">
+                    {{ form.challenge_name.label(class="form-label") }}
+                    {{ form.challenge_name(class="form-input", placeholder="Enter the name of your challenge") }}
+                    {% for error in form.challenge_name.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
 
-            <div class="form-group">
-                <label for="completion_criteria" class="form-label">How to Determine Challenge Completion</label>
-                <textarea id="completion_criteria" name="completion_criteria" class="form-textarea" placeholder="Explain how participants can show they have completed the challenge. What evidence or proof is needed?" required></textarea>
-            </div>
+                <div class="form-group">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-textarea", placeholder="Describe your challenge in detail. What is it about? What will participants learn or experience?") }}
+                    {% for error in form.description.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
 
-            <div class="form-group">
-                <label for="media" class="form-label">Upload Media (Optional)</label>
-                <input type="file" id="media" name="media" class="form-input" accept="image/*,video/*">
-                <p style="font-size: 13px; color: #6b7280; margin-top: 4px;">Upload an image or video to help explain your challenge</p>
-            </div>
+                <div class="form-group">
+                    {{ form.completion_criteria.label(class="form-label") }}
+                    {{ form.completion_criteria(class="form-textarea", placeholder="Explain how participants can show they have completed the challenge. What evidence or proof is needed?") }}
+                    {% for error in form.completion_criteria.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
 
-            <div class="form-group">
-                <button type="submit" class="form-button" style="width: 100%;" id="submit-btn">Submit Challenge</button>
+                <div class="form-group">
+                    {{ form.media.label(class="form-label") }}
+                    {{ form.media(class="form-input") }}
+                    <p style="font-size: 13px; color: #6b7280; margin-top: 4px;">Upload an image or video to help explain your challenge</p>
+                    {% for error in form.media.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="form-button" style="width: 100%;" id="submit-btn">Submit Challenge</button>
+                </div>
             </form>
         </div>
     </div>
