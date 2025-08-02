@@ -354,27 +354,38 @@ def store_reset_code(email, code):
     """Store reset code with expiration time"""
     connection = get_db_connection()
     if not connection:
+        print(f"DEBUG STORE: Database connection failed for {email}")
         return False
     
     try:
         with connection.cursor() as cursor:
             # Remove any existing reset code for this email
             cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
-            print(f"DEBUG: Deleted existing reset codes for {email}")
+            deleted_count = cursor.rowcount
+            print(f"DEBUG STORE: Deleted {deleted_count} existing reset codes for {email}")
             
-            # Insert new reset code
+            # Insert new reset code with proper timezone
             expires = datetime.now(UTC) + timedelta(minutes=15)
-            print(f"DEBUG: Inserting reset code - Email: {email}, Code: {code}, Expires: {expires}")
+            print(f"DEBUG STORE: Inserting reset code - Email: {email}, Code: {code}, Expires: {expires}")
             cursor.execute("""
                 INSERT INTO reset_codes (email, code, expires, attempts) 
                 VALUES (%s, %s, %s, 0)
             """, (email, code, expires))
             
             connection.commit()
-            print(f"DEBUG: Reset code committed to database successfully")
-            return True
+            
+            # Verify the code was inserted
+            cursor.execute("SELECT * FROM reset_codes WHERE email = %s", (email,))
+            inserted_code = cursor.fetchone()
+            if inserted_code:
+                print(f"DEBUG STORE: Reset code committed successfully - ID: {inserted_code.get('id')}, Code: {inserted_code.get('code')}")
+                return True
+            else:
+                print(f"DEBUG STORE: Failed to verify code insertion for {email}")
+                return False
     except Exception as e:
-        print(f"ERROR storing reset code: {e}")
+        print(f"DEBUG STORE: Exception storing reset code for {email}: {e}")
+        connection.rollback()
         return False
     finally:
         connection.close()
@@ -383,59 +394,71 @@ def verify_reset_code_helper(email, provided_code):
     """Verify reset code and check expiration"""
     connection = get_db_connection()
     if not connection:
+        print(f"DEBUG VERIFY: Database connection failed for {email}")
         return False, "Database connection failed"
     
     try:
         with connection.cursor() as cursor:
             # Find reset code for this email
-            cursor.execute("SELECT * FROM reset_codes WHERE email = %s", (email,))
+            cursor.execute("SELECT * FROM reset_codes WHERE email = %s ORDER BY created_at DESC LIMIT 1", (email,))
             code_data = cursor.fetchone()
             
             print(f"DEBUG VERIFY: Looking for reset code for email: {email}")
             print(f"DEBUG VERIFY: Code data found: {code_data is not None}")
             if code_data:
-                print(f"DEBUG VERIFY: Stored code: {code_data.get('code')}, Provided: {provided_code}")
+                print(f"DEBUG VERIFY: Stored code: '{code_data.get('code')}', Provided: '{provided_code}'")
+                print(f"DEBUG VERIFY: Code expires at: {code_data.get('expires')}")
+                print(f"DEBUG VERIFY: Current attempts: {code_data.get('attempts', 0)}")
             
             if not code_data:
                 print(f"DEBUG VERIFY: No reset code found in database for {email}")
                 return False, "No reset code found for this email"
             
-            # Simple expiration check (convert to UTC if needed)
-            try:
-                current_time = datetime.now(UTC)
-                expires_time = code_data['expires']
-                
-                # Handle timezone conversion
-                if hasattr(expires_time, 'tzinfo'):
-                    if expires_time.tzinfo is None:
-                        expires_time = expires_time.replace(tzinfo=UTC)
-                else:
-                    # If it's a string, parse it
-                    if isinstance(expires_time, str):
-                        expires_time = datetime.fromisoformat(expires_time.replace('Z', '+00:00'))
-                
-                if current_time > expires_time:
-                    cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
-                    connection.commit()
-                    return False, "Reset code has expired"
-            except:
-                # If timezone handling fails, skip expiration check for now
-                pass
+            # Check expiration with proper timezone handling
+            current_time = datetime.now(UTC)
+            expires_time = code_data['expires']
+            
+            # Ensure expires_time has timezone info
+            if hasattr(expires_time, 'tzinfo') and expires_time.tzinfo is None:
+                expires_time = expires_time.replace(tzinfo=UTC)
+            elif isinstance(expires_time, str):
+                try:
+                    expires_time = datetime.fromisoformat(expires_time.replace('Z', '+00:00'))
+                except:
+                    # If parsing fails, assume naive datetime is UTC
+                    expires_time = datetime.fromisoformat(expires_time).replace(tzinfo=UTC)
+            
+            print(f"DEBUG VERIFY: Current time: {current_time}")
+            print(f"DEBUG VERIFY: Expires time: {expires_time}")
+            print(f"DEBUG VERIFY: Is expired: {current_time > expires_time}")
+            
+            if current_time > expires_time:
+                print(f"DEBUG VERIFY: Code expired, deleting from database")
+                cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
+                connection.commit()
+                return False, "Reset code has expired"
             
             # Check attempts limit
-            if code_data.get('attempts', 0) >= 3:
+            attempts = code_data.get('attempts', 0)
+            if attempts >= 3:
+                print(f"DEBUG VERIFY: Too many attempts ({attempts}), code blocked")
                 return False, "Too many failed attempts. Please request a new code."
             
-            # Simple string comparison - exact match
+            # Clean and compare codes
             stored_code = str(code_data['code']).strip()
             provided_code = str(provided_code).strip()
             
+            print(f"DEBUG VERIFY: Comparing codes - stored: '{stored_code}', provided: '{provided_code}'")
+            print(f"DEBUG VERIFY: Codes match: {stored_code == provided_code}")
+            
             if stored_code == provided_code:
+                print(f"DEBUG VERIFY: Code verified successfully, deleting from database")
                 # Code matches - remove it and return success
                 cursor.execute("DELETE FROM reset_codes WHERE email = %s", (email,))
                 connection.commit()
                 return True, "Code verified successfully"
             else:
+                print(f"DEBUG VERIFY: Code mismatch, incrementing attempts")
                 # Code doesn't match - increment attempts
                 cursor.execute(
                     "UPDATE reset_codes SET attempts = COALESCE(attempts, 0) + 1 WHERE email = %s",
@@ -445,6 +468,7 @@ def verify_reset_code_helper(email, provided_code):
                 return False, "Invalid reset code"
                 
     except Exception as e:
+        print(f"DEBUG VERIFY: Exception occurred: {str(e)}")
         return False, f"Error verifying code: {str(e)}"
     finally:
         connection.close()
@@ -475,25 +499,39 @@ def store_verification_code(email, code, user_data):
     """Store verification code with expiration time and user data"""
     connection = get_db_connection()
     if not connection:
+        print(f"DEBUG STORE EMAIL: Database connection failed for {email}")
         return False
     
     try:
         with connection.cursor() as cursor:
             # Remove any existing verification code for this email
             cursor.execute("DELETE FROM verification_codes WHERE email = %s", (email,))
+            deleted_count = cursor.rowcount
+            print(f"DEBUG STORE EMAIL: Deleted {deleted_count} existing verification codes for {email}")
             
             # Insert new verification code with user data as JSON
             expires = datetime.now(UTC) + timedelta(minutes=15)
             import json
+            print(f"DEBUG STORE EMAIL: Inserting verification code - Email: {email}, Code: {code}, Expires: {expires}")
             cursor.execute("""
                 INSERT INTO verification_codes (email, code, expires, attempts, user_data) 
                 VALUES (%s, %s, %s, 0, %s)
             """, (email, code, expires, json.dumps(user_data)))
             
             connection.commit()
-            return True
+            
+            # Verify the code was inserted
+            cursor.execute("SELECT * FROM verification_codes WHERE email = %s", (email,))
+            inserted_code = cursor.fetchone()
+            if inserted_code:
+                print(f"DEBUG STORE EMAIL: Verification code committed successfully - ID: {inserted_code.get('id')}, Code: {inserted_code.get('code')}")
+                return True
+            else:
+                print(f"DEBUG STORE EMAIL: Failed to verify code insertion for {email}")
+                return False
     except Exception as e:
-        print(f"Error storing verification code: {e}")
+        print(f"DEBUG STORE EMAIL: Exception storing verification code for {email}: {e}")
+        connection.rollback()
         return False
     finally:
         connection.close()
@@ -502,15 +540,24 @@ def verify_email_code_helper(email, provided_code):
     """Verify email verification code and check expiration"""
     connection = get_db_connection()
     if not connection:
+        print(f"DEBUG EMAIL VERIFY: Database connection failed for {email}")
         return False, "Database connection failed", None
     
     try:
         with connection.cursor() as cursor:
             # Find verification code for this email
-            cursor.execute("SELECT * FROM verification_codes WHERE email = %s", (email,))
+            cursor.execute("SELECT * FROM verification_codes WHERE email = %s ORDER BY created_at DESC LIMIT 1", (email,))
             code_data = cursor.fetchone()
             
+            print(f"DEBUG EMAIL VERIFY: Looking for verification code for email: {email}")
+            print(f"DEBUG EMAIL VERIFY: Code data found: {code_data is not None}")
+            if code_data:
+                print(f"DEBUG EMAIL VERIFY: Stored code: '{code_data.get('code')}', Provided: '{provided_code}'")
+                print(f"DEBUG EMAIL VERIFY: Code expires at: {code_data.get('expires')}")
+                print(f"DEBUG EMAIL VERIFY: Current attempts: {code_data.get('attempts', 0)}")
+            
             if not code_data:
+                print(f"DEBUG EMAIL VERIFY: No verification code found in database for {email}")
                 return False, "No verification code found for this email", None
             
             # Check if code has expired (handle timezone properly)
@@ -518,34 +565,46 @@ def verify_email_code_helper(email, provided_code):
             expires_time = code_data['expires']
             
             # If expires_time is naive (no timezone), assume it's UTC
-            if expires_time.tzinfo is None:
+            if hasattr(expires_time, 'tzinfo') and expires_time.tzinfo is None:
                 expires_time = expires_time.replace(tzinfo=UTC)
+            elif isinstance(expires_time, str):
+                try:
+                    expires_time = datetime.fromisoformat(expires_time.replace('Z', '+00:00'))
+                except:
+                    expires_time = datetime.fromisoformat(expires_time).replace(tzinfo=UTC)
+            
+            print(f"DEBUG EMAIL VERIFY: Current time: {current_time}")
+            print(f"DEBUG EMAIL VERIFY: Expires time: {expires_time}")
+            print(f"DEBUG EMAIL VERIFY: Is expired: {current_time > expires_time}")
             
             if current_time > expires_time:
+                print(f"DEBUG EMAIL VERIFY: Code expired, deleting from database")
                 # Remove expired code
                 cursor.execute("DELETE FROM verification_codes WHERE email = %s", (email,))
                 connection.commit()
                 return False, "Verification code has expired", None
             
             # Check attempts limit
-            if code_data['attempts'] >= 3:
+            attempts = code_data.get('attempts', 0)
+            if attempts >= 3:
+                print(f"DEBUG EMAIL VERIFY: Too many attempts ({attempts}), code blocked")
                 return False, "Too many failed attempts. Please request a new code.", None
             
             # Check if code matches (ensure proper string comparison)
             stored_code = str(code_data['code']).strip()
             provided_code = str(provided_code).strip()
             
-            print(f"DEBUG: Stored code: '{stored_code}', Provided code: '{provided_code}'")
-            print(f"DEBUG: Codes match: {stored_code == provided_code}")
+            print(f"DEBUG EMAIL VERIFY: Comparing codes - stored: '{stored_code}', provided: '{provided_code}'")
+            print(f"DEBUG EMAIL VERIFY: Codes match: {stored_code == provided_code}")
             
             if stored_code != provided_code:
+                print(f"DEBUG EMAIL VERIFY: Code mismatch, incrementing attempts")
                 # Increment attempts
                 cursor.execute(
                     "UPDATE verification_codes SET attempts = attempts + 1 WHERE email = %s",
                     (email,)
                 )
                 connection.commit()
-                print(f"DEBUG: Code mismatch - returning False")
                 return False, "Invalid verification code", None
             
             # Code is valid - get user data and remove verification code
@@ -553,9 +612,10 @@ def verify_email_code_helper(email, provided_code):
             user_data = json.loads(code_data['user_data']) if code_data['user_data'] else None
             cursor.execute("DELETE FROM verification_codes WHERE email = %s", (email,))
             connection.commit()
-            print(f"DEBUG: Code verified successfully, returning user_data: {user_data}")
+            print(f"DEBUG EMAIL VERIFY: Code verified successfully, returning user_data: {user_data}")
             return True, "Email verified successfully", user_data
     except Exception as e:
+        print(f"DEBUG EMAIL VERIFY: Exception occurred: {str(e)}")
         return False, "Error verifying code", None
     finally:
         connection.close()
@@ -865,10 +925,22 @@ def admin_required(f):
             return redirect(url_for('login.login_page'))
         
         # Check if 2FA is pending (admin logged in but 2FA not completed)
+        # Only redirect if we're not already on the 2FA page to prevent infinite loops
         if session.get('admin_2fa_pending'):
-            return redirect(url_for('login.admin_2fa_page'))
-            
-        return f(*args, **kwargs)
+            current_endpoint = request.endpoint
+            if current_endpoint != 'login.admin_2fa_page' and current_endpoint != 'login.admin_2fa_verify':
+                return redirect(url_for('login.admin_2fa_page'))
+        
+        # Execute the protected function
+        response = f(*args, **kwargs)
+        
+        # Add cache control headers to prevent browser caching
+        if hasattr(response, 'headers'):
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        
+        return response
     return decorated_function
 
 # Routes
@@ -1174,7 +1246,19 @@ def update_profile():
 @login_bp.route('/logout')
 def logout():
     """Logout user"""
-    session.clear()  # Clear all session data
+    # Check if this was an admin logout
+    was_admin = session.get('is_admin', False)
+    admin_username = session.get('username') if was_admin else None
+    
+    # Clear all session data
+    session.clear()
+    
+    # If it was an admin, set a flag to require 2FA on any back button usage
+    if was_admin and admin_username == ADMIN_USERNAME:
+        session['admin_logged_out'] = True
+        session['admin_username'] = admin_username
+        print(f"DEBUG LOGOUT: Admin {admin_username} logged out, 2FA will be required on back button")
+    
     return redirect(url_for('login.login_page'))
 
 @login_bp.route('/auth/google/callback')
@@ -1233,6 +1317,9 @@ def google_callback():
 @login_bp.route('/forgot-password', methods=['GET'])
 def forgot_password_page():
     """Forgot password page"""
+    # Clear any existing reset session to allow fresh requests
+    session.pop('reset_email', None)
+    session.pop('code_verified', None)
     return render_template('forget.html')
 
 @login_bp.route('/forgot-password', methods=['POST'])
@@ -1376,25 +1463,27 @@ def reset_password():
 def resend_reset_code():
     """Resend reset code"""
     if 'reset_email' not in session:
-        flash('Session expired. Please start over.', 'error')
-        return redirect(url_for('login.forgot_password_page'))
+        return jsonify({'success': False, 'message': 'Session expired. Please start over.'}), 400
     
     email = session['reset_email']
     
     # Generate new code
     reset_code = generate_reset_code()
+    print(f"DEBUG RESEND: Generated new code {reset_code} for {email}")
     
     if not store_reset_code(email, reset_code):
-        flash('Error generating new code. Please try again.', 'error')
-        return redirect(url_for('login.verify_reset_code_page'))
+        print(f"DEBUG RESEND: Failed to store new code for {email}")
+        return jsonify({'success': False, 'message': 'Error generating new code. Please try again.'}), 500
+    
+    print(f"DEBUG RESEND: New code stored successfully for {email}")
     
     # Send reset email
     if send_reset_email(email, reset_code):
-        flash('New verification code sent successfully!', 'success')
-        return redirect(url_for('login.verify_reset_code_page'))
+        print(f"DEBUG RESEND: New reset email sent successfully to {email}")
+        return jsonify({'success': True, 'message': 'New verification code sent successfully!'})
     else:
-        flash('Error sending email. Please try again.', 'error')
-        return redirect(url_for('login.verify_reset_code_page'))
+        print(f"DEBUG RESEND: Failed to send new reset email to {email}")
+        return jsonify({'success': False, 'message': 'Error sending email. Please try again.'}), 500
 
 # Email Verification Routes
 @login_bp.route('/verify-email', methods=['GET'])
@@ -1468,7 +1557,7 @@ def resend_code():
     
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM verification_codes WHERE email = %s", (email,))
+            cursor.execute("SELECT * FROM verification_codes WHERE email = %s ORDER BY created_at DESC LIMIT 1", (email,))
             code_data = cursor.fetchone()
             
         if not code_data:
@@ -1484,15 +1573,83 @@ def resend_code():
     
     # Generate new verification code
     new_code = generate_verification_code()
+    print(f"DEBUG RESEND EMAIL: Generated new verification code {new_code} for {email}")
     
     # Update the stored code
     if store_verification_code(email, new_code, user_data):
+        print(f"DEBUG RESEND EMAIL: New verification code stored for {email}")
         # Send new verification email
-        send_verification_email(email, new_code)
+        if send_verification_email(email, new_code):
+            print(f"DEBUG RESEND EMAIL: New verification email sent to {email}")
+        else:
+            print(f"DEBUG RESEND EMAIL: Failed to send new verification email to {email}")
+    else:
+        print(f"DEBUG RESEND EMAIL: Failed to store new verification code for {email}")
     
     return redirect(url_for('login.verify_email_page', email=email))
 
+# Debug Routes (remove in production)
+@login_bp.route('/debug/codes/<email>')
+def debug_codes(email):
+    """Debug route to check codes in database"""
+    connection = get_db_connection()
+    if not connection:
+        return f"Database connection failed"
+    
+    try:
+        with connection.cursor() as cursor:
+            # Check reset codes
+            cursor.execute("SELECT * FROM reset_codes WHERE email = %s ORDER BY created_at DESC", (email,))
+            reset_codes = cursor.fetchall()
+            
+            # Check verification codes  
+            cursor.execute("SELECT * FROM verification_codes WHERE email = %s ORDER BY created_at DESC", (email,))
+            verification_codes = cursor.fetchall()
+            
+            result = f"<h2>Debug: Codes for {email}</h2>"
+            result += f"<h3>Reset Codes ({len(reset_codes)} found):</h3>"
+            for code in reset_codes:
+                result += f"<p>ID: {code['id']}, Code: {code['code']}, Expires: {code['expires']}, Attempts: {code['attempts']}</p>"
+            
+            result += f"<h3>Verification Codes ({len(verification_codes)} found):</h3>"
+            for code in verification_codes:
+                result += f"<p>ID: {code['id']}, Code: {code['code']}, Expires: {code['expires']}, Attempts: {code['attempts']}</p>"
+            
+            return result
+    except Exception as e:
+        return f"Error: {str(e)}"
+    finally:
+        connection.close()
+
 # API Routes
+@login_bp.route('/api/check-session', methods=['GET'])
+def check_session():
+    """Check if admin session is still valid"""
+    is_admin = session.get('is_admin', False)
+    admin_username = session.get('username')
+    admin_logged_out = session.get('admin_logged_out', False)
+    
+    # If admin was logged out and trying to access via back button
+    if admin_logged_out and session.get('admin_username') == ADMIN_USERNAME:
+        # Restore admin session but require 2FA
+        session['is_admin'] = True
+        session['username'] = session['admin_username']
+        session['admin_2fa_pending'] = True
+        session.pop('admin_logged_out', None)
+        session.pop('admin_username', None)
+        print(f"DEBUG SESSION CHECK: Admin back button detected, requiring 2FA")
+        return jsonify({'valid': False, 'redirect': '/admin/2fa'})
+    
+    if is_admin and admin_username == ADMIN_USERNAME:
+        # Admin session exists but check if 2FA is needed
+        if session.get('admin_2fa_pending'):
+            return jsonify({'valid': False, 'redirect': '/admin/2fa'})
+        else:
+            return jsonify({'valid': True})
+    else:
+        # Not an admin or no session
+        return jsonify({'valid': False, 'redirect': '/login'})
+
 @login_bp.route('/api/check-email', methods=['POST'])
 def check_email():
     """Check if email is already taken"""
@@ -1714,7 +1871,10 @@ def admin_2fa_page():
     if not session.get('admin_2fa_pending'):
         return redirect(url_for('login.login_page'))
     
-    return render_template('admin_2fa.html')
+    # Check if this is a re-verification after logout (admin is already in session)
+    is_reverification = session.get('is_admin') and session.get('username') == ADMIN_USERNAME
+    
+    return render_template('admin_2fa.html', is_reverification=is_reverification)
 
 @login_bp.route('/admin/2fa/verify', methods=['POST'])
 def admin_2fa_verify():
@@ -1736,8 +1896,9 @@ def admin_2fa_verify():
         ]
         
         if code in valid_codes:
-            # 2FA successful - clear pending flag
+            # 2FA successful - clear pending flag and set short-lived access token
             session.pop('admin_2fa_pending', None)
+            session['admin_2fa_verified_at'] = datetime.now(UTC).timestamp()
             return jsonify({'success': True, 'message': '2FA verification successful'})
         else:
             return jsonify({'success': False, 'message': 'Invalid 2FA code'}), 400

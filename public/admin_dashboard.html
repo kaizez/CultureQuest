@@ -300,8 +300,30 @@
             }, 3000);
         });
 
-        // Add entrance animations
+        // Check session validity on page load and visibility change
+        function checkSessionValidity() {
+            fetch('/api/check-session', {
+                method: 'GET',
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.valid) {
+                    console.log('Session invalid, redirecting to:', data.redirect);
+                    window.location.href = data.redirect;
+                }
+            })
+            .catch(error => {
+                console.error('Session check failed:', error);
+                // If session check fails, redirect to login
+                window.location.href = '/login';
+            });
+        }
+
+        // Check session on page load
         window.addEventListener('load', function() {
+            checkSessionValidity();
+            
             const cards = document.querySelectorAll('.stat-card, .sidebar-card, .main-content');
             cards.forEach((card, index) => {
                 card.style.opacity = '0';
@@ -313,6 +335,25 @@
                     card.style.transform = 'translateY(0)';
                 }, index * 100);
             });
+        });
+
+        // Check session when page becomes visible (back button)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkSessionValidity();
+            }
+        });
+
+        // Check session on page focus (back button)
+        window.addEventListener('focus', function() {
+            checkSessionValidity();
+        });
+
+        // Prevent browser back/forward cache
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                checkSessionValidity();
+            }
         });
     </script>
 </body>

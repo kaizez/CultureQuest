@@ -421,6 +421,45 @@
       'abc123', 'Password1', 'password!', '12345678', 'sunshine'
     ]);
 
+    // Restricted usernames for security (case-insensitive)
+    const RESTRICTED_USERNAMES = new Set([
+      // System/Admin accounts
+      'admin', 'administrator', 'root', 'system', 'sys', 'superuser', 'su',
+      'mod', 'moderator', 'owner', 'master', 'manager', 'operator', 'staff',
+      
+      // Service accounts
+      'service', 'daemon', 'bot', 'api', 'system32', 'guest', 'anonymous',
+      'nobody', 'www', 'web', 'ftp', 'mail', 'postmaster', 'hostmaster',
+      
+      // Security-related
+      'security', 'audit', 'backup', 'test', 'debug', 'console', 'shell',
+      'support', 'help', 'helpdesk', 'tech', 'technical', 'IT', 'sysadmin',
+      
+      // Application-specific
+      'culturequest', 'culture', 'quest', 'app', 'application', 'server',
+      'database', 'db', 'config', 'configuration', 'settings', 'account',
+      
+      // Common abuse targets
+      'null', 'undefined', 'void', 'error', 'exception', 'warning', 'info',
+      'log', 'logs', 'tmp', 'temp', 'cache', 'public', 'private', 'shared',
+      
+      // Protocol/Network
+      'http', 'https', 'www', 'ftp', 'smtp', 'pop', 'imap', 'dns', 'dhcp',
+      'proxy', 'gateway', 'router', 'switch', 'firewall', 'vpn', 'ssl', 'tls',
+      
+      // Reserved words that could cause confusion
+      'me', 'you', 'we', 'us', 'them', 'all', 'everyone', 'someone', 'anyone',
+      'user', 'users', 'profile', 'profiles', 'login', 'signup', 'register',
+      
+      // Potential XSS/injection vectors
+      'script', 'javascript', 'js', 'css', 'html', 'xml', 'json', 'php',
+      'asp', 'jsp', 'perl', 'python', 'ruby', 'java', 'c', 'cpp', 'sql',
+      
+      // Social engineering protection
+      'facebook', 'google', 'twitter', 'instagram', 'linkedin', 'github',
+      'microsoft', 'apple', 'amazon', 'paypal', 'stripe', 'visa', 'mastercard'
+    ]);
+
     // Device fingerprinting for fraud detection
     function generateDeviceFingerprint() {
       const canvas = document.createElement('canvas');
@@ -598,6 +637,17 @@
           if (val.length > 30) return { valid: false, message: 'Username too long (max 30 chars)' };
           if (!/^[a-zA-Z0-9_]+$/.test(val)) return { valid: false, message: 'Only letters, numbers, and underscores allowed' };
           if (/^[0-9]+$/.test(val)) return { valid: false, message: 'Username cannot be all numbers' };
+          
+          // Check against restricted usernames (case-insensitive)
+          if (RESTRICTED_USERNAMES.has(val.toLowerCase())) {
+            return { valid: false, message: 'Username is restricted for security reasons' };
+          }
+          
+          // Check for variations with numbers/underscores of restricted names
+          const baseUsername = val.toLowerCase().replace(/[0-9_]+/g, '');
+          if (baseUsername && RESTRICTED_USERNAMES.has(baseUsername)) {
+            return { valid: false, message: 'Username is restricted for security reasons' };
+          }
           
           // Then check availability with server
           try {
