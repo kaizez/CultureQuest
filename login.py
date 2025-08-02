@@ -1631,14 +1631,27 @@ def check_session():
     
     # If admin was logged out and trying to access via back button
     if admin_logged_out and session.get('admin_username') == ADMIN_USERNAME:
-        # Restore admin session but require 2FA
+        # Restore admin session but require 2FA only if not already verified recently
         session['is_admin'] = True
         session['username'] = session['admin_username']
-        session['admin_2fa_pending'] = True
-        session.pop('admin_logged_out', None)
-        session.pop('admin_username', None)
-        print(f"DEBUG SESSION CHECK: Admin back button detected, requiring 2FA")
-        return jsonify({'valid': False, 'redirect': '/admin/2fa'})
+        
+        # Check if 2FA was recently verified (within last 5 minutes)
+        recent_2fa_verification = session.get('admin_2fa_verified_at')
+        current_time = datetime.now(UTC).timestamp()
+        
+        if recent_2fa_verification and (current_time - recent_2fa_verification) < 300:  # 5 minutes
+            # 2FA recently verified, allow access without requiring another 2FA
+            session.pop('admin_logged_out', None)
+            session.pop('admin_username', None)
+            print(f"DEBUG SESSION CHECK: Admin back button detected, but 2FA recently verified, allowing access")
+            return jsonify({'valid': True})
+        else:
+            # Require fresh 2FA
+            session['admin_2fa_pending'] = True
+            session.pop('admin_logged_out', None)
+            session.pop('admin_username', None)
+            print(f"DEBUG SESSION CHECK: Admin back button detected, requiring fresh 2FA")
+            return jsonify({'valid': False, 'redirect': '/admin/2fa'})
     
     if is_admin and admin_username == ADMIN_USERNAME:
         # Admin session exists but check if 2FA is needed
