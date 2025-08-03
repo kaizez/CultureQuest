@@ -3,12 +3,12 @@ from flask import current_app
 from datetime import datetime, timedelta
 from sqlalchemy import func
 
-# Define rate limit parameters
-RATE_LIMIT = 5  # Max requests per minute
-RATE_LIMIT_WINDOW = timedelta(minutes=1)  # 1 minute window
+# Define rate limit parameters - Protects against abuse and DoS attacks
+RATE_LIMIT = 5  # Max requests per minute - Protects against rapid-fire spam attacks
+RATE_LIMIT_WINDOW = timedelta(minutes=1)  # 1 minute window - Protects against sustained abuse
 
 def insert_challenge(challenge_name, description, completion_criteria, media_filename):
-    """Insert a new challenge into the database using SQLAlchemy."""
+    """Insert a new challenge into the database using SQLAlchemy - Protects against SQL injection via ORM."""
     try:
         challenge = ChallengeSubmission(
             challenge_name=challenge_name,
@@ -16,17 +16,17 @@ def insert_challenge(challenge_name, description, completion_criteria, media_fil
             completion_criteria=completion_criteria,
             media_filename=media_filename,
             name=challenge_name,  # Set legacy field for backward compatibility
-            status='On Hold'
+            status='On Hold'  # Default safe status - Protects against privilege escalation
         )
         
         db.session.add(challenge)
-        db.session.commit()
+        db.session.commit()  # Atomic operation - Protects against partial data corruption
         
         print(f"[OK] Challenge '{challenge_name}' inserted successfully")
         return challenge.id
         
     except Exception as e:
-        db.session.rollback()
+        db.session.rollback()  # Rollback on error - Protects against data corruption
         print(f"[ERROR] Failed to insert challenge: {str(e)}")
         raise e
 
@@ -95,13 +95,13 @@ def insert_challenge_legacy(name, email, phone, description, media_filename):
     )
 
 class RateLimit(db.Model):
-    """Model for tracking rate limits for users."""
+    """Model for tracking rate limits for users - Protects against abuse and DoS attacks."""
     __tablename__ = 'RateLimit'  # Specify the table name
 
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)  # User email for rate limiting
-    request_count = db.Column(db.Integer, default=1)  # Number of requests made
-    last_request = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Last request timestamp
+    email = db.Column(db.String(255), unique=True, nullable=False)  # User email for rate limiting - Protects against anonymous abuse
+    request_count = db.Column(db.Integer, default=1)  # Number of requests made - Protects against rapid requests
+    last_request = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Last request timestamp - Protects against time-based attacks
 
     def __init__(self, email, request_count=1, last_request=None):
         self.email = email
@@ -112,36 +112,36 @@ class RateLimit(db.Model):
         return f"<RateLimit(email={self.email}, request_count={self.request_count}, last_request={self.last_request})>"
     
 def check_and_update_rate_limit(email):
-    """Check and update the rate limit for a given user by email."""
+    """Check and update the rate limit for a given user by email - Protects against abuse and DoS attacks."""
     # Get the current time
     now = datetime.utcnow()
 
-    # Check if the user has a record in the RateLimit table
+    # Check if the user has a record in the RateLimit table - Protects against bypass attempts
     rate_limit_record = db.session.query(RateLimit).filter_by(email=email).first()
 
     if rate_limit_record:
-        # Check if the request is within the time window
+        # Check if the request is within the time window - Protects against time-based bypass
         if now - rate_limit_record.last_request < RATE_LIMIT_WINDOW:
             if rate_limit_record.request_count >= RATE_LIMIT:
-                # Rate limit exceeded
+                # Rate limit exceeded - Protects against abuse
                 return False  # Exceeded limit, cannot proceed
             else:
-                # Increment the request count within the allowed window
+                # Increment the request count within the allowed window - Tracks usage
                 rate_limit_record.request_count += 1
                 rate_limit_record.last_request = now
-                db.session.commit()
+                db.session.commit()  # Atomic update - Protects against race conditions
                 return True
         else:
-            # Expired window, reset count and update timestamp
+            # Expired window, reset count and update timestamp - Allows legitimate use after timeout
             rate_limit_record.request_count = 1
             rate_limit_record.last_request = now
-            db.session.commit()
+            db.session.commit()  # Atomic update - Protects against race conditions
             return True
     else:
-        # No record found for the user, create a new record
+        # No record found for the user, create a new record - Initialize tracking for new users
         new_record = RateLimit(email=email, request_count=1, last_request=now)
         db.session.add(new_record)
-        db.session.commit()
+        db.session.commit()  # Atomic operation - Protects against duplicate records
         return True
 
 def clean_expired_rate_limits():

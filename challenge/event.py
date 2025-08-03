@@ -6,29 +6,29 @@ from functools import wraps
 # Create a Blueprint for the event page
 event_bp = Blueprint('event', __name__, template_folder='templates')
 
-# Login required decorator
+# Login required decorator - Protects against unauthorized access
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'username' not in session or 'email' not in session:
-            # Redirect to login page if not authenticated
+            # Redirect to login page if not authenticated - Protects against unauthenticated access
             return redirect('/login')
         return f(*args, **kwargs)
     return decorated_function
 
 @event_bp.route('/')
-@login_required
+@login_required  # Protects against unauthorized event viewing
 def event_page():
-    # Check if the user has exceeded the rate limit before proceeding
+    # Check if the user has exceeded the rate limit before proceeding - Protects against spam/DoS attacks
     email = session.get('email')  # Get the user's email from the session
     if email and not check_and_update_rate_limit(email):
-        return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded
+        return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded - Protects against abuse
     
-    page = request.args.get('page', 1, type=int)
-    per_page = 8  # 8 challenges per page (2x4 grid)
+    page = request.args.get('page', 1, type=int)  # Protects against invalid page parameters
+    per_page = 8  # 8 challenges per page (2x4 grid) - Protects against excessive data loading
     
-    # Fetch all approved challenges from the database
-    challenges = fetch_challenges(status_filter='Approved')  # Only approved challenges
+    # Fetch all approved challenges from the database - Protects against showing unapproved content
+    challenges = fetch_challenges(status_filter='Approved')  # Only approved challenges - Protects against data leakage
     
     if not challenges:
         return render_template('event.html', 

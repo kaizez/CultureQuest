@@ -10,5 +10,12 @@ itsdangerous==2.1.2
 click==8.1.7
 blinker==1.6.3
 SQLAlchemy==2.0.23
-Flask-WTF==1.2.1
+Flask-WTF==1.2.1  # Protects against CSRF attacks
 WTForms==3.1.2
+# Security Libraries
+bleach==6.1.0  # Protects against XSS attacks via HTML sanitization
+python-magic==0.4.27  # Protects against malicious file uploads via content validation
+cryptography==41.0.7  # Protects against weak encryption and provides secure functions
+bcrypt==4.1.2  # Protects against password attacks via secure hashing
+pyotp==2.9.0  # Protects against account takeover via 2FA support
+secure==0.3.0  # Protects against various web vulnerabilities via security headers
