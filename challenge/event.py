@@ -1,11 +1,23 @@
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, render_template, request, session, redirect
 from db_handler import fetch_challenges, check_and_update_rate_limit  # Fetch function from db_handler.py
 import math
+from functools import wraps
 
 # Create a Blueprint for the event page
 event_bp = Blueprint('event', __name__, template_folder='templates')
 
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session or 'email' not in session:
+            # Redirect to login page if not authenticated
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated_function
+
 @event_bp.route('/')
+@login_required
 def event_page():
     # Check if the user has exceeded the rate limit before proceeding
     email = session.get('email')  # Get the user's email from the session

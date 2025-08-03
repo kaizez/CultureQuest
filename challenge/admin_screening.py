@@ -1,10 +1,24 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from db_handler import fetch_challenges, update_challenge_status, check_and_update_rate_limit  # Import necessary functions
+from functools import wraps
+import sqlite3
 
 # Create a Blueprint for the admin screening page
 admin_screening_bp = Blueprint('admin_screening', __name__, template_folder='templates')
 
+# Login required decorator (simplified to just check if user is logged in)
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if user is logged in
+        if 'username' not in session or 'email' not in session:
+            return redirect('/login')
+        # Allow access for any logged-in user
+        return f(*args, **kwargs)
+    return decorated_function
+
 @admin_screening_bp.route('/', methods=['GET', 'POST'])
+@login_required
 def admin_page():
     # Check if the user has exceeded the rate limit before proceeding
     email = session.get('email')  # Get the user's email from the session

@@ -5,9 +5,20 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField
 from flask_wtf.file import FileField, FileAllowed
 from wtforms.validators import DataRequired, Length
+from functools import wraps
 
 # Create a Blueprint for the challenge form
 challenge_bp = Blueprint('challenge', __name__, template_folder='templates')
+
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session or 'email' not in session:
+            # Redirect to login page if not authenticated
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated_function
 
 # WTForm for Challenge
 class ChallengeForm(FlaskForm):
@@ -17,6 +28,7 @@ class ChallengeForm(FlaskForm):
     media = FileField('Media', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'], 'Images and videos only!')])
 
 @challenge_bp.route('/', methods=['GET', 'POST'])
+@login_required
 def create_challenge():
     # Check if the user has exceeded the rate limit before proceeding
     email = session.get('email')  # Get the user's email from the session
