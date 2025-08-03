@@ -1,38 +1,52 @@
-from flask import Blueprint, render_template, request, redirect, url_for
-from db_handler import insert_challenge  # Use the insert function from db_handler.py
+from flask import Blueprint, render_template, redirect, url_for, flash, session
+from db_handler import insert_challenge, check_and_update_rate_limit  # Import the rate limiting function
 from file_upload import save_file  # Import file upload logic
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField
+from flask_wtf.file import FileField, FileAllowed
+from wtforms.validators import DataRequired, Length
 
 # Create a Blueprint for the challenge form
 challenge_bp = Blueprint('challenge', __name__, template_folder='templates')
 
-# Upload folder for storing uploaded files
-UPLOAD_FOLDER = 'static/uploads/'
+# WTForm for Challenge
+class ChallengeForm(FlaskForm):
+    challenge_name = StringField('Challenge Name', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Description', validators=[DataRequired(), Length(max=500)])
+    completion_criteria = TextAreaField('Completion Criteria', validators=[DataRequired(), Length(max=300)])
+    media = FileField('Media', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'], 'Images and videos only!')])
 
 @challenge_bp.route('/', methods=['GET', 'POST'])
 def create_challenge():
-    if request.method == 'POST':
-        challenge_name = request.form['challenge_name']
-        description = request.form['description']
-        completion_criteria = request.form['completion_criteria']
+    # Check if the user has exceeded the rate limit before proceeding
+    email = session.get('email')  # Get the user's email from the session
+    if email and not check_and_update_rate_limit(email):
+        return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded
+
+    form = ChallengeForm()
+    if form.validate_on_submit():
+        challenge_name = form.challenge_name.data
+        description = form.description.data
+        completion_criteria = form.completion_criteria.data
 
         # Handle media file upload
-        media_file = request.files.get('media')
+        media_file = form.media.data
         media_filename = None
 
-        if media_file and media_file.filename:
+        if media_file:
             try:
-                # Save the file and get its filename
                 media_filename = save_file(media_file)
             except ValueError as e:
-                return str(e)
+                flash(str(e), 'danger')
+                return render_template('challenge.html', form=form)
 
-        # Insert challenge data into SQLite database using insert_challenge
-        # We'll need to modify this to match the new fields
         insert_challenge(challenge_name, description, completion_criteria, media_filename)
-
         return redirect(url_for('challenge.success'))
 
-    return render_template('challenge.html')
+    elif form.is_submitted():
+        flash('Please correct the errors in the form.', 'danger')
+
+    return render_template('challenge.html', form=form)
 
 @challenge_bp.route('/success')
 def success():

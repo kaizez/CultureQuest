@@ -1,6 +1,11 @@
 from challenge_models import db, ChallengeSubmission
 from flask import current_app
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import func
+
+# Define rate limit parameters
+RATE_LIMIT = 5  # Max requests per minute
+RATE_LIMIT_WINDOW = timedelta(minutes=1)  # 1 minute window
 
 def insert_challenge(challenge_name, description, completion_criteria, media_filename):
     """Insert a new challenge into the database using SQLAlchemy."""
@@ -88,3 +93,60 @@ def insert_challenge_legacy(name, email, phone, description, media_filename):
         completion_criteria="Please provide completion proof",
         media_filename=media_filename
     )
+
+class RateLimit(db.Model):
+    """Model for tracking rate limits for users."""
+    __tablename__ = 'RateLimit'  # Specify the table name
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)  # User email for rate limiting
+    request_count = db.Column(db.Integer, default=1)  # Number of requests made
+    last_request = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Last request timestamp
+
+    def __init__(self, email, request_count=1, last_request=None):
+        self.email = email
+        self.request_count = request_count
+        self.last_request = last_request or datetime.utcnow()
+
+    def __repr__(self):
+        return f"<RateLimit(email={self.email}, request_count={self.request_count}, last_request={self.last_request})>"
+    
+def check_and_update_rate_limit(email):
+    """Check and update the rate limit for a given user by email."""
+    # Get the current time
+    now = datetime.utcnow()
+
+    # Check if the user has a record in the RateLimit table
+    rate_limit_record = db.session.query(RateLimit).filter_by(email=email).first()
+
+    if rate_limit_record:
+        # Check if the request is within the time window
+        if now - rate_limit_record.last_request < RATE_LIMIT_WINDOW:
+            if rate_limit_record.request_count >= RATE_LIMIT:
+                # Rate limit exceeded
+                return False  # Exceeded limit, cannot proceed
+            else:
+                # Increment the request count within the allowed window
+                rate_limit_record.request_count += 1
+                rate_limit_record.last_request = now
+                db.session.commit()
+                return True
+        else:
+            # Expired window, reset count and update timestamp
+            rate_limit_record.request_count = 1
+            rate_limit_record.last_request = now
+            db.session.commit()
+            return True
+    else:
+        # No record found for the user, create a new record
+        new_record = RateLimit(email=email, request_count=1, last_request=now)
+        db.session.add(new_record)
+        db.session.commit()
+        return True
+
+def clean_expired_rate_limits():
+    """Clean up rate limit records that have expired beyond the set window."""
+    # Remove records older than the allowed window
+    expiration_time = datetime.utcnow() - RATE_LIMIT_WINDOW
+    db.session.query(RateLimit).filter(RateLimit.last_request < expiration_time).delete()
+    db.session.commit()

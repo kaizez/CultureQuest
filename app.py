@@ -2,7 +2,7 @@ import os
 import sys
 import uuid
 import pymysql
-from flask import Flask, render_template, send_from_directory, abort
+from flask import Flask, render_template, send_from_directory, abort, session
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
 from jinja2 import FileSystemLoader, ChoiceLoader
@@ -24,9 +24,11 @@ from shared_db import db
 
 # Import challenge module
 os.chdir(os.path.join(current_dir, 'challenge'))
+from db_handler import RateLimit
 from challenge import challenge_bp
 from admin_screening import admin_screening_bp
 from event import event_bp
+from challenge_models import db
 
 # Import chatapp_rewards module
 os.chdir(os.path.join(current_dir, 'chatapp_rewards'))

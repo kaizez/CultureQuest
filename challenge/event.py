@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request
-from db_handler import fetch_challenges  # Fetch function from db_handler.py to get challenges
+from flask import Blueprint, render_template, request, session
+from db_handler import fetch_challenges, check_and_update_rate_limit  # Fetch function from db_handler.py
 import math
 
 # Create a Blueprint for the event page
@@ -7,6 +7,11 @@ event_bp = Blueprint('event', __name__, template_folder='templates')
 
 @event_bp.route('/')
 def event_page():
+    # Check if the user has exceeded the rate limit before proceeding
+    email = session.get('email')  # Get the user's email from the session
+    if email and not check_and_update_rate_limit(email):
+        return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded
+    
     page = request.args.get('page', 1, type=int)
     per_page = 8  # 8 challenges per page (2x4 grid)
     
