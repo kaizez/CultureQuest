@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile | CultureQuest</title>
+  <link rel="stylesheet" href="static/profile.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo-container">
+      <img src="/static/logo.png" alt="CultureQuest Logo" class="logo">
+      <span class="logo-text">CultureQuest</span>
+      <button class="sign-out-btn" onclick="signOut()">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <div class="profile-picture-wrapper">
+        <img src="/static/{{ profile_picture or 'default_profile.png' }}" alt="Profile Picture" class="profile-picture" id="profilePic" onerror="this.src='/static/default_profile.png'">
+        <div class="edit-photo-overlay">
+          <i class="fas fa-camera"></i>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" style="display:none">
+      </div>
+      
+      <div class="user-info">
+        <h2 class="username" id="username">{{ username.title() if username else 'User' }}</h2>
+        <span class="user-role">Culture Enthusiast</span>
+      </div>
+
+      <nav class="nav-menu">
+        <div class="nav-item active" onclick="showSection('profile')">
+          <i class="fas fa-user"></i>
+          <span>Profile</span>
+        </div>
+        <div class="nav-item" onclick="showSection('tasks')">
+          <i class="fas fa-tasks"></i>
+          <span>Tasks</span>
+        </div>
+        <div class="nav-item" onclick="showSection('friends')">
+          <i class="fas fa-users"></i>
+          <span>Friends</span>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Center Panel -->
+    <div class="center-panel">
+      <!-- Profile Section -->
+      <div id="profileSection" class="profile-section">
+        <div class="profile-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-id-card"></i>
+              {{ username.title() if username else 'User' }} Profile Information
+            </h3>
+            <button class="edit-btn" onclick="editProfile()">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-icon">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Online Time</div>
+                <div class="info-value" id="onlineTimeDisplay">
+                  {% if online_start_time and online_end_time %}
+                    {{ online_start_time }} - {{ online_end_time }}
+                  {% else %}
+                    Not set yet
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-icon">
+                <i class="fas fa-briefcase"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Occupation</div>
+                <div class="info-value" id="occupation">{{ occupation or 'Not set yet' }}</div>
+              </div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-icon">
+                <i class="fas fa-birthday-cake"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Birthday</div>
+                <div class="info-value" id="birthday">{{ birthday or 'Not set yet' }}</div>
+              </div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-icon">
+                <i class="fas fa-tags"></i>
+              </div>
+              <div class="info-content">
+                <div class="info-label">Labels</div>
+                <div class="info-value" id="labels">{{ labels or 'Not set yet' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics Card - First -->
+        <div class="stats-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-chart-bar"></i>
+              Statistics
+            </h3>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-icon">🏅</div>
+              <div class="stat-value">0</div>
+              <div class="stat-label">Badges</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">💎</div>
+              <div class="stat-value">0</div>
+              <div class="stat-label">Points</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">🔥</div>
+              <div class="stat-value">0</div>
+              <div class="stat-label">Streak</div>
+            </div>
+          </div>
+
+          <!-- Weekly Progress Chart -->
+          <div class="progress-chart">
+            <h4 style="margin-bottom: 1rem; color: var(--text-dark); font-weight: 700;">This Week's Progress</h4>
+            <div class="chart-bars">
+              <div class="chart-day">
+                <div class="chart-bar" style="height: 0%"></div>
+                <span>Mon</span>
+              </div>
+              <div class="chart-day">
+                <div class="chart-bar" style="height: 0%"></div>
+                <span>Tue</span>
+              </div>
+              <div class="chart-day">
+                <div class="chart-bar" style="height: 0%"></div>
+                <span>Wed</span>
+              </div>
+              <div class="chart-day">
+                <div class="chart-bar" style="height: 0%"></div>
+                <span>Thu</span>
+              </div>
+              <div class="chart-day">
+                <div class="chart-bar" style="height: 0%"></div>
+                <span>Fri</span>
+              </div>
+              <div class="chart-day">
+                <div class="chart-bar" style="height: 0%"></div>
+                <span>Sat</span>
+              </div>
+              <div class="chart-day">
+                <div class="chart-bar" style="height: 0%"></div>
+                <span>Sun</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Achievement Cards - Second -->
+        <div class="achievement-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-trophy"></i>
+              Recent Achievements
+            </h3>
+          </div>
+          <div class="achievements-grid">
+            <div class="achievement-item locked">
+              <div class="achievement-icon">🏆</div>
+              <div class="achievement-info">
+                <div class="achievement-name">First Steps</div>
+                <div class="achievement-desc">Complete your first quest</div>
+              </div>
+            </div>
+            <div class="achievement-item locked">
+              <div class="achievement-icon">🌟</div>
+              <div class="achievement-info">
+                <div class="achievement-name">Explorer</div>
+                <div class="achievement-desc">Visit 5 different cultures</div>
+              </div>
+            </div>
+            <div class="achievement-item locked">
+              <div class="achievement-icon">📚</div>
+              <div class="achievement-info">
+                <div class="achievement-name">Scholar</div>
+                <div class="achievement-desc">Read 10 cultural articles</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Timeline - Third/Last -->
+        <div class="activity-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-history"></i>
+              Recent Activity
+            </h3>
+          </div>
+          <div class="activity-timeline">
+            <div class="activity-item">
+              <div class="activity-time">Just now</div>
+              <div class="activity-text">Profile created successfully! Welcome to CultureQuest! 🎉</div>
+            </div>
+            <div class="activity-item placeholder">
+              <div class="activity-time">---</div>
+              <div class="activity-text">Your cultural journey starts here...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks Section -->
+      <div id="tasksSection" class="hidden">
+        <div class="profile-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-tasks"></i>
+              My Tasks
+            </h3>
+          </div>
+          <p style="text-align: center; color: var(--text-muted); padding: 2rem;">Tasks feature coming soon!</p>
+        </div>
+      </div>
+
+      <!-- Friends Section -->
+      <div id="friendsSection" class="hidden">
+        <div class="profile-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-users"></i>
+              Friends
+            </h3>
+          </div>
+          <p style="text-align: center; color: var(--text-muted); padding: 2rem;">Friends feature coming soon!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+      <div class="rank-card">
+        <div class="rank-content">
+          <h3 class="rank-title" id="rankTitle">Unranked</h3>
+          <div class="rank-icon-wrapper">
+            <div class="rank-icon" id="rankIcon">
+              <i class="fas fa-star"></i>
+            </div>
+          </div>
+          <div class="progress-container">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 0%;"></div>
+            </div>
+            <p style="margin-top: 1rem; color: var(--text-muted); font-weight: 600;">0 / 100 XP</p>
+          </div>
+          <button class="view-progress-btn" onclick="showRankModal()">
+            <i class="fas fa-trophy"></i> View Progress
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+      <h3 style="text-align: center; margin-bottom: 1rem;">Edit Profile</h3>
+      
+      <form class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Online Start Time</label>
+          <input type="time" class="form-input" id="onlineStart" value="09:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Online End Time</label>
+          <input type="time" class="form-input" id="onlineEnd" value="18:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Occupation</label>
+          <input type="text" class="form-input" id="occupationInput" placeholder="Your occupation">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Birthday</label>
+          <input type="date" class="form-input" id="birthdayInput">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Labels</label>
+          <input type="text" class="form-input" id="labelsInput" placeholder="e.g., Explorer, Foodie, Adventurer">
+        </div>
+        <button type="button" class="save-btn" onclick="saveProfile()">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Rank Progress Modal -->
+  <div id="rankModal" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeRankModal()">
+        <i class="fas fa-times"></i>
+      </button>
+      <h3 style="text-align: center; margin-bottom: 2rem;">Rank Progress</h3>
+      
+      <div style="text-align: center;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+          <div>
+            <strong>Current XP:</strong> <span id="xpValue">0</span>
+          </div>
+          <div>
+            <strong>Current Rank:</strong> <span id="currentRank">Unranked</span>
+          </div>
+        </div>
+        
+        <div class="progress-container" style="margin: 2rem 0;">
+          <div class="progress-bar" style="height: 20px;">
+            <div class="progress-fill" id="modalProgressFill" style="width: 0%;"></div>
+          </div>
+          <p style="margin-top: 1rem; font-size: 1.1rem;">
+            <span id="xpToNext">0 / 100 XP to Novice</span>
+          </p>
+        </div>
+        
+        <div id="rankProgressTrack" style="display: flex; justify-content: center; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 2rem;">
+          <!-- Rank icons will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Navigation functionality
+    function showSection(section) {
+      // Hide all sections
+      document.getElementById('profileSection').classList.add('hidden');
+      document.getElementById('tasksSection').classList.add('hidden');
+      document.getElementById('friendsSection').classList.add('hidden');
+      
+      // Remove active class from all nav items
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // Show selected section and activate nav item
+      if (section === 'profile') {
+        document.getElementById('profileSection').classList.remove('hidden');
+        document.querySelector('.nav-item').classList.add('active');
+      } else if (section === 'tasks') {
+        document.getElementById('tasksSection').classList.remove('hidden');
+        document.querySelectorAll('.nav-item')[1].classList.add('active');
+      } else if (section === 'friends') {
+        document.getElementById('friendsSection').classList.remove('hidden');
+        document.querySelectorAll('.nav-item')[2].classList.add('active');
+      }
+    }
+
+    // Profile editing functionality
+    function editProfile() {
+      const onlineTime = document.getElementById("onlineTimeDisplay").innerText.trim();
+      const onlineTimeParts = onlineTime.split(' - ');
+      
+      const onlineStart = onlineTimeParts[0] || '';
+      const onlineEnd = onlineTimeParts[1] || '';
+      const occupation = document.getElementById("occupation").innerText;
+      const birthday = document.getElementById("birthday").innerText;
+      const labels = document.getElementById("labels").innerText;
+
+      // Populate form fields
+      document.getElementById("onlineStart").value = onlineStart;
+      document.getElementById("onlineEnd").value = onlineEnd;
+      document.getElementById("occupationInput").value = occupation !== 'Not set yet' ? occupation : '';
+      document.getElementById("birthdayInput").value = birthday !== 'Not set yet' ? birthday : '';
+      document.getElementById("labelsInput").value = labels !== 'Not set yet' ? labels : '';
+
+      document.getElementById("editModal").style.display = "block";
+    }
+
+    async function saveProfile() {
+      const occupation = document.getElementById("occupationInput").value;
+      const birthday = document.getElementById("birthdayInput").value;
+      const labels = document.getElementById("labelsInput").value;
+      const onlineStart = document.getElementById("onlineStart").value;
+      const onlineEnd = document.getElementById("onlineEnd").value;
+
+      const saveBtn = document.querySelector('.save-btn');
+      
+      // Show loading state
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      saveBtn.disabled = true;
+
+      try {
+        // Send data to backend
+        const formData = new FormData();
+        formData.append('online_start_time', onlineStart);
+        formData.append('online_end_time', onlineEnd);
+        formData.append('occupation', occupation);
+        formData.append('birthday', birthday);
+        formData.append('labels', labels);
+
+        const response = await fetch('/update-profile', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          // Update display only after successful save
+          document.getElementById("onlineTimeDisplay").innerText = onlineStart && onlineEnd ? `${onlineStart} - ${onlineEnd}` : 'Not set yet';
+          document.getElementById("occupation").innerText = occupation || "Not set yet";
+          document.getElementById("birthday").innerText = birthday || "Not set yet";
+          document.getElementById("labels").innerText = labels || "Not set yet";
+
+          // Store in memory for immediate access
+          window.profileData = {
+            onlineStart,
+            onlineEnd,
+            occupation,
+            birthday,
+            labels
+          };
+
+          closeModal();
+          
+          // Show success animation
+          saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+          saveBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+          
+          setTimeout(() => {
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            saveBtn.style.background = '';
+            saveBtn.disabled = false;
+          }, 2000);
+        } else {
+          throw new Error('Failed to save profile');
+        }
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        
+        // Show error state
+        saveBtn.innerHTML = '<i class="fas fa-times"></i> Error - Try Again';
+        saveBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        
+        setTimeout(() => {
+          saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+          saveBtn.style.background = '';
+          saveBtn.disabled = false;
+        }, 3000);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById("editModal").style.display = "none";
+    }
+
+    function closeRankModal() {
+      document.getElementById("rankModal").style.display = "none";
+    }
+
+    function signOut() {
+      // Add sign out animation
+      document.body.style.opacity = '0';
+      document.body.style.transition = 'opacity 0.5s ease';
+      
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
+    }
+
+    // Rank modal functionality with proper ranking system
+    function showRankModal() {
+      const xp = 0; // Current XP - should come from backend
+      
+      const ranks = [
+        { name: "Unranked", minXP: 0, maxXP: 99, icon: "⭐", next: "Novice", nextXP: 100 },
+        { name: "Novice", minXP: 100, maxXP: 249, icon: "🌱", next: "Explorer", nextXP: 250 },
+        { name: "Explorer", minXP: 250, maxXP: 499, icon: "🗺️", next: "Adventurer", nextXP: 500 },
+        { name: "Adventurer", minXP: 500, maxXP: 999, icon: "🏃", next: "Scholar", nextXP: 1000 },
+        { name: "Scholar", minXP: 1000, maxXP: 1999, icon: "📚", next: "Expert", nextXP: 2000 },
+        { name: "Expert", minXP: 2000, maxXP: 3999, icon: "🎓", next: "Master", nextXP: 4000 },
+        { name: "Master", minXP: 4000, maxXP: 7999, icon: "🏆", next: "Grandmaster", nextXP: 8000 },
+        { name: "Grandmaster", minXP: 8000, maxXP: 15999, icon: "👑", next: "Legend", nextXP: 16000 },
+        { name: "Legend", minXP: 16000, maxXP: 31999, icon: "⚡", next: "Mythic", nextXP: 32000 },
+        { name: "Mythic", minXP: 32000, maxXP: Infinity, icon: "🌟", next: "Max", nextXP: null }
+      ];
+
+      let currentRank = ranks[0];
+      for (let i = 0; i < ranks.length; i++) {
+        if (xp >= ranks[i].minXP && xp <= ranks[i].maxXP) {
+          currentRank = ranks[i];
+          break;
+        }
+      }
+
+      const nextXP = currentRank.nextXP;
+      const progress = nextXP !== null
+        ? Math.floor((xp - currentRank.minXP) / (nextXP - currentRank.minXP) * 100)
+        : 100;
+
+      // Update main rank display
+      document.getElementById("rankTitle").innerText = currentRank.name;
+      document.querySelector(".rank-icon").innerHTML = `<i class="fas fa-star"></i>`;
+      
+      // Update progress bar in main view
+      const mainProgressBar = document.querySelector(".progress-fill");
+      mainProgressBar.style.width = progress + "%";
+      const mainProgressText = document.querySelector(".progress-container p");
+      mainProgressText.innerHTML = nextXP !== null
+        ? `${xp} / ${nextXP} XP`
+        : 'Max Rank Achieved';
+
+      // Update modal content
+      document.getElementById("xpValue").innerText = xp;
+      document.getElementById("currentRank").innerText = currentRank.name;
+      document.getElementById("modalProgressFill").style.width = progress + "%";
+      document.getElementById("xpToNext").innerText = nextXP !== null
+        ? `${xp - currentRank.minXP} / ${nextXP - currentRank.minXP} XP to ${currentRank.next}`
+        : 'Max rank achieved';
+
+      // Create rank track visualization
+      const trackContainer = document.getElementById("rankProgressTrack");
+      trackContainer.innerHTML = "";
+
+      const currentIndex = ranks.findIndex(r => r.name === currentRank.name);
+
+      // Current rank
+      const currentDiv = document.createElement("div");
+      currentDiv.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem;
+        background: var(--gradient-futuristic);
+        border-radius: 20px;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+      `;
+      currentDiv.innerHTML = `
+        <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">${currentRank.icon}</div>
+        <div style="font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">${currentRank.name}</div>
+      `;
+      trackContainer.appendChild(currentDiv);
+
+      // Arrow and next rank (if exists)
+      if (currentIndex < ranks.length - 1) {
+        const arrow = document.createElement("div");
+        arrow.innerHTML = '<i class="fas fa-arrow-right" style="font-size: 2rem; color: var(--primary-purple); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));"></i>';
+        trackContainer.appendChild(arrow);
+
+        const nextRank = ranks[currentIndex + 1];
+        const nextDiv = document.createElement("div");
+        nextDiv.style.cssText = `
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 1.5rem;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(248, 250, 252, 0.8));
+          border-radius: 20px;
+          color: var(--text-muted);
+          font-weight: bold;
+          opacity: 0.8;
+          border: 2px solid rgba(99, 102, 241, 0.1);
+        `;
+        nextDiv.innerHTML = `
+          <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">${nextRank.icon}</div>
+          <div style="font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px;">${nextRank.name}</div>
+        `;
+        trackContainer.appendChild(nextDiv);
+      }
+
+      document.getElementById("rankModal").style.display = "block";
+    }
+
+    // Initialize profile data on load
+    window.onload = function() {
+      // Get username from template and capitalize first letter
+      const usernameElement = document.getElementById('username');
+      if (usernameElement && usernameElement.textContent.trim()) {
+        const username = usernameElement.textContent.trim();
+        usernameElement.textContent = username.charAt(0).toUpperCase() + username.slice(1);
+      }
+
+      // Initialize with values from backend template or defaults
+      const onlineTimeDisplay = document.getElementById("onlineTimeDisplay").innerText.trim();
+      const occupation = document.getElementById("occupation").innerText.trim();
+      const birthday = document.getElementById("birthday").innerText.trim();
+      const labels = document.getElementById("labels").innerText.trim();
+
+      // Store initial values
+      window.profileData = {
+        onlineStart: onlineTimeDisplay.includes(' - ') ? onlineTimeDisplay.split(' - ')[0] : '',
+        onlineEnd: onlineTimeDisplay.includes(' - ') ? onlineTimeDisplay.split(' - ')[1] : '',
+        occupation: occupation !== 'Not set yet' ? occupation : '',
+        birthday: birthday !== 'Not set yet' ? birthday : '',
+        labels: labels !== 'Not set yet' ? labels : ''
+      };
+
+      // Add entrance animations
+      setTimeout(() => {
+        document.querySelectorAll('.left-panel, .profile-card, .stats-card, .rank-card').forEach((el, index) => {
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(30px)';
+          el.style.transition = 'all 0.6s ease';
+          
+          setTimeout(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+          }, index * 150);
+        });
+      }, 100);
+    };
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+      const editModal = document.getElementById("editModal");
+      const rankModal = document.getElementById("rankModal");
+      
+      if (event.target === editModal) {
+        editModal.style.display = "none";
+      }
+      if (event.target === rankModal) {
+        rankModal.style.display = "none";
+      }
+    };
+
+    // Photo preview functionality
+    document.getElementById('photoInput').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('profilePic').src = e.target.result;
+          
+          // Add success animation
+          const pic = document.getElementById('profilePic');
+          pic.style.transform = 'scale(1.1)';
+          pic.style.transition = 'transform 0.3s ease';
+          
+          setTimeout(() => {
+            pic.style.transform = 'scale(1)';
+          }, 300);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Add click handler for photo editing
+    document.querySelector('.edit-photo-overlay').addEventListener('click', function() {
+      document.getElementById('photoInput').click();
+    });
+  </script>
+</body>
+</html>

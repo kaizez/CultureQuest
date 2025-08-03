@@ -1,0 +1,120 @@
+{% extends "login_base.html" %}
+
+{% block title %}CultureQuest{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% endblock %}
+
+{% block content %}
+    <section class="hero-section">
+        <a href="#" class="announcement-banner">
+            <div class="announcement-icon">→</div>
+            <span>IDK MAN SOME PROMOTION TYPE SHITTT.</span>
+            <span style="margin-left: 8px;">See how →</span>
+        </a>
+        
+        <h1 class="hero-title">Reinvent Social Media</h1>
+        <h1 class="hero-subtitle">— For Cultures</h1>
+    </section>
+
+    <section class="content-grid">
+        <div class="left-content">
+            <h2 class="section-title">Learn about cultures through tackling challenges</h2>
+            
+            <a href="#" class="chat-button">Chat now</a>
+            
+            <div class="chat-preview">
+                <div class="chat-message">
+                    <div class="chat-avatar">👤</div>
+                    <div class="chat-content">
+                        <p class="chat-text">Analyze our revenue data and compare this month's percentage growth vs last year</p>
+                        <a href="#" class="chat-file">
+                            📊 September_MRR_Report.csv
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="department-insight">
+                    <div class="insight-header">
+                        <div class="insight-icon">📈</div>
+                        <div>
+                            <div class="insight-title">Top Three Departments: Growth in Sales vs. 2023</div>
+                            <div class="insight-subtitle">Top Three Departments: Growth in Sales vs. 2023</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-content">
+            <h2 class="right-title">Introducing CultureQuest, the world's first social media for Cultural Bridging</h2>
+            
+            <div class="email-form">
+                <input type="email" class="email-input" placeholder="Enter your work email">
+                <a href="/signup" class="try-button">Create Account</a>
+            </div>
+            
+            <a href="/login" class="learn-more">Already have an account? Login</a>
+            
+            <div class="ai-preview">
+                <div class="ai-message">
+                    <div class="ai-avatar">🤖</div>
+                    <div class="ai-content">
+                        <p class="ai-text">Assess NVIDIA's competitive landscape, market shifts, and tariff impacts</p>
+                        
+                        <div class="status-indicators">
+                            <div class="status-item">
+                                <div class="status-dot"></div>
+                                <span>Thinking</span>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-dot"></div>
+                                <span>Activating advanced research and reasoning</span>
+                            </div>
+                        </div>
+                        
+                        <div class="report-preview">
+                            <div class="report-image">
+                                NVIDIA AI Hardware Competition Report Placeholder
+                            </div>
+                            <div class="report-title">NVIDIA AI Hardware Competition: Key Players, Market Shifts, Tariff Effects</div>
+                            <div class="report-subtitle">Report • Sources • Images • Videos • News</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Simple interactions
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Add hover effects
+        const buttons = document.querySelectorAll('.demo-btn, .chat-button, .try-button');
+        buttons.forEach(button => {
+            button.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            button.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}

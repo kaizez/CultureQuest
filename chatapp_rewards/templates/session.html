@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% set hide_navbar = true %}
+
+{% block title %}Challenge Chat{% endblock %}
+
+{% block body_class %}chat-body{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+<style>
+/* Force override for main-content in chat */
+.chat-body .main-content {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+</style>
+{% endblock %}
+
+{% block scripts_head %}
+    <!-- Add any head scripts here -->
+{% endblock %}
+
+{% block content %}
+    <!-- Show notification if present -->
+    {% if notification %}
+    <div id="unauthorized-notification" class="notification {{ notification.type }}" style="display: none;">
+        🚫 {{ notification.message }}
+    </div>
+    {% endif %}
+    
+    <div id="chat-container" data-room-id="{{ room.id }}" data-username="{{ username }}">
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <div class="chat-header-left">
+            <a href="{{ url_for('chat.chat_rooms', username=username) }}" class="back-to-rooms-btn" title="Back to Rooms">
+                <span>←</span>
+            </a>
+            <div class="challenge-badge">
+                <div class="challenge-icon">💡</div>
+                <div class="challenge-info">
+                    <h3 class="challenge-name">{{ room.name }}</h3>
+                    <span class="challenge-duration">{{ room.description or 'Active now' }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="chat-header-right">
+            <button class="header-action-btn" title="Settings">
+                <span class="icon">⚙️</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Message Area -->
+    <div id="message-wrapper">
+        <div id="messages">
+            <!-- Messages will be loaded from database via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Chat Input Footer -->
+    <div id="chat-footer">
+        <div class="chat-input-container">
+            <form id="chat-form" enctype="multipart/form-data">
+                <div class="input-actions-left">
+                    <button type="button" class="action-btn" id="attach-file-btn" title="Attach file">
+                        <span class="icon">📎</span>
+                    </button>
+                    <input type="file" id="file-input" name="file" accept="image/*,.pdf,.txt,.doc,.docx" style="display: none;" />
+                    <button type="button" class="action-btn" title="Voice message">
+                        <span class="icon">🎤</span>
+                    </button>
+                </div>
+
+                <div class="input-wrapper">
+                    <input type="text" id="message" name="message" placeholder="Type your message..." autocomplete="off" />
+                    <div id="file-preview" style="display: none;">
+                        <div class="file-preview-item">
+                            <span class="file-name"></span>
+                            <button type="button" class="remove-file-btn" title="Remove file">×</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-actions-right">
+                    <button type="submit" class="send-btn">
+                        <svg class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 2L11 13"></path>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+{% if notification %}
+<script>
+$(document).ready(function() {
+    // Show the unauthorized access notification
+    $('#unauthorized-notification').fadeIn(300);
+    
+    // Auto-hide after 4 seconds
+    setTimeout(function() {
+        $('#unauthorized-notification').fadeOut(500);
+    }, 4000);
+});
+</script>
+{% endif %}
+{% endblock %}

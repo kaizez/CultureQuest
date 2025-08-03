@@ -1,0 +1,49 @@
+[
+  {
+    "id": "96b96c5e-9847-4771-bd79-05a47813eda8",
+    "username": "felicia",
+    "email": "felicia@gmail.com",
+    "password": "scrypt:32768:8:1$7uFJPfhJPPwr0zr3$d72a6791c3a530620420de150f6f471876d1798371a8f591c7f14983d8321e22708b4f843bf3c272d50cfb3e1d6806601d3cb9cb47193629dab5ee6adfe04c57",
+    "profile_picture": null,
+    "occupation": null,
+    "birthday": null,
+    "labels": null,
+    "online_start_time": null,
+    "online_end_time": null,
+    "is_google_user": false,
+    "created_at": "2025-07-29T18:11:34.333055",
+    "last_login": "2025-08-01T09:13:33.725174"
+  },
+  {
+    "id": "c1c73e15-f861-44d7-a6bd-17ffda38ba02",
+    "username": "junhao",
+    "email": "kwajunhao@gmail.com",
+    "password": "scrypt:32768:8:1$W8592NjZHuAuNsn5$fb203461fd4f07237a63e06c215e1bd4505ae7df6a79f9281dbb70e050a7024111749967bc1d29e1c36b1ebd42b9cbf330f1dda6557051d55c65ce5e775b78fe",
+    "profile_picture": null,
+    "occupation": "Student",
+    "birthday": null,
+    "labels": null,
+    "online_start_time": "05:14pm",
+    "online_end_time": "05:17pm",
+    "is_google_user": false,
+    "email_verified": true,
+    "created_at": "2025-08-01T09:12:41.529982",
+    "last_login": "2025-08-01T09:13:21.520381"
+  },
+  {
+    "id": "9f26e7a9-b946-48b2-9f6f-b585d2e3d613",
+    "username": "junhao3",
+    "email": "culturequest.mail@gmail.com",
+    "password": "scrypt:32768:8:1$YcvryvV8wmWr6Sv5$2188768cf1e042560318a33358dd428919cfd1d44e66cd93e0afa663e2541ca6cb7c3c1c6bd9f2e0a0dbce4fd3b7ed3aa72ba52682409cb19827eb66d9d33454",
+    "profile_picture": "https://lh3.googleusercontent.com/a/ACg8ocLWtBs73fAiz8aXnIG1h9vUdqqQ2dIA_HjJepIbPmir7B-m9h0=s96-c",
+    "occupation": null,
+    "birthday": null,
+    "labels": null,
+    "online_start_time": null,
+    "online_end_time": null,
+    "is_google_user": true,
+    "email_verified": true,
+    "created_at": "2025-08-01T09:53:57.454425",
+    "last_login": null
+  }
+]

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email | CultureQuest</title>
+    <link rel="stylesheet" href="/static/forget.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-container">
+        <div class="gradient-bg"></div>
+        <div class="floating-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+        <div class="shooting-stars">
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="auth-wrapper">
+            <!-- Back to Login Link -->
+            <div class="back-link">
+                <a href="/" class="back-btn">
+                    <span>←</span>
+                    Back to Login
+                </a>
+            </div>
+
+            <!-- Email Verification Card -->
+            <div class="auth-card">
+                <div class="card-header">
+                    <h2>Verify Your Email</h2>
+                    <p>We've sent a 6-digit verification code to <strong>{{ email }}</strong></p>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="flash-message {{ category }}">
+                                    {% if category == 'success' %}
+                                        <span class="flash-icon">✅</span>
+                                    {% elif category == 'error' or category == 'danger' %}
+                                        <span class="flash-icon">❌</span>
+                                    {% else %}
+                                        <span class="flash-icon">ℹ️</span>
+                                    {% endif %}
+                                    <span class="flash-text">{{ message|e }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Email Verification Form -->
+                <form method="POST" action="/verify-email" class="login-form" id="verifyEmailForm">
+                    <!-- Hidden field for email -->
+                    <input type="hidden" name="email" value="{{ email }}">
+                    
+                    <div class="input-group">
+                        <label for="verification_code" class="input-label">Verification Code</label>
+                        <div class="input-wrapper">
+                            <input 
+                                type="text" 
+                                id="verification_code" 
+                                name="verification_code" 
+                                placeholder="Enter 6-digit code"
+                                required
+                                maxlength="6"
+                                pattern="[0-9]{6}"
+                                autocomplete="one-time-code"
+                                class="verification-input"
+                            >
+                            <span class="input-icon" aria-hidden="true">🔐</span>
+                        </div>
+                        <span class="input-help">Check your email for the verification code</span>
+                    </div>
+
+                    <button type="submit" class="login-btn" id="verifyButton">
+                        <span class="btn-text">Verify Email</span>
+                        <span class="btn-loader" aria-hidden="true"></span>
+                    </button>
+                </form>
+
+                <!-- Additional Info -->
+                <div class="auth-footer">
+                    <div class="divider">
+                        <span>Need Help?</span>
+                    </div>
+                    
+                    <div class="auth-links">
+                        <a href="/resend-code?email={{ email }}" class="auth-link" id="resendLink">
+                            <span>📧</span>
+                            Didn't receive the code? Resend
+                        </a>
+                        
+                        <a href="/signup" class="auth-link">
+                            <span>✏️</span>
+                            Use a different email address
+                        </a>
+                    </div>
+
+                    <!-- Security Notice -->
+                    <div class="security-tip">
+                        <strong>Security Notice:</strong> 
+                        The verification code will expire in 15 minutes. 
+                        Check your spam folder if you don't receive it.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-format verification code input
+        document.getElementById('verification_code').addEventListener('input', function(e) {
+            // Only allow numbers
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Limit to 6 digits
+            if (this.value.length > 6) {
+                this.value = this.value.slice(0, 6);
+            }
+            
+            // Real-time typing animation
+            if (this.value.length > 0) {
+                this.classList.add('has-content');
+            } else {
+                this.classList.remove('has-content');
+            }
+            
+            // Visual feedback for complete code
+            const inputWrapper = this.closest('.input-wrapper');
+            if (this.value.length === 6) {
+                inputWrapper.classList.add('valid');
+            } else {
+                inputWrapper.classList.remove('valid');
+            }
+        });
+
+        // Auto-submit when 6 digits are entered
+        document.getElementById('verification_code').addEventListener('input', function(e) {
+            if (this.value.length === 6) {
+                // Small delay to show the completion visual feedback
+                setTimeout(() => {
+                    document.getElementById('verifyEmailForm').submit();
+                }, 500);
+            }
+        });
+
+        // Form submission with loading state
+        document.getElementById('verifyEmailForm').addEventListener('submit', function(e) {
+            const submitButton = document.getElementById('verifyButton');
+            const btnText = submitButton.querySelector('.btn-text');
+            const btnLoader = submitButton.querySelector('.btn-loader');
+            
+            // Show loading state
+            submitButton.classList.add('loading');
+            btnText.textContent = 'Verifying...';
+            btnLoader.style.display = 'block';
+            submitButton.disabled = true;
+            
+            // Disable resend link temporarily
+            const resendLink = document.getElementById('resendLink');
+            if (resendLink) {
+                resendLink.style.pointerEvents = 'none';
+                resendLink.style.opacity = '0.6';
+            }
+        });
+
+        // Resend code functionality with cooldown
+        let resendCooldown = 0;
+        document.getElementById('resendLink').addEventListener('click', function(e) {
+            if (resendCooldown > 0) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Start cooldown
+            resendCooldown = 60; // 60 seconds
+            const originalText = this.innerHTML;
+            
+            const updateCooldown = () => {
+                if (resendCooldown > 0) {
+                    this.innerHTML = `<span>⏱️</span>Resend in ${resendCooldown}s`;
+                    this.style.pointerEvents = 'none';
+                    this.style.opacity = '0.6';
+                    resendCooldown--;
+                    setTimeout(updateCooldown, 1000);
+                } else {
+                    this.innerHTML = originalText;
+                    this.style.pointerEvents = 'auto';
+                    this.style.opacity = '1';
+                }
+            };
+            
+            updateCooldown();
+        });
+
+        // Auto-focus code input with delay
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                document.getElementById('verification_code').focus();
+            }, 500);
+        });
+
+        // Paste support for verification codes
+        document.getElementById('verification_code').addEventListener('paste', function(e) {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const numbers = paste.replace(/[^0-9]/g, '').slice(0, 6);
+            this.value = numbers;
+            
+            // Trigger input event for validation
+            this.dispatchEvent(new Event('input'));
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + R to resend (if not in cooldown)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r' && resendCooldown === 0) {
+                e.preventDefault();
+                document.getElementById('resendLink').click();
+            }
+        });
+    </script>
+</body>
+</html>

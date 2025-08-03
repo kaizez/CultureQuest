@@ -1,0 +1,974 @@
+{% extends "base.html" %}
+
+{% block title %}Chat Admin{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .admin-container {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 20px 24px;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+
+        .flagged-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .flagged-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .controls-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            z-index: 10;
+            position: relative;
+        }
+
+        .search-container {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+        }
+
+        .search-input {
+            width: 98%;
+            padding: 10px 0px 10px 5px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+        }
+
+
+        .violations-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+            min-width: 100%;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 100px 150px 2fr 100px 120px 100px 180px;
+            gap: 20px;
+            padding: 15px 24px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            align-items: center;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 100px 150px 2fr 100px 120px 100px 180px;
+            gap: 20px;
+            padding: 15px 24px;
+            border-bottom: 1px solid #f3f4f6;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .table-row:hover {
+            background: #f9fafb;
+        }
+
+        .table-row.selected {
+            background: #eff6ff;
+        }
+
+        .row-checkbox {
+            width: 16px;
+            height: 16px;
+        }
+
+        .time-cell {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .user-cell {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .message-cell {
+            font-size: 14px;
+            color: #1f2937;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .violation-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .violation-url {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .violation-file {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-handled {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .btn-view:hover {
+            background: #dbeafe;
+        }
+
+        .btn-delete {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .btn-delete:hover {
+            background: #fecaca;
+        }
+
+        .btn-edit {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .btn-edit:hover {
+            background: #fde68a;
+        }
+
+        .btn-user {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .btn-user:hover {
+            background: #dcfce7;
+        }
+
+        .btn-mute {
+            background: #fdf2f8;
+            color: #be185d;
+        }
+
+        .btn-mute:hover {
+            background: #fce7f3;
+        }
+
+        .btn-unmute {
+            background: #f0f9ff;
+            color: #0369a1;
+        }
+
+        .btn-unmute:hover {
+            background: #e0f2fe;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px;
+            background: white;
+            margin-top: auto;
+            border-radius: 8px;
+            position: sticky;
+            bottom: 0;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-container {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 20px 24px;
+            background: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .page-btn:hover {
+            background: #f9fafb;
+        }
+
+        .page-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .entries-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .view-details-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 8px;
+            z-index: 10;
+            min-width: 200px;
+            display: none;
+        }
+
+        .dropdown-item {
+            display: block;
+            padding: 8px 12px;
+            color: #374151;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: #f3f4f6;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .admin-container {
+                padding: 16px;
+            }
+            
+            .table-header,
+            .table-row {
+                grid-template-columns: 80px 120px 1.5fr 80px 100px 80px 150px;
+                gap: 12px;
+                padding: 12px 16px;
+            }
+        }
+
+        @media (max-width: 768px) {            
+            .controls-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-container {
+                max-width: none;
+            }
+            
+            .filter-controls {
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .violations-table {
+                border-radius: 8px;
+            }
+            
+            .table-header,
+            .table-row {
+                grid-template-columns: 60px 100px 1fr 60px 80px 60px 120px;
+                gap: 8px;
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+            
+            .message-cell {
+                font-size: 12px;
+            }
+            
+            .action-btn {
+                width: 24px;
+                height: 24px;
+                font-size: 10px;
+            }
+            
+            .actions-cell {
+                gap: 4px;
+            }
+        }
+
+        /* Table wrapper for better mobile scrolling */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-content {
+            min-width: 900px;
+        }
+
+        /* Mute Dialog Styles */
+        .mute-dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .mute-dialog {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .mute-dialog h3 {
+            margin: 0 0 16px 0;
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .mute-form-group {
+            margin-bottom: 16px;
+        }
+
+        .mute-form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .mute-form-input, .mute-form-select, .mute-form-textarea {
+            width: 100%;
+            padding: 10px 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .mute-form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .mute-dialog-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .mute-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mute-btn-primary {
+            background: #be185d;
+            color: white;
+        }
+
+        .mute-btn-primary:hover {
+            background: #9d174d;
+        }
+
+        .mute-btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .mute-btn-secondary:hover {
+            background: #e5e7eb;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+
+    <div class="flagged-header">
+        <div class="flagged-title">
+            <span>⚠️</span>
+            <span>Flagged users</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="font-size: 14px; color: #6b7280;">Input text to search</span>
+            <span style="font-size: 14px; color: #6b7280;">View more details</span>
+        </div>
+    </div>
+
+    <div class="controls-section">
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search messages..." id="searchInput">
+            <span class="search-icon">🔍</span>
+        </div>
+        
+        <div class="filter-controls">
+            <select class="filter-select" id="chatFilter">
+                <option value="">Select Chat</option>
+            </select>
+            <select class="filter-select" id="violationFilter">
+                <option value="">Select Violation</option>
+                <option value="url">URL Threats</option>
+                <option value="file">File Threats</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <div class="violations-table">
+            <div class="table-content">
+                <div class="table-header">
+                    <div>Time</div>
+                    <div>Users</div>
+                    <div>Message</div>
+                    <div>Chat id</div>
+                    <div>Violation</div>
+                    <div>Status</div>
+                    <div>Actions</div>
+                </div>
+                
+                <div id="violationsData">
+                    <!-- Data will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pagination">
+        <div class="entries-info">
+            <select id="pageSize" onchange="changePageSize()">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+            </select>
+            <span>Show on page</span>
+            <span id="totalEntries">Total: 0</span>
+        </div>
+        <div id="paginationControls" style="display: flex; gap: 5px;">
+            <!-- Pagination buttons will be generated here -->
+        </div>
+    </div>
+
+    <!-- Mute User Dialog -->
+    <div id="muteDialogOverlay" class="mute-dialog-overlay">
+        <div class="mute-dialog">
+            <h3>Mute User</h3>
+            <div class="mute-form-group">
+                <label>User:</label>
+                <input type="text" id="muteUserName" class="mute-form-input" readonly>
+            </div>
+            <div class="mute-form-group">
+                <label>Room ID:</label>
+                <input type="text" id="muteRoomId" class="mute-form-input" readonly>
+            </div>
+            <div class="mute-form-group">
+                <label>Duration:</label>
+                <select id="muteDuration" class="mute-form-select">
+                    <option value="">Permanent</option>
+                    <option value="1">1 Hour</option>
+                    <option value="6">6 Hours</option>
+                    <option value="24">24 Hours</option>
+                    <option value="72">3 Days</option>
+                    <option value="168">1 Week</option>
+                </select>
+            </div>
+            <div class="mute-form-group">
+                <label>Reason:</label>
+                <textarea id="muteReason" class="mute-form-textarea" placeholder="Reason for mute...">Security violation detected</textarea>
+            </div>
+            <div class="mute-dialog-buttons">
+                <button class="mute-btn mute-btn-secondary" onclick="closeMuteDialog()">Cancel</button>
+                <button class="mute-btn mute-btn-primary" onclick="confirmMute()">Mute User</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let violationsData = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 10;
+let totalPages = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadViolations();
+    loadChatRooms();
+    
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('keyup', filterData);
+    document.getElementById('chatFilter').addEventListener('change', filterData);
+    document.getElementById('violationFilter').addEventListener('change', filterData);
+});
+
+async function loadViolations() {
+    try {
+        // Load ALL violations for client-side pagination and filtering
+        const response = await fetch('/api/admin/violations');
+        if (response.ok) {
+            const data = await response.json();
+            violationsData = data.violations || data; // Handle both paginated and non-paginated responses
+            filteredData = violationsData;
+            totalPages = Math.ceil(violationsData.length / pageSize);
+            
+            console.log(`Loaded ${violationsData.length} violations, ${totalPages} pages`);
+            
+            renderViolations();
+            updatePagination();
+            updateTotalEntries();
+        }
+    } catch (error) {
+        console.error('Error loading violations:', error);
+    }
+}
+
+async function loadChatRooms() {
+    try {
+        const response = await fetch('/api/rooms');
+        if (response.ok) {
+            const rooms = await response.json();
+            const select = document.getElementById('chatFilter');
+            rooms.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room.id;
+                option.textContent = room.name;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading chat rooms:', error);
+    }
+}
+
+function renderViolations() {
+    const container = document.getElementById('violationsData');
+    container.innerHTML = '';
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageData = filteredData.slice(startIndex, endIndex);
+
+    if (pageData.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #6b7280;">No flagged content found</div>';
+        return;
+    }
+
+    pageData.forEach((violation, index) => {
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        row.innerHTML = `
+            <div class="time-cell">${formatTime(violation.timestamp)}</div>
+            <div class="user-cell">${escapeHtml(violation.user_name)}</div>
+            <div class="message-cell" title="${escapeHtml(violation.message_content || 'N/A')}">${escapeHtml(violation.content)}</div>
+            <div>${violation.room_id}</div>
+            <div><span class="violation-badge violation-${violation.violation_type}">${violation.violation_type}</span></div>
+            <div><span class="status-badge status-${violation.status}">${violation.status}</span></div>
+            <div class="actions-cell">
+                <button class="action-btn btn-view" onclick="viewDetails(${violation.id})" title="View">👁</button>
+                <button class="action-btn btn-delete" onclick="deleteViolation(${violation.id})" title="Delete">🗑</button>
+                <button class="action-btn btn-edit" onclick="updateStatus(${violation.id})" title="Mark as handled">✏</button>
+                <button class="action-btn btn-mute" onclick="showMuteDialog('${escapeHtml(violation.user_name)}', ${violation.room_id})" title="Mute user">🔇</button>
+                <button class="action-btn btn-unmute" onclick="unmuteUser('${escapeHtml(violation.user_name)}', ${violation.room_id})" title="Unmute user">🔊</button>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function filterData() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const chatFilter = document.getElementById('chatFilter').value;
+    const violationFilter = document.getElementById('violationFilter').value;
+
+    filteredData = violationsData.filter(violation => {
+        // Search filter
+        if (searchTerm && !violation.content.toLowerCase().includes(searchTerm) && 
+            !violation.user_name.toLowerCase().includes(searchTerm) &&
+            !(violation.message_content && violation.message_content.toLowerCase().includes(searchTerm))) {
+            return false;
+        }
+
+        // Chat filter
+        if (chatFilter && violation.room_id != chatFilter) {
+            return false;
+        }
+
+        // Violation type filter
+        if (violationFilter && violation.violation_type !== violationFilter) {
+            return false;
+        }
+
+        return true;
+    });
+
+    currentPage = 1; // Reset to first page after filtering
+    totalPages = Math.ceil(filteredData.length / pageSize);
+    renderViolations();
+    updatePagination();
+    updateTotalEntries();
+}
+
+function updatePagination() {
+    const paginationControls = document.getElementById('paginationControls');
+    paginationControls.innerHTML = '';
+
+    if (totalPages <= 1) {
+        paginationControls.innerHTML = '<span style="color: #6b7280; padding: 8px;">Page 1 of 1</span>';
+        return;
+    }
+
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'page-btn';
+    prevBtn.innerHTML = '◀';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => goToPage(currentPage - 1);
+    paginationControls.appendChild(prevBtn);
+
+    // Page numbers
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+        const firstBtn = document.createElement('button');
+        firstBtn.className = 'page-btn';
+        firstBtn.textContent = '1';
+        firstBtn.onclick = () => goToPage(1);
+        paginationControls.appendChild(firstBtn);
+
+        if (startPage > 2) {
+            const ellipsis = document.createElement('span');
+            ellipsis.textContent = '...';
+            ellipsis.style.padding = '8px';
+            paginationControls.appendChild(ellipsis);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = 'page-btn';
+        pageBtn.textContent = i;
+        if (i === currentPage) pageBtn.classList.add('active');
+        pageBtn.onclick = () => goToPage(i);
+        paginationControls.appendChild(pageBtn);
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.textContent = '...';
+            ellipsis.style.padding = '8px';
+            paginationControls.appendChild(ellipsis);
+        }
+
+        const lastBtn = document.createElement('button');
+        lastBtn.className = 'page-btn';
+        lastBtn.textContent = totalPages;
+        lastBtn.onclick = () => goToPage(totalPages);
+        paginationControls.appendChild(lastBtn);
+    }
+
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'page-btn';
+    nextBtn.innerHTML = '▶';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => goToPage(currentPage + 1);
+    paginationControls.appendChild(nextBtn);
+}
+
+function goToPage(page) {
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    renderViolations();
+    updatePagination();
+}
+
+function changePageSize() {
+    pageSize = parseInt(document.getElementById('pageSize').value);
+    currentPage = 1;
+    totalPages = Math.ceil(filteredData.length / pageSize);
+    renderViolations();
+    updatePagination();
+    updateTotalEntries();
+}
+
+function updateTotalEntries() {
+    const total = filteredData.length;
+    const showing = Math.min(pageSize, total - ((currentPage - 1) * pageSize));
+    document.getElementById('totalEntries').textContent = `Total: ${total}`;
+}
+
+async function viewDetails(violationId) {
+    try {
+        const response = await fetch(`/api/admin/violations/${violationId}`);
+        if (response.ok) {
+            const violation = await response.json();
+            alert(`Violation Details:\n\nUser: ${violation.user_name}\nType: ${violation.violation_type}\nContent: ${violation.content}\nDetection Details: ${violation.detection_details || 'N/A'}\nTimestamp: ${violation.timestamp}`);
+        }
+    } catch (error) {
+        console.error('Error loading violation details:', error);
+    }
+}
+
+async function deleteViolation(violationId) {
+    if (!confirm('Are you sure you want to delete this violation record?')) return;
+
+    try {
+        const response = await fetch(`/api/admin/violations/${violationId}`, {
+            method: 'DELETE'
+        });
+        if (response.ok) {
+            loadViolations(); // Reload data
+        }
+    } catch (error) {
+        console.error('Error deleting violation:', error);
+    }
+}
+
+async function updateStatus(violationId) {
+    try {
+        const response = await fetch(`/api/admin/violations/${violationId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'handled' })
+        });
+        if (response.ok) {
+            loadViolations(); // Reload data
+        }
+    } catch (error) {
+        console.error('Error updating violation status:', error);
+    }
+}
+
+function warnUser(username) {
+    alert(`Warning functionality for user "${username}" would be implemented here.`);
+}
+
+function showMuteDialog(username, roomId) {
+    document.getElementById('muteUserName').value = username;
+    document.getElementById('muteRoomId').value = roomId;
+    document.getElementById('muteDuration').value = '24'; // Default to 24 hours
+    document.getElementById('muteReason').value = 'Security violation detected';
+    document.getElementById('muteDialogOverlay').style.display = 'flex';
+}
+
+function closeMuteDialog() {
+    document.getElementById('muteDialogOverlay').style.display = 'none';
+}
+
+async function confirmMute() {
+    const username = document.getElementById('muteUserName').value;
+    const roomId = parseInt(document.getElementById('muteRoomId').value);
+    const duration = document.getElementById('muteDuration').value;
+    const reason = document.getElementById('muteReason').value;
+
+    try {
+        const payload = {
+            user_name: username,
+            room_id: roomId,
+            reason: reason
+        };
+
+        if (duration) {
+            payload.duration_hours = parseInt(duration);
+        }
+
+        const response = await fetch('/api/admin/mute-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`✅ ${result.message}`);
+            closeMuteDialog();
+            loadViolations(); // Refresh the data
+        } else {
+            alert(`❌ Error: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error muting user:', error);
+        alert('❌ Failed to mute user. Please try again.');
+    }
+}
+
+async function unmuteUser(username, roomId) {
+    if (!confirm(`Are you sure you want to unmute ${username} in room ${roomId}?`)) return;
+
+    try {
+        const response = await fetch('/api/admin/unmute-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_name: username,
+                room_id: roomId
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`✅ ${result.message}`);
+            loadViolations(); // Refresh the data
+        } else {
+            alert(`❌ Error: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error unmuting user:', error);
+        alert('❌ Failed to unmute user. Please try again.');
+    }
+}
+
+// Close dialog when clicking outside
+document.addEventListener('click', function(event) {
+    const overlay = document.getElementById('muteDialogOverlay');
+    if (event.target === overlay) {
+        closeMuteDialog();
+    }
+});
+</script>
+{% endblock %}

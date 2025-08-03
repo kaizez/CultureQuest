@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard | CultureQuest</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/static/rootadmin.css" />
+</head>
+<body>
+  <header class="admin-header">
+    <img src="/static/logo.png" alt="Logo" class="logo" />
+    <h1>Admin Dashboard</h1>
+    <a href="/login.logout" class="signout-btn">Sign Out</a>
+  </header>
+
+  <main>
+    <section class="stats">
+      <h2>User Signups Over Time</h2>
+      <canvas id="signupChart" width="600" height="300"></canvas>
+    </section>
+
+    <section class="recent-users">
+      <h2>Recently Signed-Up Users</h2>
+      <ul id="recentUsersList"></ul>
+    </section>
+  </main>
+
+  <script>
+    // Fetch chart + user data
+    fetch('/admin/user-data')
+      .then(res => res.json())
+      .then(data => {
+        // Chart
+        const ctx = document.getElementById('signupChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              label: 'User Signups',
+              data: data.counts,
+              backgroundColor: 'rgba(75, 192, 192, 0.6)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        // Recent users list
+        const list = document.getElementById('recentUsersList');
+        data.recentUsers.forEach(user => {
+          const li = document.createElement('li');
+          li.textContent = `${user.name} (${user.email})`;
+          list.appendChild(li);
+        });
+      })
+      .catch(err => {
+        console.error('Error loading admin data:', err);
+      });
+  </script>
+</body>
+</html>

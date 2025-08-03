@@ -1,0 +1,26 @@
+<nav class="navbar">
+    <div class="navbar-container">
+        <div class="navbar-brand">
+            <a href="{{ url_for('chat.chat_rooms') }}">
+                <div class="logo">Y</div>
+                <h1>CultureQuest</h1>
+            </a>
+        </div>
+        
+        <div class="navbar-menu">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a href="{{ url_for('chat.chat_rooms') }}" class="nav-link">Chat Rooms</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('rewards.rewards_page') }}" class="nav-link">Rewards</a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="navbar-actions">
+            <a href="{{ url_for('login.logout') }}" class="sign-in-btn">Logout</a>
+            <a href="{{ url_for('login.profile') }}" class="demo-btn">Profile</a>
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to CultureQuest Challenge{% endblock %}
+
+{% block content %}
+    <section class="hero-section">
+        <a href="#" class="announcement-banner">
+            <div class="announcement-icon">🎯</div>
+            <span>Join the cultural exchange challenge today!</span>
+            <span style="margin-left: 8px;">Get started →</span>
+        </a>
+        
+        <h1 class="hero-title">Welcome to CultureQuest</h1>
+        <h1 class="hero-subtitle">— Challenge Edition</h1>
+    </section>
+
+    <section class="content-grid">
+        <div class="left-content">
+            <h2 class="section-title">Create and participate in cultural challenges</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px; max-width: 300px;">
+                <a href="{{ url_for('challenge.create_challenge') }}" class="chat-button" style="text-align: center;">Host a Challenge</a>
+                
+                <a href="{{ url_for('admin_screening.admin_page') }}" class="demo-btn" style="text-align: center; padding: 12px 24px; display: inline-block;">Admin Screening</a>
+                
+                <a href="{{ url_for('event.event_page') }}" class="demo-btn" style="text-align: center; padding: 12px 24px; display: inline-block; background: #10b981;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">View Events</a>
+            </div>
+        </div>
+
+        <div class="right-content">
+            <h2 class="right-title">Ready to bridge cultures through challenges?</h2>
+            
+            <p style="margin-bottom: 24px; font-size: 16px; opacity: 0.9;">Create meaningful challenges that bring communities together and celebrate diversity.</p>
+            
+            <div class="ai-preview">
+                <div class="ai-message">
+                    <div class="ai-avatar">🌍</div>
+                    <div class="ai-content">
+                        <p class="ai-text">Discover how cultural challenges create connections and understanding across communities</p>
+                        
+                        <div class="status-indicators">
+                            <div class="status-item">
+                                <div class="status-dot"></div>
+                                <span>Create engaging challenges</span>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-dot"></div>
+                                <span>Connect with diverse communities</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to buttons
+        const buttons = document.querySelectorAll('.chat-button, .demo-btn');
+        buttons.forEach(button => {
+            button.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            button.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}
