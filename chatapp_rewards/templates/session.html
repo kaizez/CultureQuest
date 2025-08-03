@@ -8,6 +8,19 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+<style>
+/* Force override for main-content in chat */
+.chat-body .main-content {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+</style>
 {% endblock %}
 
 {% block scripts_head %}
@@ -15,6 +28,13 @@
 {% endblock %}
 
 {% block content %}
+    <!-- Show notification if present -->
+    {% if notification %}
+    <div id="unauthorized-notification" class="notification {{ notification.type }}" style="display: none;">
+        🚫 {{ notification.message }}
+    </div>
+    {% endif %}
+    
     <div id="chat-container" data-room-id="{{ room.id }}" data-username="{{ username }}">
     <!-- Chat Header -->
     <div class="chat-header">
@@ -86,4 +106,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+{% if notification %}
+<script>
+$(document).ready(function() {
+    // Show the unauthorized access notification
+    $('#unauthorized-notification').fadeIn(300);
+    
+    // Auto-hide after 4 seconds
+    setTimeout(function() {
+        $('#unauthorized-notification').fadeOut(500);
+    }, 4000);
+});
+</script>
+{% endif %}
 {% endblock %}

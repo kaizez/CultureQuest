@@ -1,135 +1,174 @@
 #!/usr/bin/env python3
 """
-MySQL Clear Script for CultureQuest User Data
-This script clears all user data from the CultureQuest application tables
-without dropping the schema or affecting other users' data in the shared database.
+Clear User Data Script for CultureQuest
+========================================
+
+PURPOSE:
+Drops only the chatapp_rewards related database tables to allow for schema updates.
+This script will NOT touch any tables outside of the chatapp_rewards module.
+
+WHEN TO USE:
+- When you see database errors like "Unknown column 'user_id'"  
+- After updating the chatapp_rewards models with new columns
+- When authentication integration requires database schema changes
+
+USAGE:
+1. Stop your application server
+2. Run: python clear_user_data.py
+3. Confirm the action by typing 'YES'
+4. Restart your application server 
+5. The app will automatically recreate tables with the new schema
+
+SAFETY:
+- Only affects chatapp_rewards tables (chat_room, message, user_points, etc.)
+- Login system tables are NOT affected
+- Challenge module tables are NOT affected
+- Other application data remains intact
 """
 
+import pymysql
 import os
-import sys
-from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
 def get_db_connection():
-    """Create database connection from environment variables"""
-    db_host = os.environ.get('DB_HOST')
-    db_port = os.environ.get('DB_PORT')
-    db_user = os.environ.get('DB_USER')
-    db_password = os.environ.get('DB_PASSWORD')
-    db_name = os.environ.get('DB_NAME')
-    
-    if not all([db_host, db_port, db_user, db_password, db_name]):
-        print("Error: Missing database connection parameters in .env file")
-        sys.exit(1)
-    
-    connection_string = f'mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
-    return create_engine(connection_string)
+    """Get database connection using environment variables"""
+    try:
+        # Get database connection parameters (same as used in app.py)
+        db_host = os.getenv('DB_HOST')
+        db_port = int(os.getenv('DB_PORT', 8080))
+        db_user = os.getenv('DB_USER')
+        db_password = os.getenv('DB_PASSWORD')
+        db_name = os.getenv('DB_NAME')
+        
+        # Check if all required variables are present
+        if not all([db_host, db_user, db_password, db_name]):
+            missing_vars = []
+            if not db_host: missing_vars.append('DB_HOST')
+            if not db_user: missing_vars.append('DB_USER')
+            if not db_password: missing_vars.append('DB_PASSWORD')
+            if not db_name: missing_vars.append('DB_NAME')
+            print(f"Missing required environment variables: {', '.join(missing_vars)}")
+            print("Please check your .env file")
+            return None
+        
+        print(f"Connecting to database: {db_user}@{db_host}:{db_port}/{db_name}")
+        
+        connection = pymysql.connect(
+            host=db_host,
+            port=db_port,
+            user=db_user,
+            password=db_password,
+            database=db_name,
+            charset='utf8mb4',
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        return connection
+    except Exception as e:
+        print(f"Error connecting to database: {e}")
+        print("Please verify your database credentials in .env file")
+        return None
 
-def clear_user_data():
-    """Clear all CultureQuest user data from database tables"""
-    engine = get_db_connection()
+def drop_chatapp_rewards_tables():
+    """Drop only the tables related to chatapp_rewards module"""
+    
+    # Tables to drop (in order to handle foreign key constraints)
+    tables_to_drop = [
+        'reward_redemption',    # Has foreign key to reward_item and user_points
+        'message',              # Has foreign key to uploaded_file and chat_room
+        'muted_user',           # Has foreign key to chat_room
+        'security_violation',   # Standalone table
+        'uploaded_file',        # Has foreign key to chat_room
+        'user_points',          # Standalone table
+        'reward_item',          # Standalone table
+        'chat_room'             # Referenced by other tables
+    ]
+    
+    connection = get_db_connection()
+    if not connection:
+        print("Failed to connect to database")
+        return False
     
     try:
-        with engine.connect() as connection:
-            # Start transaction
-            trans = connection.begin()
+        with connection.cursor() as cursor:
+            # Disable foreign key checks temporarily
+            cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
             
-            try:
-                print("Starting data cleanup for CultureQuest tables...")
-                
-                # Clear data in order (respecting foreign key constraints)
-                # 1. Reward redemptions (references reward_item)
-                result = connection.execute(text("DELETE FROM reward_redemption"))
-                print(f"Cleared {result.rowcount} reward redemptions")
-                
-                # 2. Reward items (can be cleared independently)
-                result = connection.execute(text("DELETE FROM reward_item"))
-                print(f"Cleared {result.rowcount} reward items")
-                
-                # 3. User points (can be cleared independently)
-                result = connection.execute(text("DELETE FROM user_points"))
-                print(f"Cleared {result.rowcount} user points records")
-                
-                # 4. Messages (references chat_room and uploaded_file)
-                result = connection.execute(text("DELETE FROM message"))
-                print(f"Cleared {result.rowcount} messages")
-                
-                # 5. Security violations (references chat_room)
-                result = connection.execute(text("DELETE FROM security_violation"))
-                print(f"Cleared {result.rowcount} security violations")
-                
-                # 6. Muted users (references chat_room)
-                result = connection.execute(text("DELETE FROM muted_user"))
-                print(f"Cleared {result.rowcount} muted users")
-                
-                # 7. Uploaded files (can be cleared independently)
-                result = connection.execute(text("DELETE FROM uploaded_file"))
-                print(f"Cleared {result.rowcount} uploaded files")
-                
-                # 8. Chat rooms (parent table)
-                result = connection.execute(text("DELETE FROM chat_room"))
-                print(f"Cleared {result.rowcount} chat rooms")
-                
-                # Reset auto-increment counters to 1
-                print("\nResetting auto-increment counters...")
-                connection.execute(text("ALTER TABLE reward_redemption AUTO_INCREMENT = 1"))
-                connection.execute(text("ALTER TABLE reward_item AUTO_INCREMENT = 1"))
-                connection.execute(text("ALTER TABLE user_points AUTO_INCREMENT = 1"))
-                connection.execute(text("ALTER TABLE message AUTO_INCREMENT = 1"))
-                connection.execute(text("ALTER TABLE security_violation AUTO_INCREMENT = 1"))
-                connection.execute(text("ALTER TABLE muted_user AUTO_INCREMENT = 1"))
-                connection.execute(text("ALTER TABLE uploaded_file AUTO_INCREMENT = 1"))
-                connection.execute(text("ALTER TABLE chat_room AUTO_INCREMENT = 1"))
-                print("Auto-increment counters reset")
-                
-                # Commit transaction
-                trans.commit()
-                print("\n✅ Successfully cleared all CultureQuest user data")
-                print("Note: Database schema and structure remain intact")
-                
-            except Exception as e:
-                # Rollback on error
-                trans.rollback()
-                print(f"\n❌ Error during data cleanup: {e}")
-                print("Transaction rolled back - no data was modified")
-                sys.exit(1)
-                
+            dropped_tables = []
+            for table in tables_to_drop:
+                try:
+                    # Check if table exists first
+                    cursor.execute(f"SHOW TABLES LIKE '{table}'")
+                    if cursor.fetchone():
+                        cursor.execute(f"DROP TABLE `{table}`")
+                        dropped_tables.append(table)
+                        print(f"✓ Dropped table: {table}")
+                    else:
+                        print(f"⚠ Table {table} does not exist, skipping")
+                except Exception as e:
+                    print(f"✗ Error dropping table {table}: {e}")
+            
+            # Re-enable foreign key checks
+            cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+            
+            connection.commit()
+            print(f"\n✓ Successfully dropped {len(dropped_tables)} tables")
+            print("Tables dropped:", ", ".join(dropped_tables))
+            
+        return True
+        
     except Exception as e:
-        print(f"❌ Database connection error: {e}")
-        sys.exit(1)
+        print(f"Error during table dropping: {e}")
+        connection.rollback()
+        return False
+    finally:
+        connection.close()
 
 def confirm_action():
     """Ask user to confirm the destructive action"""
-    print("⚠️  WARNING: This will permanently delete ALL CultureQuest user data!")
-    print("This includes:")
-    print("- All reward redemptions")
-    print("- All reward items")
-    print("- All user points records")
-    print("- All chat messages")
-    print("- All uploaded files")
-    print("- All chat rooms")
-    print("- All security violations")
-    print("- All muted users")
-    print("\nThe database schema will remain intact.")
-    print("This action CANNOT be undone!")
+    print("=" * 60)
+    print("WARNING: DESTRUCTIVE ACTION")
+    print("=" * 60)
+    print("This script will DROP the following chatapp_rewards tables:")
+    print("- chat_room")
+    print("- uploaded_file") 
+    print("- message")
+    print("- security_violation")
+    print("- muted_user")
+    print("- user_points")
+    print("- reward_item")
+    print("- reward_redemption")
+    print("\nALL DATA in these tables will be PERMANENTLY LOST!")
+    print("Tables outside of chatapp_rewards module will NOT be affected.")
+    print("=" * 60)
     
-    response = input("\nAre you sure you want to proceed? Type 'YES' to confirm: ")
+    response = input("Are you sure you want to continue? (type 'YES' to confirm): ").strip()
+    return response == 'YES'
+
+def main():
+    """Main function"""
+    print("Clear User Data Script for CultureQuest")
+    print("Targeting chatapp_rewards tables only\n")
     
-    if response != 'YES':
-        print("Operation cancelled.")
-        sys.exit(0)
+    if not confirm_action():
+        print("Operation cancelled by user.")
+        return
+    
+    print("\nStarting table cleanup...")
+    success = drop_chatapp_rewards_tables()
+    
+    if success:
+        print("\n" + "=" * 60)
+        print("SUCCESS: Chatapp_rewards tables have been dropped")
+        print("You can now restart your application to recreate tables with the new schema")
+        print("=" * 60)
+    else:
+        print("\n" + "=" * 60)
+        print("ERROR: Failed to complete table cleanup")
+        print("Please check the error messages above")
+        print("=" * 60)
 
 if __name__ == "__main__":
-    print("CultureQuest Database Clear Script")
-    print("=" * 40)
-    
-    # Confirm the action
-    confirm_action()
-    
-    # Clear the data
-    clear_user_data()
-    
-    print("\nOperation completed successfully!")
+    main()

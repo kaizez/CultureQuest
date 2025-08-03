@@ -1,7 +1,39 @@
+/* Reset all margins and padding for chat page */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box;
+}
+
 /* General Body Styles */
 .chat-body {
     margin: 0;
+    padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+/* Override base.css for chat pages - Multiple selectors for higher specificity */
+.chat-body .main-content,
+body.chat-body .main-content,
+html body.chat-body .main-content,
+body.chat-body main.main-content {
+    height: 100vh !important;
+    width: 100vw !important;
+    max-width: none !important;
+    min-height: unset !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    box-sizing: border-box !important;
 }
 
 /* Mute Notification Styles */
@@ -57,8 +89,14 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
+    width: 100vw;
     background-color: #f8f9fa;
     overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
 }
 
 /* Chat Header */
@@ -136,7 +174,11 @@
 #message-wrapper {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px;
+    background-color: #f8f9fa;
+    position: relative;
+    min-height: 0; /* Important for flex scrolling */
 }
 
 #messages {
@@ -350,4 +392,90 @@
 .message.user .bubble-text .file-link {
     color: #ffffff;
     text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .chat-header {
+        padding: 10px 15px;
+    }
+    
+    .challenge-name {
+        font-size: 16px;
+    }
+    
+    .challenge-duration {
+        font-size: 12px;
+    }
+    
+    #message-wrapper {
+        padding: 15px 10px;
+    }
+    
+    .message {
+        max-width: 85%;
+    }
+    
+    .message-avatar {
+        width: 35px;
+        height: 35px;
+        margin: 0 8px;
+    }
+    
+    .bubble-text {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+    
+    #chat-footer {
+        padding: 10px 15px;
+    }
+    
+    .chat-input-container {
+        padding: 4px;
+    }
+    
+    #message {
+        font-size: 14px;
+        padding: 8px;
+    }
+    
+    .action-btn, .send-btn {
+        padding: 8px;
+        font-size: 20px;
+    }
+    
+    .send-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (max-width: 480px) {
+    .challenge-badge {
+        gap: 8px;
+    }
+    
+    .challenge-icon {
+        font-size: 20px;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
+    
+    .message-avatar {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .bubble-text {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .message-image {
+        max-width: 250px;
+        max-height: 250px;
+    }
 }

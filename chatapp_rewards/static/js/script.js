@@ -26,7 +26,7 @@ $(document).ready(function () {
 
     // Function to check if user is muted
     function checkMuteStatus() {
-        $.getJSON(`/api/mute-status/${encodeURIComponent(userName)}/${roomId}`, function(response) {
+        $.getJSON(`/api/mute-status/${roomId}`, function(response) {
             isMuted = response.is_muted;
             muteInfo = response.mute_info;
             
@@ -424,19 +424,21 @@ $(document).ready(function () {
             '<div style="margin-top: 10px; font-weight: bold; color: #17a2b8;">🔍 URL Scan Results:</div>'
         );
         
-        // Style safe URLs
+        // Style safe URLs with clickable links (more flexible pattern)
         formattedMessage = formattedMessage.replace(
-            /✅ (https?:\/\/[^\s]+): ([^<\n]+)/g,
+            /✅\s*(https?:\/\/[^\s:]+):\s*([^\n\r]+)/g,
             '<div style="margin: 5px 0; padding: 8px; background-color: #d4edda; border-radius: 4px; border-left: 4px solid #28a745;">' +
             '<div style="font-weight: bold; color: #155724;">✅ Safe URL</div>' +
-            '<div style="font-family: monospace; font-size: 0.9em; color: #155724; word-break: break-all;">$1</div>' +
+            '<div style="font-family: monospace; font-size: 0.9em; word-break: break-all;">' +
+            '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #155724; text-decoration: underline;">$1</a>' +
+            '</div>' +
             '<div style="font-size: 0.9em; color: #155724;">$2</div>' +
             '</div>'
         );
         
-        // Style potentially dangerous URLs
+        // Style potentially dangerous URLs (no clickable link for security)
         formattedMessage = formattedMessage.replace(
-            /⚠️ (https?:\/\/[^\s]+): ([^<\n]+)/g,
+            /⚠️\s*(https?:\/\/[^\s:]+):\s*([^\n\r]+)/g,
             '<div style="margin: 5px 0; padding: 8px; background-color: #f8d7da; border-radius: 4px; border-left: 4px solid #dc3545;">' +
             '<div style="font-weight: bold; color: #721c24;">⚠️ Potential Threat Detected</div>' +
             '<div style="font-family: monospace; font-size: 0.9em; color: #721c24; word-break: break-all;">$1</div>' +
@@ -453,6 +455,12 @@ $(document).ready(function () {
         formattedMessage = formattedMessage.replace(
             /⚠️ Uploaded without virus scan/g,
             '<div style="margin-top: 10px; color: #ffc107; font-weight: bold;">⚠️ Uploaded without virus scan</div>'
+        );
+        
+        // Make regular URLs clickable (not already processed by virus scan)
+        formattedMessage = formattedMessage.replace(
+            /(^|[^">])(https?:\/\/[^\s<>"]+)(?![^<]*<\/a>)/g,
+            '$1<a href="$2" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">$2</a>'
         );
         
         return formattedMessage;

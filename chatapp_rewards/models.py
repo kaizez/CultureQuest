@@ -37,7 +37,7 @@ class UploadedFile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
     original_filename = db.Column(db.String(255), nullable=False)
-    file_data = db.Column(db.LargeBinary, nullable=False)
+    file_data = db.Column(db.LargeBinary(length=16777215), nullable=False)  # MEDIUMBLOB - 16MB max
     file_size = db.Column(db.Integer, nullable=False)
     mime_type = db.Column(db.String(100), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -58,7 +58,8 @@ class Message(db.Model):
     __table_args__ = mysql_table_args
     
     id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.String(36), nullable=False)  # Links to login system user ID (UUID)
+    user_name = db.Column(db.String(50), nullable=False)  # Keep username for display
     message = db.Column(db.String(500), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     file_id = db.Column(db.Integer, db.ForeignKey('uploaded_file.id'), nullable=True)
@@ -80,10 +81,13 @@ class Message(db.Model):
         
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'user_name': self.user_name,
             'message': self.message,
             'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S') if self.timestamp else '',
             'file_info': file_info,
+            'file_url': f'/file/{self.file_id}' if self.file_id else None,
+            'file_name': file_info['filename'] if file_info else None,
             'room_id': self.room_id
         }
 
@@ -117,7 +121,8 @@ class MutedUser(db.Model):
     __table_args__ = mysql_table_args
     
     id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.String(36), nullable=False)  # Links to login system user ID (UUID)
+    user_name = db.Column(db.String(50), nullable=False)  # Keep username for display
     room_id = db.Column(db.Integer, db.ForeignKey('chat_room.id'), nullable=False)
     muted_at = db.Column(db.DateTime, default=datetime.utcnow)
     muted_until = db.Column(db.DateTime, nullable=True)  # None for permanent mute
@@ -128,6 +133,7 @@ class MutedUser(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'user_name': self.user_name,
             'room_id': self.room_id,
             'muted_at': self.muted_at.strftime('%Y-%m-%d %H:%M:%S') if self.muted_at else '',
@@ -149,7 +155,8 @@ class UserPoints(db.Model):
     __table_args__ = mysql_table_args
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), nullable=False, unique=True)
+    user_id = db.Column(db.String(36), nullable=False, unique=True)  # Links to login system user ID (UUID)
+    username = db.Column(db.String(50), nullable=False)  # Keep username for display purposes
     points = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -157,6 +164,7 @@ class UserPoints(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'username': self.username,
             'points': self.points,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else '',

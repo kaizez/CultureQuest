@@ -121,10 +121,47 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db.init_app(app)
 socketio = SocketIO(app)
 
+# Make auth functions available to all templates
+from chatapp_rewards.auth_utils import get_navbar_template
+
+@app.context_processor
+def inject_navbar():
+    return dict(get_navbar_template=get_navbar_template)
+
 # Create tables if not exist
 with app.app_context():
-    db.create_all()
-    print("[OK] All database tables created/verified")
+    try:
+        db.create_all()
+        print("[OK] All database tables created/verified")
+        
+        # Verify that chatapp_rewards tables have the correct schema
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        
+        # Check Message table has user_id column
+        message_columns = [col['name'] for col in inspector.get_columns('message')]
+        if 'user_id' not in message_columns:
+            print("[WARNING] Message table missing user_id column - may need to run clear_user_data.py")
+        
+        # Check MutedUser table has user_id column  
+        try:
+            muted_user_columns = [col['name'] for col in inspector.get_columns('muted_user')]
+            if 'user_id' not in muted_user_columns:
+                print("[WARNING] MutedUser table missing user_id column - may need to run clear_user_data.py")
+        except:
+            pass  # Table might not exist yet
+            
+        # Check UserPoints table has user_id column
+        try:
+            user_points_columns = [col['name'] for col in inspector.get_columns('user_points')]
+            if 'user_id' not in user_points_columns:
+                print("[WARNING] UserPoints table missing user_id column - may need to run clear_user_data.py")
+        except:
+            pass  # Table might not exist yet
+            
+    except Exception as e:
+        print(f"[ERROR] Database initialization failed: {e}")
+        print("[INFO] If you're seeing schema errors, run: python clear_user_data.py")
     
     # Create default chat rooms if they don't exist
     if ChatRoom.query.count() == 0:

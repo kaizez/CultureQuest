@@ -12,6 +12,7 @@ from models import db, Message, ChatRoom, SecurityViolation, MutedUser, Uploaded
 from datetime import datetime
 from markupsafe import escape
 from urllib.parse import urlparse
+from auth_utils import require_login, require_admin, get_current_user, get_user_id, get_username
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -276,13 +277,57 @@ def analyze_file_scan_result(report_data):
     
     return is_safe, scan_summary, message
 
-def is_user_muted(user_name, room_id):
+def redirect_to_latest_chat_with_notification(user_id, message):
+    """Redirect user to their latest visited chat room and queue a notification"""
+    try:
+        from flask import session
+        
+        # Store the notification message in session to show after redirect
+        session['notification'] = {
+            'message': message,
+            'type': 'error'
+        }
+        
+        # Get the user's most recently visited room from session
+        last_visited_room = session.get('last_visited_room')
+        
+        if last_visited_room:
+            # Verify the room still exists and is active
+            room = ChatRoom.query.get(last_visited_room)
+            if room and room.is_active:
+                return redirect(url_for('chat.chat_session', room_id=last_visited_room))
+        
+        # Fallback: Find the user's most recent chat room by message activity
+        latest_message = Message.query.filter_by(user_id=user_id).order_by(Message.timestamp.desc()).first()
+        
+        if latest_message and latest_message.room_id:
+            # Verify this room is still active
+            room = ChatRoom.query.get(latest_message.room_id)
+            if room and room.is_active:
+                return redirect(url_for('chat.chat_session', room_id=latest_message.room_id))
+        
+        # Final fallback to chat rooms list
+        return redirect(url_for('chat.chat_rooms'))
+            
+    except Exception as e:
+        print(f"Error in redirect_to_latest_chat_with_notification: {e}")
+        # Fallback to simple redirect
+        return redirect(url_for('chat.chat_rooms'))
+
+def is_user_muted(user_name, room_id, user_id=None):
     """Helper function to check if a user is muted in a specific room"""
-    mute = MutedUser.query.filter_by(
-        user_name=user_name,
-        room_id=room_id,
-        is_active=True
-    ).first()
+    if user_id:
+        mute = MutedUser.query.filter_by(
+            user_id=user_id,
+            room_id=room_id,
+            is_active=True
+        ).first()
+    else:
+        mute = MutedUser.query.filter_by(
+            user_name=user_name,
+            room_id=room_id,
+            is_active=True
+        ).first()
     
     if not mute:
         return False
@@ -293,34 +338,51 @@ def is_user_muted(user_name, room_id):
 # Landing page route removed - handled by login module
 
 @chat_bp.route('/chat')
+@require_login
 def chat_rooms():
     """Chat rooms menu page"""
-    username = request.args.get('username', 'Guest')
+    current_user = get_current_user()
+    username = current_user['username']
     rooms = ChatRoom.query.filter_by(is_active=True).order_by(ChatRoom.created_at.desc()).all()
     return render_template('chat_rooms.html', username=escape(username), rooms=rooms)
 
 @chat_bp.route('/chat/<int:room_id>')
+@require_login
 def chat_session(room_id):
     """Individual chat session route"""
+    from flask import session
+    
     room = ChatRoom.query.get_or_404(room_id)
     if not room.is_active:
         flash('This chat room is not available', 'error')
         return redirect(url_for('chat.chat_rooms'))
     
-    # Get username from query parameters or default to 'Guest'
-    username = request.args.get('username', 'Guest')
+    # Get current user from session
+    current_user = get_current_user()
+    username = current_user['username']
+    
+    # Track the user's visit to this room
+    session['last_visited_room'] = room_id
+    print(f"User {username} visited room {room_id} - tracking for redirect purposes")
+    
+    # Check for queued notifications from unauthorized access attempts
+    notification = session.pop('notification', None)
+    
     return render_template('session.html', 
                          username=escape(username), 
                          room=room,
-                         room_id=room_id)
+                         room_id=room_id,
+                         notification=notification)
 
 @chat_bp.route('/api/rooms', methods=['GET'])
+@require_login
 def get_rooms():
     """API endpoint to get all active chat rooms"""
     rooms = ChatRoom.query.filter_by(is_active=True).order_by(ChatRoom.created_at.desc()).all()
     return jsonify([room.to_dict() for room in rooms])
 
 @chat_bp.route('/api/rooms', methods=['POST'])
+@require_login
 def create_room():
     """API endpoint to create a new chat room"""
     data = request.get_json()
@@ -349,17 +411,22 @@ def create_room():
     return jsonify(new_room.to_dict()), 201
 
 @chat_bp.route('/history/<int:room_id>')
+@require_login
 def history(room_id):
     """Get chat history for a specific room"""
     room = ChatRoom.query.get_or_404(room_id)
     messages = Message.query.filter_by(room_id=room_id).order_by(Message.timestamp.asc()).all()
     return jsonify([msg.to_dict() for msg in messages])
 
-@chat_bp.route('/api/mute-status/<username>/<int:room_id>', methods=['GET'])
-def check_mute_status(username, room_id):
-    """API endpoint to check if a user is muted in a specific room"""
+@chat_bp.route('/api/mute-status/<int:room_id>', methods=['GET'])
+@require_login
+def check_mute_status(room_id):
+    """API endpoint to check if current user is muted in a specific room"""
+    current_user = get_current_user()
+    user_id = current_user['user_id']
+    
     mute = MutedUser.query.filter_by(
-        user_name=username,
+        user_id=user_id,
         room_id=room_id,
         is_active=True
     ).first()
@@ -403,6 +470,7 @@ def check_mute_status(username, room_id):
     })
 
 @chat_bp.route('/upload/<int:room_id>', methods=['POST'])
+@require_login
 def upload_file(room_id):
     """Handle file uploads with virus scanning for a specific room"""
     from flask import current_app
@@ -412,7 +480,10 @@ def upload_file(room_id):
         return jsonify({'error': 'Chat room is not available'}), 400
     
     try:
-        user_name = request.form.get('user_name', 'Guest')
+        # Get current user from session
+        current_user = get_current_user()
+        user_id = current_user['user_id']
+        user_name = current_user['username']
         message = request.form.get('message', '')
 
         # Basic input validation for user_name and message
@@ -424,14 +495,14 @@ def upload_file(room_id):
         message = str(escape(message))
         
         # Check if user is muted in this room
-        if is_user_muted(str(user_name), room_id):
+        if is_user_muted(str(user_name), room_id, user_id):
             return jsonify({'error': 'You are muted in this room and cannot send messages or upload files.'}), 403
 
         # Check if file was uploaded
         if 'file' not in request.files:
             # If there's a message, treat it as a regular text message
             if message:
-                new_msg = Message(user_name=user_name, message=message, 
+                new_msg = Message(user_id=user_id, user_name=user_name, message=message, 
                                 timestamp=datetime.utcnow(), room_id=room_id)
                 db.session.add(new_msg)
                 db.session.commit()
@@ -451,7 +522,7 @@ def upload_file(room_id):
         if file.filename == '':
             # If there's a message, treat it as a regular text message
             if message:
-                new_msg = Message(user_name=user_name, message=message, 
+                new_msg = Message(user_id=user_id, user_name=user_name, message=message, 
                                 timestamp=datetime.utcnow(), room_id=room_id)
                 db.session.add(new_msg)
                 db.session.commit()
@@ -539,6 +610,7 @@ def upload_file(room_id):
                 full_message = f"{message}\n\n{scan_info}" if message else scan_info
 
                 new_msg = Message(
+                    user_id=user_id,
                     user_name=user_name,
                     message=full_message,
                     timestamp=datetime.utcnow(),
@@ -599,6 +671,13 @@ def handle_leave(socketio, data):
 
 def handle_chat_message(socketio, json):
     """Handle chat message with URL scanning"""
+    from flask import session
+    
+    # Check if user is authenticated
+    if 'username' not in session or 'user_id' not in session:
+        socketio.emit('error', {'message': 'Authentication required'})
+        return
+    
     room_id = json.get('room_id')
     if not room_id:
         return
@@ -610,7 +689,9 @@ def handle_chat_message(socketio, json):
     
     print('received message:', json)
 
-    user_name = json.get('user_name', 'Guest')
+    # Get user info from session instead of message data
+    user_name = session['username']
+    user_id = session['user_id']
     message = json.get('message', '')
 
     # Basic input validation
@@ -622,7 +703,7 @@ def handle_chat_message(socketio, json):
     message = str(escape(message))
     
     # Check if user is muted in this room
-    if is_user_muted(str(user_name), room_id):
+    if is_user_muted(str(user_name), room_id, user_id):
         emit('mute_notification', {
             'message': 'You are muted in this room and cannot send messages.',
             'room_id': room_id
@@ -669,6 +750,7 @@ def handle_chat_message(socketio, json):
 
     # Save message to database
     new_msg = Message(
+        user_id=user_id,
         user_name=user_name,
         message=final_message,
         timestamp=datetime.utcnow(),
@@ -687,15 +769,88 @@ def handle_chat_message(socketio, json):
     emit('my response', new_msg.to_dict(), room=f'room_{room_id}')
 
 @chat_bp.route('/file/<int:file_id>')
+@require_login
 def serve_file(file_id):
-    """Serve file from database"""
-    uploaded_file = UploadedFile.query.get_or_404(file_id)
-    
-    return Response(
-        uploaded_file.file_data,
-        mimetype=uploaded_file.mime_type,
-        headers={
-            'Content-Disposition': f'inline; filename="{uploaded_file.original_filename}"',
-            'Content-Length': str(uploaded_file.file_size)
-        }
-    )
+    """Serve file from database with proper authorization"""
+    try:
+        from flask import session
+        current_user = get_current_user()
+        user_id = current_user['user_id']
+        username = current_user['username']
+        
+        print(f"Serving file {file_id}, user: {username}")
+        
+        # Get the file
+        uploaded_file = UploadedFile.query.get_or_404(file_id)
+        
+        # Find the message that contains this file
+        message = Message.query.filter_by(file_id=file_id).first()
+        if not message:
+            print(f"No message found for file {file_id}")
+            return redirect_to_latest_chat_with_notification(user_id, "File not found or access denied")
+        
+        # Get the chat room for this message
+        chat_room = ChatRoom.query.get(message.room_id)
+        if not chat_room or not chat_room.is_active:
+            print(f"Chat room {message.room_id} not found or inactive")
+            return redirect_to_latest_chat_with_notification(user_id, "Chat room not accessible")
+        
+        # STRICT Authorization: User can ONLY access files when viewing the specific chat room
+        # This applies to ALL files - even ones they uploaded themselves
+        
+        print(f"File belongs to message ID {message.id} in room {message.room_id}")
+        print(f"File uploaded by user_id: {message.user_id}, current user_id: {user_id}")
+        
+        # Check if user is currently viewing the correct chat room (based on HTTP referer)
+        from flask import request
+        referer = request.headers.get('Referer', '')
+        print(f"Request referer: {referer}")
+        
+        # Check if the referer is from the correct chat room
+        expected_chat_url = f'/chat/{message.room_id}'
+        is_accessing_from_correct_room = expected_chat_url in referer
+        
+        print(f"Expected chat URL: {expected_chat_url}")
+        print(f"Accessing from correct room: {is_accessing_from_correct_room}")
+        
+        # STRICT RULE: Files can ONLY be accessed when viewing the correct chat room
+        if not is_accessing_from_correct_room:
+            print(f"User {username} denied access to file {file_id} - not accessing from correct room {message.room_id}")
+            return redirect_to_latest_chat_with_notification(user_id, "Unauthorized access - files can only be accessed from within their respective chat room")
+        
+        # Additional verification: ensure user has access to this room
+        user_uploaded_file = (message.user_id == user_id)
+        user_messages_in_room = Message.query.filter_by(
+            user_id=user_id, 
+            room_id=message.room_id
+        ).count()
+        
+        print(f"User uploaded this file: {user_uploaded_file}")
+        print(f"User has {user_messages_in_room} messages in room {message.room_id}")
+        
+        # User must have participated in this room (either uploaded this file OR has other messages)
+        if not user_uploaded_file and user_messages_in_room == 0:
+            print(f"User {username} denied access to file {file_id} - no participation in room")
+            return redirect_to_latest_chat_with_notification(user_id, "Unauthorized access - you haven't participated in this chat room")
+        
+        # Log successful access
+        print(f"File access granted: {uploaded_file.original_filename} to user {username}")
+        
+        # For images, use inline display; for other files, use attachment for download
+        file_extension = uploaded_file.original_filename.split('.')[-1].lower() if '.' in uploaded_file.original_filename else ''
+        is_image = file_extension in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg']
+        
+        disposition = 'inline' if is_image else 'attachment'
+        
+        return Response(
+            uploaded_file.file_data,
+            mimetype=uploaded_file.mime_type,
+            headers={
+                'Content-Disposition': f'{disposition}; filename="{uploaded_file.original_filename}"',
+                'Content-Length': str(uploaded_file.file_size),
+                'Cache-Control': 'private, max-age=3600'  # Private cache since it's access-controlled
+            }
+        )
+    except Exception as e:
+        print(f"Error serving file {file_id}: {e}")
+        return f"Access denied", 403

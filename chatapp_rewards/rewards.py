@@ -6,25 +6,29 @@ from werkzeug.utils import secure_filename
 from models import db, UserPoints, RewardItem, RewardRedemption, UploadedFile
 from datetime import datetime
 from chat import scan_file_with_virustotal, allowed_file
+from auth_utils import require_login, require_admin, get_current_user, get_user_id, get_username
 
 rewards_bp = Blueprint('rewards', __name__)
 
-def get_or_create_user_points(username):
+def get_or_create_user_points(user_id, username):
     """Get user points or create new user with 950 default points"""
-    user_points = UserPoints.query.filter_by(username=username).first()
+    user_points = UserPoints.query.filter_by(user_id=user_id).first()
     if not user_points:
-        user_points = UserPoints(username=username, points=950)
+        user_points = UserPoints(user_id=user_id, username=username, points=950)
         db.session.add(user_points)
         db.session.commit()
     return user_points
 
 @rewards_bp.route('/rewards')
+@require_login
 def rewards_page():
     """Display the rewards page"""
-    username = request.args.get('username', 'User')
+    current_user = get_current_user()
+    user_id = current_user['user_id']
+    username = current_user['username']
     
     # Get user points
-    user_points = get_or_create_user_points(username)
+    user_points = get_or_create_user_points(user_id, username)
     
     # Get all active reward items
     reward_items = RewardItem.query.filter_by(is_active=True).all()
@@ -35,17 +39,22 @@ def rewards_page():
                          reward_items=reward_items)
 
 @rewards_bp.route('/rewards/redeem', methods=['POST'])
+@require_login
 def redeem_reward():
     """Handle reward redemption"""
     data = request.get_json()
-    username = data.get('username')
     reward_id = data.get('reward_id')
     
-    if not username or not reward_id:
-        return jsonify({'error': 'Missing username or reward_id'}), 400
+    if not reward_id:
+        return jsonify({'error': 'Missing reward_id'}), 400
+    
+    # Get current user from session
+    current_user = get_current_user()
+    user_id = current_user['user_id']
+    username = current_user['username']
     
     # Get user points
-    user_points = get_or_create_user_points(username)
+    user_points = get_or_create_user_points(user_id, username)
     
     # Get reward item
     reward_item = RewardItem.query.get(reward_id)
@@ -92,9 +101,11 @@ def redeem_reward():
         return jsonify({'error': 'Failed to process redemption'}), 500
 
 @rewards_bp.route('/rewards/admin')
+@require_admin
 def rewards_admin():
     """Display the rewards admin page"""
-    username = request.args.get('username', 'Admin')
+    current_user = get_current_user()
+    username = current_user['username']
     
     # Get all reward items
     reward_items = RewardItem.query.all()
@@ -112,6 +123,7 @@ def rewards_admin():
                          recent_redemptions=recent_redemptions)
 
 @rewards_bp.route('/rewards/admin/add_item', methods=['POST'])
+@require_admin
 def add_reward_item():
     """Add a new reward item with image upload"""
     try:
@@ -193,6 +205,7 @@ def add_reward_item():
         return jsonify({'error': f'Failed to add reward item: {str(e)}'}), 500
 
 @rewards_bp.route('/rewards/admin/update_stock', methods=['POST'])
+@require_admin
 def update_stock():
     """Update stock for a reward item"""
     data = request.get_json()
@@ -216,14 +229,26 @@ def update_stock():
         return jsonify({'error': 'Failed to update stock'}), 500
 
 @rewards_bp.route('/rewards/admin/update_points', methods=['POST'])
+@require_admin
 def update_user_points():
     """Update points for a user"""
     data = request.get_json()
-    username = data.get('username')
+    user_id = data.get('user_id')
+    username = data.get('username')  # For backwards compatibility
     new_points = data.get('points')
     
     try:
-        user_points = get_or_create_user_points(username)
+        if user_id:
+            # Look up by user_id (preferred method)
+            user_points = UserPoints.query.filter_by(user_id=user_id).first()
+            if not user_points:
+                return jsonify({'error': 'User not found'}), 404
+        else:
+            # Fallback to username for backwards compatibility
+            user_points = UserPoints.query.filter_by(username=username).first()
+            if not user_points:
+                return jsonify({'error': 'User not found'}), 404
+        
         user_points.points = int(new_points)
         user_points.updated_at = datetime.utcnow()
         
@@ -236,6 +261,7 @@ def update_user_points():
         return jsonify({'error': 'Failed to update user points'}), 500
 
 @rewards_bp.route('/rewards/admin/delete_item', methods=['POST'])
+@require_admin
 def delete_reward_item():
     """Delete a reward item permanently"""
     data = request.get_json()
