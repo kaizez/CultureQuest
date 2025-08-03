@@ -9,13 +9,39 @@
 </head>
 
 <body>
+  <!-- Background matching login.css -->
+  <div class="bg-container">
+    <div class="gradient-bg"></div>
+    <div class="shooting-stars">
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+    </div>
+  </div>
+
   <!-- Header -->
   <header class="header">
-    <div class="logo-container">
-      <img src="/static/logo.png" alt="CultureQuest Logo" class="logo">
-      <span class="logo-text">CultureQuest</span>
-      <button class="sign-out-btn" onclick="signOut()">
-        <i class="fas fa-sign-out-alt"></i> Sign Out
+    <div class="header-content">
+      <!-- Home Icon -->
+      <div class="home-icon">
+        <a href="/" aria-label="Go to Home">
+          <i class="fas fa-home"></i>
+        </a>
+      </div>
+      
+      <!-- Logo Section -->
+      <div class="logo-container">
+        <img src="/static/logo.png" alt="CultureQuest Logo" class="logo">
+        <span class="logo-text">CultureQuest</span>
+      </div>
+      
+      <!-- Back to Home Button -->
+      <button class="back-home-btn" onclick="goHome()">
+        <i class="fas fa-home"></i>
+        <span>Back to Home</span>
       </button>
     </div>
   </header>
@@ -482,8 +508,8 @@
       document.getElementById("rankModal").style.display = "none";
     }
 
-    function signOut() {
-      // Add sign out animation
+    function goHome() {
+      // Add transition animation
       document.body.style.opacity = '0';
       document.body.style.transition = 'opacity 0.5s ease';
       
@@ -650,24 +676,92 @@
       }
     };
 
-    // Photo preview functionality
-    document.getElementById('photoInput').addEventListener('change', function(event) {
+    // Enhanced Photo upload functionality with database save
+    document.getElementById('photoInput').addEventListener('change', async function(event) {
       const file = event.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('profilePic').src = e.target.result;
+        // Validate file type and size
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        
+        if (!validTypes.includes(file.type)) {
+          alert('Please select a valid image file (JPEG, PNG, or GIF)');
+          return;
+        }
+        
+        if (file.size > maxSize) {
+          alert('Image size must be less than 5MB');
+          return;
+        }
+
+        // Show loading state
+        const overlay = document.querySelector('.edit-photo-overlay');
+        const originalContent = overlay.innerHTML;
+        overlay.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        overlay.style.pointerEvents = 'none';
+
+        try {
+          // Preview the image immediately
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            document.getElementById('profilePic').src = e.target.result;
+            
+            // Add success animation
+            const pic = document.getElementById('profilePic');
+            pic.style.transform = 'scale(1.1)';
+            pic.style.transition = 'transform 0.3s ease';
+            
+            setTimeout(() => {
+              pic.style.transform = 'scale(1)';
+            }, 300);
+          };
+          reader.readAsDataURL(file);
+
+          // Upload to server
+          const formData = new FormData();
+          formData.append('profile_picture', file);
+
+          const response = await fetch('/upload-profile-picture', {
+            method: 'POST',
+            body: formData
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            // Update the image src with the server URL to ensure it's saved
+            document.getElementById('profilePic').src = result.image_url;
+            
+            // Show success feedback
+            overlay.innerHTML = '<i class="fas fa-check"></i>';
+            overlay.style.color = '#10b981';
+            
+            setTimeout(() => {
+              overlay.innerHTML = originalContent;
+              overlay.style.color = '';
+              overlay.style.pointerEvents = '';
+            }, 2000);
+          } else {
+            throw new Error(result.message || 'Failed to upload image');
+          }
+        } catch (error) {
+          console.error('Error uploading profile picture:', error);
           
-          // Add success animation
-          const pic = document.getElementById('profilePic');
-          pic.style.transform = 'scale(1.1)';
-          pic.style.transition = 'transform 0.3s ease';
+          // Revert the preview on error
+          document.getElementById('profilePic').src = '/static/{{ profile_picture or "default_profile.png" }}';
+          
+          // Show error feedback
+          overlay.innerHTML = '<i class="fas fa-times"></i>';
+          overlay.style.color = '#ef4444';
           
           setTimeout(() => {
-            pic.style.transform = 'scale(1)';
-          }, 300);
-        };
-        reader.readAsDataURL(file);
+            overlay.innerHTML = originalContent;
+            overlay.style.color = '';
+            overlay.style.pointerEvents = '';
+          }, 3000);
+          
+          alert('Error uploading profile picture: ' + error.message);
+        }
       }
     });
 

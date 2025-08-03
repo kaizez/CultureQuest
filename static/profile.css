@@ -16,6 +16,7 @@
   --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
   --gradient-futuristic: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
   --gradient-neon: linear-gradient(45deg, #06b6d4, #3b82f6, #6366f1, #8b5cf6);
+  --gradient-subtle: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 * {
@@ -186,15 +187,6 @@ body::before {
   transition: left 0.5s ease;
 }
 
-.sign-out-btn:hover::before {
-  left: 100%;
-}
-
-.sign-out-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-50%) scale(1.05);
-  box-shadow: var(--shadow-glow);
-}
 
 /* Enhanced Main Layout */
 .main-container {
@@ -229,7 +221,7 @@ body::before {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: var(--gradient-neon);
+  background: white;
   border-radius: 32px;
   opacity: 0;
   transition: opacity 0.4s ease;
@@ -242,7 +234,7 @@ body::before {
 
 .left-panel:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-8px);
+  transform: translateY(-2px);
 }
 
 .profile-picture-wrapper {
@@ -563,7 +555,7 @@ body::before {
   left: 0;
   width: 100%;
   height: 4px;
-  background: var(--gradient-neon);
+  background: white;
   transform: scaleX(0);
   transition: transform 0.4s ease;
 }
@@ -639,22 +631,6 @@ body::before {
   overflow: hidden;
 }
 
-.rank-card::before {
-  content: '';
-  position: absolute;
-  top: -100%;
-  left: -100%;
-  width: 300%;
-  height: 300%;
-  background: conic-gradient(from 0deg, 
-    transparent, 
-    rgba(255, 215, 0, 0.05), 
-    rgba(99, 102, 241, 0.05), 
-    rgba(6, 182, 212, 0.05), 
-    transparent
-  );
-  animation: rankAura 12s linear infinite;
-}
 
 @keyframes rankAura {
   0% { transform: rotate(0deg); }
@@ -663,7 +639,7 @@ body::before {
 
 .rank-card:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-15px);
+  transform: translateY(-2px);
 }
 
 .rank-content {
@@ -690,7 +666,7 @@ body::before {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: var(--gradient-neon);
+  background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -740,7 +716,7 @@ body::before {
 
 .progress-fill {
   height: 100%;
-  background: var(--gradient-neon);
+  background: white;
   border-radius: 15px;
   width: 0%;
   transition: width 1.5s ease;
@@ -956,7 +932,7 @@ body::before {
 
 .achievement-card:hover, .activity-card:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-8px);
+  transform: translateY(-2px);
 }
 
 .achievements-grid {
@@ -1297,7 +1273,7 @@ body::before {
   margin-right: 15px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
   animation: logoFloat 3s ease-in-out infinite;
-  background: var(--gradient-gold);
+  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1334,10 +1310,6 @@ body::before {
   backdrop-filter: blur(10px);
 }
 
-.sign-out-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-50%) scale(1.05);
-}
 
 /* Main Layout */
 .main-container {
@@ -1365,7 +1337,7 @@ body::before {
 
 .left-panel:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-5px);
+  transform: translateY(-2px);
 }
 
 .profile-picture-wrapper {
@@ -1493,7 +1465,7 @@ body::before {
   right: -50%;
   width: 100px;
   height: 100px;
-  background: var(--gradient-gold);
+  background: white;
   border-radius: 50%;
   opacity: 0.1;
   animation: cardGlow 4s ease-in-out infinite;
@@ -1506,7 +1478,7 @@ body::before {
 
 .profile-card:hover, .stats-card:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-8px);
+  transform: translateY(-2px);
 }
 
 .card-header {
@@ -1623,7 +1595,7 @@ body::before {
 }
 
 .stat-item:hover {
-  transform: translateY(-5px);
+  transform: translateY(-2px);
   background: rgba(255, 255, 255, 0.8);
 }
 
@@ -1664,21 +1636,6 @@ body::before {
   overflow: hidden;
 }
 
-.rank-card::before {
-  content: '';
-  position: absolute;
-  top: -100%;
-  left: -100%;
-  width: 300%;
-  height: 300%;
-  background: conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.1), transparent);
-  animation: rankRotate 10s linear infinite;
-}
-
-@keyframes rankRotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 
 .rank-card:hover {
   box-shadow: var(--shadow-hover);
@@ -1706,7 +1663,7 @@ body::before {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: var(--gradient-gold);
+  background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1898,6 +1855,176 @@ body::before {
   }
 }
 
+/* Background matching login.css */
+.bg-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.gradient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-subtle);
+  background-size: 400% 400%;
+  animation: lightFlow 25s ease infinite;
+}
+
+@keyframes lightFlow {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+  100% { background-position: 0% 50%; }
+}
+
+.shooting-stars {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.shooting-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: linear-gradient(45deg, #fff, rgba(99, 102, 241, 0.8));
+  border-radius: 50%;
+  animation: shoot 3s linear infinite;
+}
+
+.shooting-star:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+.shooting-star:nth-child(2) { top: 20%; left: 30%; animation-delay: 0.5s; }
+.shooting-star:nth-child(3) { top: 30%; left: 60%; animation-delay: 1s; }
+.shooting-star:nth-child(4) { top: 50%; left: 20%; animation-delay: 1.5s; }
+.shooting-star:nth-child(5) { top: 70%; left: 80%; animation-delay: 2s; }
+.shooting-star:nth-child(6) { top: 80%; left: 50%; animation-delay: 2.5s; }
+
+@keyframes shoot {
+  0% {
+    transform: translateX(-100px) translateY(-100px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100px) translateY(100px);
+    opacity: 0;
+  }
+}
+
+/* Enhanced Header Styling */
+.header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1000;
+  padding: 1rem 0;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home-icon {
+  flex-shrink: 0;
+}
+
+.home-icon a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary-purple), var(--accent-blue));
+  color: white;
+  text-decoration: none;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.home-icon a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+span.logo-text {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #000000;
+  transition: none;
+  transform: none;
+  background: none;
+  background-clip: initial;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: initial;
+  text-shadow: none;
+  animation: none;
+}
+
+.back-home-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary-purple), var(--accent-blue));
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: none;
+  transform: translateY(-2px);
+  vertical-align: middle;
+}
+
+.back-home-btn:hover {
+  background: linear-gradient(135deg, var(--primary-purple), var(--accent-blue));
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: none;
+}
+
+.back-home-btn span {
+  font-size: 0.9rem;
+}
+
 @media (max-width: 768px) {
   .main-container {
     grid-template-columns: 1fr;
@@ -1907,5 +2034,17 @@ body::before {
   
   .left-panel, .right-panel {
     position: static;
+  }
+  
+  .header-content {
+    padding: 0 1rem;
+  }
+  
+  .logo-text {
+    font-size: 1.2rem;
+  }
+  
+  .back-home-btn span {
+    display: none;
   }
 }

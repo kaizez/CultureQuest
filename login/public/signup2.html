@@ -192,6 +192,7 @@
               <li id="req-no-common">Not a common password</li>
             </ul>
           </div>
+          <div class="error-message" id="password-error" style="display:none; color:#F56565; margin-top:5px;">Password does not meet the required strength.</div>
         </div>
 
         <!-- Confirm Password Field -->
@@ -581,7 +582,18 @@
           }
           
           if (issues.length > 0) {
+            // Show the error message
+            const errorDiv = document.getElementById('password-error');
+            if (errorDiv) {
+              errorDiv.style.display = 'block';
+            }
             return { valid: false, message: `Missing: ${issues.join(', ')}` };
+          }
+          
+          // Hide the error message if password is strong
+          const errorDiv = document.getElementById('password-error');
+          if (errorDiv) {
+            errorDiv.style.display = 'none';
           }
           
           return { valid: true, message: 'Strong password' };

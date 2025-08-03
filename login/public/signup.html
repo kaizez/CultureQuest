@@ -227,6 +227,7 @@
               <li id="req-no-common">Not a common password</li>
             </ul>
           </div>
+          <div class="error-message" id="password-error" style="display:none; color:#F56565; margin-top:5px;">Password does not meet the required strength.</div>
         </div>
 
         <div class="input-group">
@@ -674,7 +675,7 @@
           }
         },
         
-        email: (val) => {
+        email: async (val) => {
           if (!val) return { valid: false, message: 'Email is required' };
           const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
           if (!emailRegex.test(val)) return { valid: false, message: 'Invalid email format' };
@@ -684,7 +685,23 @@
           if (/\+.*\+/.test(val)) return { valid: false, message: 'Invalid email format' };
           if (/\.{2,}/.test(val)) return { valid: false, message: 'Invalid email format' };
           
-          return { valid: true, message: 'Email format is valid' };
+          // Check if email is already taken
+          try {
+            const response = await fetch('/api/check-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: val })
+            });
+            const result = await response.json();
+            
+            if (result.taken) {
+              return { valid: false, message: 'Email error. Please use another email.' };
+            }
+          } catch (error) {
+            console.error('Email check error:', error);
+          }
+          
+          return { valid: true, message: '' };
         },
         
         password: (val) => {
@@ -714,7 +731,18 @@
           }
           
           if (issues.length > 0) {
+            // Show the error message
+            const errorDiv = document.getElementById('password-error');
+            if (errorDiv) {
+              errorDiv.style.display = 'block';
+            }
             return { valid: false, message: `Missing: ${issues.join(', ')}` };
+          }
+          
+          // Hide the error message if password is strong
+          const errorDiv = document.getElementById('password-error');
+          if (errorDiv) {
+            errorDiv.style.display = 'none';
           }
           
           return { valid: true, message: 'Strong password' };
@@ -1214,7 +1242,7 @@
       const result = await response.json();
       
       if (!response.ok) {
-        throw new Error(result.error || 'Signup failed');
+        throw new Error(result.message || result.error || 'Signup failed');
       }
       
       return result;

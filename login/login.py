@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 try:
     from datetime import UTC
@@ -26,6 +27,8 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import Flow
+from PIL import Image
+import io
 
 # Load environment variables from .env file
 load_dotenv()
@@ -1000,8 +1003,9 @@ def signup():
     # Check if user already exists
     if find_user_by_email(email):
         if request.is_json:
-            return jsonify({'success': False, 'message': 'Email already registered'})
+            return jsonify({'success': False, 'message': 'Email already registered', 'show_email_error': True})
         else:
+            flash('Email already registered', 'error')
             return redirect(url_for('login.signup_page'))
     
     if find_user_by_username(username):
@@ -1242,6 +1246,98 @@ def update_profile():
     update_user(user_id, updates)
     
     return redirect(url_for('login.profile'))
+
+@login_bp.route('/upload-profile-picture', methods=['POST'])
+def upload_profile_picture():
+    """Handle profile picture upload"""
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+    
+    if 'profile_picture' not in request.files:
+        return jsonify({'success': False, 'message': 'No file provided'}), 400
+    
+    file = request.files['profile_picture']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No file selected'}), 400
+    
+    # Check file type and size
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+    max_size = 5 * 1024 * 1024  # 5MB
+    
+    def allowed_file(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+    
+    if not allowed_file(file.filename):
+        return jsonify({'success': False, 'message': 'Invalid file type. Please use PNG, JPG, JPEG, or GIF'}), 400
+    
+    # Check file size
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    
+    if file_size > max_size:
+        return jsonify({'success': False, 'message': 'File size too large. Maximum 5MB allowed'}), 400
+    
+    try:
+        # Create uploads directory if it doesn't exist
+        upload_dir = os.path.join('static', 'uploads')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generate unique filename
+        filename = secure_filename(file.filename)
+        name, ext = os.path.splitext(filename)
+        unique_filename = f"{session['user_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
+        filepath = os.path.join(upload_dir, unique_filename)
+        
+        # Process and resize image
+        image = Image.open(file)
+        
+        # Convert RGBA to RGB if necessary
+        if image.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+            image = background
+        
+        # Resize image to reasonable size (max 400x400)
+        image.thumbnail((400, 400), Image.Resampling.LANCZOS)
+        
+        # Save processed image
+        image.save(filepath, 'JPEG', quality=85, optimize=True)
+        
+        # Update database with new profile picture
+        user_id = session.get('user_id')
+        relative_path = f"uploads/{unique_filename}"
+        
+        if update_user(user_id, {'profile_picture': relative_path}):
+            # Update session
+            session['profile_picture'] = relative_path
+            
+            # Clean up old profile picture if it exists and isn't default
+            old_pic = session.get('old_profile_picture')
+            if old_pic and old_pic != 'default_profile.png' and old_pic.startswith('uploads/'):
+                old_filepath = os.path.join('static', old_pic)
+                if os.path.exists(old_filepath):
+                    try:
+                        os.remove(old_filepath)
+                    except:
+                        pass  # Ignore cleanup errors
+            
+            return jsonify({
+                'success': True, 
+                'message': 'Profile picture updated successfully',
+                'image_url': f'/static/{relative_path}'
+            })
+        else:
+            # Remove uploaded file if database update failed
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({'success': False, 'message': 'Failed to update database'}), 500
+            
+    except Exception as e:
+        print(f"Error uploading profile picture: {e}")
+        return jsonify({'success': False, 'message': 'Error processing image'}), 500
 
 @login_bp.route('/logout')
 def logout():

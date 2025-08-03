@@ -9,13 +9,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
 <body>
-    <!-- Animated Background - Same as your style.css -->
-    <div class="admin-bg">
+    <!-- Background with Shooting Stars -->
+    <div class="bg-container">
         <div class="gradient-bg"></div>
-        <div class="floating-orbs">
-            <div class="orb orb-1"></div>
-            <div class="orb orb-2"></div>
-            <div class="orb orb-3"></div>
+        <div class="shooting-stars">
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
         </div>
     </div>
 
@@ -125,8 +128,8 @@
                             <tr>
                                 <td>
                                     <div class="user-info">
-                                        {% if user.profile_picture %}
-                                            <img src="{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar">
+                                        {% if user.profile_picture and user.profile_picture != 'default_profile.png' %}
+                                            <img src="/static/{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                         {% else %}
                                             <div class="user-avatar-placeholder">
                                                 {{ user.username[0].upper() }}
@@ -180,8 +183,8 @@
                         <div class="recent-users-list">
                             {% for user in recent_users %}
                             <div class="recent-user-item">
-                                {% if user.profile_picture %}
-                                    <img src="{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar">
+                                {% if user.profile_picture and user.profile_picture != 'default_profile.png' %}
+                                    <img src="/static/{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                 {% else %}
                                     <div class="user-avatar-placeholder">
                                         {{ user.username[0].upper() }}
@@ -236,7 +239,7 @@
                     <div class="system-info">
                         <div class="system-info-item">
                             <span class="system-info-label">Storage</span>
-                            <span class="system-info-value">JSON Files</span>
+                            <span class="system-info-value">MYSQL DB Files</span>
                         </div>
                         <div class="system-info-item">
                             <span class="system-info-label">Authentication</span>
