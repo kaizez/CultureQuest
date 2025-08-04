@@ -4,3 +4,37 @@ Werkzeug==3.0.1
 
 # Database - Raw PyMySQL (no SQLAlchemy needed)
 PyMySQL==1.1.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Google OAuth Authentication
+Flask-Dance==7.0.0
+google-auth==2.23.4
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.2.0
+googleapis-common-protos==1.61.0
+google-api-python-client==2.108.0
+
+# Email Functionality
+secure-smtplib==0.1.1
+
+# Image Processing (for profile pictures)
+Pillow==10.1.0
+
+# Excel Export Functionality
+openpyxl==3.1.5
+et-xmlfile==2.0.0
+
+# Additional Flask Extensions
+Flask-Session==0.5.0
+
+# Security and Cryptography
+cryptography==41.0.7
+
+# HTTP Requests
+requests==2.31.0
+urllib3==2.1.0
+
+# Date/Time handling
+pytz==2023.3
