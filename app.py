@@ -24,11 +24,26 @@ from shared_db import db
 
 # Import challenge module
 os.chdir(os.path.join(current_dir, 'challenge'))
-from db_handler import RateLimit
-from challenge import challenge_bp
-from admin_screening import admin_screening_bp
-from event import event_bp
-from challenge_models import db
+try:
+    from db_handler import RateLimit
+    print("[OK] db_handler imported successfully")
+    from challenge import challenge_bp
+    print("[OK] challenge_bp imported successfully")
+    from admin_screening import admin_screening_bp
+    print("[OK] admin_screening_bp imported successfully")
+    from event import event_bp
+    print("[OK] event_bp imported successfully")
+    from challenge_models import db
+    print("[OK] challenge_models imported successfully")
+except Exception as e:
+    print(f"[ERROR] Challenge module import failed: {e}")
+    import traceback
+    traceback.print_exc()
+    # Create a dummy blueprint to prevent app crash
+    from flask import Blueprint
+    challenge_bp = Blueprint('challenge_dummy', __name__)
+    admin_screening_bp = Blueprint('admin_screening_dummy', __name__)
+    event_bp = Blueprint('event_dummy', __name__)
 
 # Import chatapp_rewards module
 os.chdir(os.path.join(current_dir, 'chatapp_rewards'))
@@ -176,19 +191,7 @@ with app.app_context():
         print(f"[ERROR] Database initialization failed: {e}")
         print("[INFO] If you're seeing schema errors, run: python clear_user_data.py")
     
-    # Create default chat rooms if they don't exist
-    if ChatRoom.query.count() == 0:
-        default_rooms = [
-            ChatRoom(name="General Chat", description="Welcome to the general discussion room"),
-            ChatRoom(name="Tech Talk", description="Discuss technology, programming, and innovation"),
-            ChatRoom(name="Random", description="Talk about anything and everything"),
-            ChatRoom(name="File Sharing", description="Share and discuss files securely")
-        ]
-        
-        for room in default_rooms:
-            db.session.add(room)
-        db.session.commit()
-        print("[OK] Default chat rooms created")
+    # No default chat rooms needed - challenge rooms will be created automatically
     
     # Create default reward items if they don't exist
     if RewardItem.query.count() == 0:

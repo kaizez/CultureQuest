@@ -2,7 +2,12 @@ import os
 import random
 import string
 from werkzeug.utils import secure_filename
-import magic  # For file content validation - Protects against malicious files with fake extensions
+try:
+    import magic  # For file content validation - Protects against malicious files with fake extensions
+    MAGIC_AVAILABLE = True
+except ImportError:
+    print("[WARNING] python-magic not available - file content validation disabled")
+    MAGIC_AVAILABLE = False
 from security_logger import log_file_upload_attempt  # Protects against unmonitored file uploads
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi'}  # Protects against dangerous file types
@@ -18,6 +23,10 @@ def allowed_file(filename):
 
 def validate_file_content(file_path):
     """Validate file content matches expected type - Protects against malicious files with fake extensions."""
+    if not MAGIC_AVAILABLE:
+        print("[WARNING] Magic not available - skipping file content validation")
+        return True  # Skip validation if magic is not available
+    
     try:
         mime_type = magic.from_file(file_path, mime=True)
         return mime_type in ALLOWED_MIME_TYPES

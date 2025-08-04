@@ -15,8 +15,17 @@ import os
 import sys
 from dotenv import load_dotenv
 from challenge_models import db, ChallengeSubmission
-from db_handler import RateLimit
+from db_handler import RateLimit, delete_challenge_chat_room, CHAT_INTEGRATION_AVAILABLE
 from flask import Flask
+
+# Import chat models for cleanup
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'chatapp_rewards'))
+try:
+    from models import ChatRoom
+    CHAT_CLEANUP_AVAILABLE = True
+except ImportError:
+    CHAT_CLEANUP_AVAILABLE = False
 
 def load_env():
     """Load environment variables from .env file."""
@@ -79,7 +88,7 @@ def confirm_action(db_info):
     return response == 'CLEAR CHALLENGES'
 
 def clear_challenge_tables():
-    """Clear only the challenge-specific tables."""
+    """Clear only the challenge-specific tables and associated chat sessions."""
     try:
         # Get count before deletion for reporting
         initial_count = ChallengeSubmission.query.count()
@@ -89,6 +98,9 @@ def clear_challenge_tables():
             print("✅ No challenge data found. Nothing to clear.")
             return True
         
+        # Get all challenge IDs for chat session cleanup
+        challenge_ids = [challenge.id for challenge in ChallengeSubmission.query.all()]
+        
         # Delete all challenge submissions
         deleted_challenges = db.session.query(ChallengeSubmission).delete()
         
@@ -96,6 +108,27 @@ def clear_challenge_tables():
         db.session.commit()
         
         print(f"✅ Successfully deleted {deleted_challenges} challenge records")
+        
+        # Clean up associated chat sessions
+        if CHAT_CLEANUP_AVAILABLE and challenge_ids:
+            print(f"🔄 Cleaning up {len(challenge_ids)} associated chat sessions...")
+            deactivated_count = 0
+            
+            for challenge_id in challenge_ids:
+                chat_room = ChatRoom.query.get(challenge_id)
+                if chat_room and chat_room.is_active:
+                    chat_room.is_active = False
+                    deactivated_count += 1
+                    print(f"   Deactivated chat session for challenge {challenge_id}")
+            
+            if deactivated_count > 0:
+                db.session.commit()
+                print(f"✅ Deactivated {deactivated_count} challenge chat sessions")
+            else:
+                print("✅ No active challenge chat sessions found")
+        elif not CHAT_CLEANUP_AVAILABLE:
+            print("⚠️  Chat cleanup not available - chat sessions may remain active")
+        
         print("✅ Challenge database cleared successfully!")
         
         # Verify the deletion

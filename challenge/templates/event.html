@@ -11,31 +11,33 @@
         <!-- Featured Challenge -->
         {% if featured_challenge %}
             <div class="featured-challenge">
-                <div class="featured-challenge-image-container">
-                    {% if featured_challenge['media'] %}
-                        <img src="/uploads/{{ featured_challenge['media'] }}" alt="{{ featured_challenge['challenge_name'] or featured_challenge['name'] }}" class="featured-challenge-image">
-                    {% else %}
-                        <div class="featured-challenge-image" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 16px;">
-                            No image available
-                        </div>
-                    {% endif %}
-                </div>
-                
-                <div class="featured-challenge-content">
-                    <h2>{{ featured_challenge['challenge_name'] or featured_challenge['name'] }}</h2>
-                    
-                    <div class="featured-challenge-section">
-                        <div class="featured-section-title">Description</div>
-                        <div class="featured-section-content">{{ featured_challenge['description'] }}</div>
+                <a href="{{ url_for('response.challenge_description', challenge_id=featured_challenge.id) }}" style="text-decoration: none; color: inherit; display: contents;">
+                    <div class="featured-challenge-image-container">
+                        {% if featured_challenge['media'] %}
+                            <img src="/uploads/{{ featured_challenge['media'] }}" alt="{{ featured_challenge['challenge_name'] or featured_challenge['name'] }}" class="featured-challenge-image">
+                        {% else %}
+                            <div class="featured-challenge-image" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 16px;">
+                                No image available
+                            </div>
+                        {% endif %}
                     </div>
                     
-                    {% if featured_challenge['completion_criteria'] %}
+                    <div class="featured-challenge-content">
+                        <h2>{{ featured_challenge['challenge_name'] or featured_challenge['name'] }}</h2>
+                        
                         <div class="featured-challenge-section">
-                            <div class="featured-section-title">Completion Criteria</div>
-                            <div class="featured-section-content">{{ featured_challenge['completion_criteria'] }}</div>
+                            <div class="featured-section-title">Description</div>
+                            <div class="featured-section-content">{{ featured_challenge['description'] }}</div>
                         </div>
-                    {% endif %}
-                </div>
+                        
+                        {% if featured_challenge['completion_criteria'] %}
+                            <div class="featured-challenge-section">
+                                <div class="featured-section-title">Completion Criteria</div>
+                                <div class="featured-section-content">{{ featured_challenge['completion_criteria'] }}</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </a>
             </div>
         {% endif %}
 

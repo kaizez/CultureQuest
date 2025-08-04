@@ -39,7 +39,7 @@
     <!-- Chat Header -->
     <div class="chat-header">
         <div class="chat-header-left">
-            <a href="{{ url_for('chat.chat_rooms', username=username) }}" class="back-to-rooms-btn" title="Back to Rooms">
+            <a href="{{ url_for('response.wip_challenge_details', challenge_id=room.id) }}" class="back-to-rooms-btn" title="Back to Challenge">
                 <span>←</span>
             </a>
             <div class="challenge-badge">
@@ -73,9 +73,6 @@
                         <span class="icon">📎</span>
                     </button>
                     <input type="file" id="file-input" name="file" accept="image/*,.pdf,.txt,.doc,.docx" style="display: none;" />
-                    <button type="button" class="action-btn" title="Voice message">
-                        <span class="icon">🎤</span>
-                    </button>
                 </div>
 
                 <div class="input-wrapper">

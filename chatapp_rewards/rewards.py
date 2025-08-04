@@ -19,6 +19,18 @@ rewards_bp = Blueprint('rewards', __name__)
 # Google Maps API Key - In production, store this in environment variables
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', 'YOUR_GOOGLE_MAPS_API_KEY_HERE')
 
+def get_current_user_with_id():
+    """Get current user info with proper user_id handling for admin users"""
+    current_user = get_current_user()
+    user_id = current_user['user_id']
+    username = current_user['username']
+    
+    # Handle admin users who might not have a proper user_id
+    if not user_id and current_user.get('is_admin'):
+        user_id = '00000000-0000-0000-0000-000000000000'  # 36 chars admin UUID
+    
+    return user_id, username, current_user
+
 def get_or_create_user_points(user_id, username):
     """Get user points or create new user with 950 default points"""
     user_points = UserPoints.query.filter_by(user_id=user_id).first()
@@ -32,9 +44,7 @@ def get_or_create_user_points(user_id, username):
 @require_login
 def rewards_page():
     """Display the rewards page"""
-    current_user = get_current_user()
-    user_id = current_user['user_id']
-    username = current_user['username']
+    user_id, username, current_user = get_current_user_with_id()
     
     # Get user points
     user_points = get_or_create_user_points(user_id, username)
@@ -77,9 +87,7 @@ def redeem_reward():
         )
         
         # Get current user from session
-        current_user = get_current_user()
-        user_id = current_user['user_id']
-        username = current_user['username']
+        user_id, username, current_user = get_current_user_with_id()
         
         # Get user points
         user_points = get_or_create_user_points(user_id, username)
@@ -191,9 +199,7 @@ def claim_reward():
         longitude = data.get('longitude')
         
         # Get current user from session
-        current_user = get_current_user()
-        user_id = current_user['user_id']
-        username = current_user['username']
+        user_id, username, current_user = get_current_user_with_id()
         
         # Get user points
         user_points = get_or_create_user_points(user_id, username)

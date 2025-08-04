@@ -343,7 +343,7 @@ def is_user_muted(user_name, room_id, user_id=None):
 # Landing page route removed - handled by login module
 
 @chat_bp.route('/chat')
-@require_login
+@require_admin
 def chat_rooms():
     """Chat rooms menu page"""
     current_user = get_current_user()
@@ -351,16 +351,23 @@ def chat_rooms():
     rooms = ChatRoom.query.filter_by(is_active=True).order_by(ChatRoom.created_at.desc()).all()
     return render_template('chat_rooms.html', username=escape(username), rooms=rooms)
 
-@chat_bp.route('/chat/<int:room_id>')
+@chat_bp.route('/chat/<room_id>')
 @require_login
 def chat_session(room_id):
     """Individual chat session route"""
-    from flask import session
+    from flask import session, flash, redirect, url_for
+    
+    # Convert room_id to integer (handles both positive and negative)
+    try:
+        room_id = int(room_id)
+    except ValueError:
+        return "Invalid room ID", 404
     
     room = ChatRoom.query.get_or_404(room_id)
     if not room.is_active:
         flash('This chat room is not available', 'error')
         return redirect(url_for('chat.chat_rooms'))
+    
     
     # Get current user from session
     current_user = get_current_user()
@@ -451,18 +458,27 @@ def create_room():
         log_security_event("ROOM_CREATE_ERROR", f"Unexpected error: {str(e)}", "ERROR")
         return jsonify({'error': 'Failed to create room'}), 500
 
-@chat_bp.route('/history/<int:room_id>')
+@chat_bp.route('/history/<room_id>')
 @require_login
 def history(room_id):
     """Get chat history for a specific room"""
+    try:
+        room_id = int(room_id)
+    except ValueError:
+        return "Invalid room ID", 404
     room = ChatRoom.query.get_or_404(room_id)
     messages = Message.query.filter_by(room_id=room_id).order_by(Message.timestamp.asc()).all()
     return jsonify([msg.to_dict() for msg in messages])
 
-@chat_bp.route('/api/mute-status/<int:room_id>', methods=['GET'])
+@chat_bp.route('/api/mute-status/<room_id>', methods=['GET'])
 @require_login
 def check_mute_status(room_id):
     """API endpoint to check if current user is muted in a specific room"""
+    try:
+        room_id = int(room_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid room ID'}), 400
+    
     current_user = get_current_user()
     user_id = current_user['user_id']
     
@@ -510,7 +526,7 @@ def check_mute_status(room_id):
         }
     })
 
-@chat_bp.route('/upload/<int:room_id>', methods=['POST'])
+@chat_bp.route('/upload/<room_id>', methods=['POST'])
 @require_login
 @RateLimiter.rate_limit(limit_per_minute=20)  # Rate limit file uploads
 def upload_file(room_id):
@@ -518,10 +534,11 @@ def upload_file(room_id):
     from flask import current_app
     
     try:
-        # Validate room_id
-        room_id = InputValidator.validate_integer(
-            room_id, min_value=1, max_value=999999, field_name="room_id"
-        )
+        # Convert and validate room_id (allow negative for admin rooms)
+        try:
+            room_id = int(room_id)
+        except ValueError:
+            return jsonify({'error': 'Invalid room ID'}), 400
         
         room = ChatRoom.query.get_or_404(room_id)
         if not room.is_active:
@@ -744,12 +761,10 @@ def handle_chat_message(socketio, json):
         if not room_id:
             return
         
-        # Validate room_id
+        # Validate room_id (allow negative for admin rooms)
         try:
-            room_id = InputValidator.validate_integer(
-                room_id, min_value=1, max_value=999999, field_name="room_id"
-            )
-        except SecViolation:
+            room_id = int(room_id)
+        except (ValueError, TypeError):
             return
         
         # Verify room exists
@@ -857,17 +872,18 @@ def handle_chat_message(socketio, json):
         )
         emit('error', {'message': 'Message processing failed'})
 
-@chat_bp.route('/api/chat/<int:room_id>/delete', methods=['DELETE'])
+@chat_bp.route('/api/chat/<room_id>/delete', methods=['DELETE'])
 @require_login
 @RateLimiter.rate_limit(limit_per_minute=5)  # Strict rate limiting for destructive operations
 @CSRFProtection.require_csrf_token
 def delete_chat_room(room_id):
     """Delete entire chat room and all associated data"""
     try:
-        # Validate room_id
-        room_id = InputValidator.validate_integer(
-            room_id, min_value=1, max_value=999999, field_name="room_id"
-        )
+        # Convert and validate room_id (allow negative for admin rooms)
+        try:
+            room_id = int(room_id)
+        except ValueError:
+            return jsonify({'error': 'Invalid room ID'}), 400
         
         # Get current user info
         current_user = get_current_user()

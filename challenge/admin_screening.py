@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
-from db_handler import fetch_challenges, update_challenge_status, check_and_update_rate_limit  # Import necessary functions
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
+from db_handler import fetch_challenges, update_challenge_status, check_and_update_rate_limit, sync_challenge_chat_sessions  # Import necessary functions
 from input_sanitizer import validate_admin_input  # Protects against injection attacks in admin panel
 from security_logger import log_authorization_failure, log_admin_action, log_rate_limit_exceeded  # Protects against unmonitored admin activity
 from auth_decorators import admin_required, login_required  # Import centralized authentication decorators
@@ -66,3 +66,25 @@ def admin_page():
         return redirect(url_for('admin_screening.admin_page'))
 
     return render_template('admin_screening.html', challenges=challenges)
+
+@admin_screening_bp.route('/sync-chat-sessions', methods=['POST'])
+@admin_required
+def sync_chat_sessions():
+    """Manually sync challenges with chat sessions"""
+    try:
+        user_id = session.get('user_id')
+        if user_id and not check_and_update_rate_limit(user_id):
+            return jsonify({'error': 'Rate limit exceeded'}), 429
+        
+        # Log the sync action
+        log_admin_action(user_id, "SYNC_CHALLENGE_CHAT_SESSIONS", "Admin manually synced challenge chat sessions")
+        
+        # Perform the sync
+        sync_challenge_chat_sessions()
+        
+        flash('Challenge chat sessions synchronized successfully!', 'success')
+        return jsonify({'success': True, 'message': 'Challenge chat sessions synchronized successfully!'})
+        
+    except Exception as e:
+        print(f"[ERROR] Sync chat sessions failed: {str(e)}")
+        return jsonify({'error': 'Failed to sync chat sessions'}), 500
