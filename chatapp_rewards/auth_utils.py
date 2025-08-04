@@ -72,7 +72,7 @@ def get_current_user():
     
     return {
         'username': session['username'],
-        'user_id': session.get('user_id', 'admin'),  # Default for admin sessions
+        'user_id': session.get('user_id'),
         'email': session.get('email'),
         'is_admin': session.get('is_admin', False)
     }

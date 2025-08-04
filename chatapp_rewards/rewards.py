@@ -3,8 +3,8 @@ import uuid
 import json as json_module
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from werkzeug.utils import secure_filename
-from models import db, UserPoints, RewardItem, RewardRedemption, UploadedFile
-from datetime import datetime
+from models import db, UserPoints, RewardItem, RewardRedemption, UploadedFile, RewardOrder
+from datetime import datetime, date
 from chat import scan_file_with_virustotal, allowed_file
 from auth_utils import require_login, require_admin, get_current_user, get_user_id, get_username
 from security import (
@@ -12,8 +12,12 @@ from security import (
     SecurityViolation as SecViolation, validate_and_sanitize_input,
     log_security_event, SECURITY_CONFIG
 )
+from carpark_utils import find_nearest_carpark
 
 rewards_bp = Blueprint('rewards', __name__)
+
+# Google Maps API Key - In production, store this in environment variables
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', 'YOUR_GOOGLE_MAPS_API_KEY_HERE')
 
 def get_or_create_user_points(user_id, username):
     """Get user points or create new user with 950 default points"""
@@ -38,10 +42,19 @@ def rewards_page():
     # Get all active reward items
     reward_items = RewardItem.query.filter_by(is_active=True).all()
     
+    # Get user's reward order history (claimed rewards)
+    user_reward_orders = RewardOrder.query.filter_by(user_id=user_id).order_by(RewardOrder.created_at.desc()).all()
+    
+    # Get user's redemption history (old system compatibility)
+    user_redemptions = RewardRedemption.query.filter_by(username=username).order_by(RewardRedemption.redeemed_at.desc()).all()
+    
     return render_template('rewards.html', 
                          username=username, 
                          user_points=user_points.points,
-                         reward_items=reward_items)
+                         reward_items=reward_items,
+                         user_reward_orders=user_reward_orders,
+                         user_redemptions=user_redemptions,
+                         google_maps_api_key=GOOGLE_MAPS_API_KEY)
 
 @rewards_bp.route('/rewards/redeem', methods=['POST'])
 @require_login
@@ -131,6 +144,191 @@ def redeem_reward():
         log_security_event("REWARD_REDEEM_ERROR", f"Redemption error: {str(e)}", "ERROR")
         return jsonify({'error': 'Failed to process redemption'}), 500
 
+@rewards_bp.route('/rewards/claim', methods=['POST'])
+@require_login
+@RateLimiter.rate_limit(limit_per_minute=30)
+@CSRFProtection.require_csrf_token
+def claim_reward():
+    """Handle new reward claiming flow with date/address selection"""
+    try:
+        data = request.get_json()
+        if not data:
+            raise SecViolation("Invalid JSON data", "INVALID_INPUT")
+        
+        # Validate reward_id
+        reward_id = data.get('reward_id')
+        if not reward_id:
+            raise SecViolation("Missing reward_id", "INVALID_INPUT")
+        
+        reward_id = InputValidator.validate_integer(
+            reward_id, min_value=1, max_value=999999, field_name="reward_id"
+        )
+        
+        # Validate collection_date
+        collection_date_str = data.get('collection_date')
+        if not collection_date_str:
+            raise SecViolation("Missing collection_date", "INVALID_INPUT")
+        
+        try:
+            collection_date = datetime.strptime(collection_date_str, '%Y-%m-%d').date()
+            if collection_date < date.today():
+                return jsonify({'error': 'Collection date cannot be in the past'}), 400
+        except ValueError:
+            raise SecViolation("Invalid collection_date format", "INVALID_INPUT")
+        
+        # Validate address
+        address = data.get('address')
+        if not address:
+            raise SecViolation("Missing address", "INVALID_INPUT")
+        
+        address = InputValidator.validate_string(
+            address, max_length=500, min_length=5, field_name="address"
+        )
+        address = InputValidator.sanitize_html(address)
+        
+        # Validate coordinates (optional)
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        # Get current user from session
+        current_user = get_current_user()
+        user_id = current_user['user_id']
+        username = current_user['username']
+        
+        # Get user points
+        user_points = get_or_create_user_points(user_id, username)
+        
+        # Get reward item
+        reward_item = RewardItem.query.get(reward_id)
+        if not reward_item or not reward_item.is_active:
+            return jsonify({'error': 'Reward not found or inactive'}), 404
+        
+        # Check if user has enough points
+        if user_points.points < reward_item.cost:
+            return jsonify({'error': 'Insufficient points'}), 400
+        
+        # Check stock
+        if reward_item.stock <= 0:
+            return jsonify({'error': 'Item out of stock'}), 400
+        
+        # Find nearest collection point if coordinates are provided
+        nearest_collection_point = None
+        if latitude and longitude:
+            try:
+                latitude = float(latitude)
+                longitude = float(longitude)
+                nearest_collection_point = find_nearest_carpark(latitude, longitude)  # Uses legacy function for compatibility
+            except (ValueError, TypeError) as e:
+                log_security_event(
+                    "REWARD_CLAIM_INVALID_COORDS",
+                    f"Invalid coordinates provided: {e}",
+                    "WARNING"
+                )
+        
+        # Generate unique order ID
+        order_id = datetime.now().strftime('%Y%m%d%H%M%S') + str(uuid.uuid4())[:8]
+        
+        # Create reward order
+        reward_order = RewardOrder(
+            order_id=order_id,
+            user_id=user_id,
+            username=username,
+            reward_item_id=reward_id,
+            collection_date=collection_date,
+            customer_address=address,
+            customer_latitude=latitude if latitude else None,
+            customer_longitude=longitude if longitude else None,
+            points_spent=reward_item.cost
+        )
+        
+        # Add collection point information if found
+        if nearest_collection_point:
+            reward_order.assigned_carpark_name = nearest_collection_point['name']
+            reward_order.assigned_carpark_address = nearest_collection_point['address']
+            reward_order.assigned_carpark_latitude = nearest_collection_point['coordinates']['lat']
+            reward_order.assigned_carpark_longitude = nearest_collection_point['coordinates']['lng']
+            reward_order.carpark_distance = nearest_collection_point['distance']
+        
+        # Log claim attempt
+        log_security_event(
+            "REWARD_CLAIM_ATTEMPT",
+            f"User {username} attempting to claim reward {reward_item.name} for {collection_date}",
+            "INFO"
+        )
+        
+        # Deduct points from user
+        user_points.points -= reward_item.cost
+        user_points.updated_at = datetime.utcnow()
+        
+        # Reduce stock
+        reward_item.stock -= 1
+        reward_item.updated_at = datetime.utcnow()
+        
+        # Create redemption record for tracking
+        redemption = RewardRedemption(
+            username=username,
+            reward_item_id=reward_id,
+            points_spent=reward_item.cost,
+            status='completed'
+        )
+        
+        # Save all records
+        db.session.add(reward_order)
+        db.session.add(redemption)
+        db.session.commit()
+        
+        log_security_event(
+            "REWARD_CLAIMED",
+            f"User {username} successfully claimed {reward_item.name} for collection on {collection_date}",
+            "INFO"
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully claimed {reward_item.name}!',
+            'order_id': order_id,
+            'collection_date': collection_date_str,
+            'remaining_points': user_points.points,
+            'remaining_stock': reward_item.stock,
+            'nearest_collection_point': nearest_collection_point
+        })
+        
+    except SecViolation as e:
+        log_security_event("REWARD_CLAIM_VIOLATION", f"Security violation: {e.message}", "WARNING")
+        return jsonify({'error': 'Invalid request data'}), 400
+    except Exception as e:
+        db.session.rollback()
+        log_security_event("REWARD_CLAIM_ERROR", f"Claim error: {str(e)}", "ERROR")
+        return jsonify({'error': 'Failed to process claim'}), 500
+
+@rewards_bp.route('/rewards/confirmation/<order_id>')
+@require_login
+def reward_confirmation(order_id):
+    """Display reward collection confirmation page"""
+    try:
+        current_user = get_current_user()
+        user_id = current_user['user_id']
+        
+        # Get the reward order
+        reward_order = RewardOrder.query.filter_by(
+            order_id=order_id, 
+            user_id=user_id
+        ).first()
+        
+        if not reward_order:
+            flash("Order not found", "error")
+            return redirect(url_for('rewards.rewards_page'))
+        
+        return render_template('reward_confirmation.html', 
+                             order=reward_order,
+                             username=current_user['username'],
+                             google_maps_api_key=GOOGLE_MAPS_API_KEY)
+        
+    except Exception as e:
+        log_security_event("REWARD_CONFIRMATION_ERROR", f"Confirmation error: {str(e)}", "ERROR")
+        flash("Error loading confirmation page", "error")
+        return redirect(url_for('rewards.rewards_page'))
+
 @rewards_bp.route('/rewards/admin')
 @require_admin
 def rewards_admin():
@@ -147,11 +345,15 @@ def rewards_admin():
     # Get recent redemptions
     recent_redemptions = RewardRedemption.query.order_by(RewardRedemption.redeemed_at.desc()).limit(10).all()
     
+    # Get recent reward orders
+    recent_orders = RewardOrder.query.order_by(RewardOrder.created_at.desc()).limit(10).all()
+    
     return render_template('rewards_admin.html',
                          username=username,
                          reward_items=reward_items,
                          user_points=user_points,
-                         recent_redemptions=recent_redemptions)
+                         recent_redemptions=recent_redemptions,
+                         recent_orders=recent_orders)
 
 @rewards_bp.route('/rewards/admin/add_item', methods=['POST'])
 @require_admin
@@ -371,3 +573,89 @@ def delete_reward_item():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Failed to delete reward item'}), 500
+
+@rewards_bp.route('/rewards/admin/update_order_status', methods=['POST'])
+@require_admin
+@RateLimiter.rate_limit(limit_per_minute=30)
+@CSRFProtection.require_csrf_token
+def update_order_status():
+    """Update status of a reward order"""
+    try:
+        data = request.get_json()
+        if not data:
+            raise SecViolation("Invalid JSON data", "INVALID_INPUT")
+        
+        order_id = data.get('order_id')
+        new_status = data.get('status')
+        
+        if not order_id or not new_status:
+            raise SecViolation("Missing order_id or status", "INVALID_INPUT")
+        
+        # Validate order_id
+        order_id = InputValidator.validate_string(
+            order_id, max_length=50, min_length=10, field_name="order_id"
+        )
+        
+        # Validate status
+        valid_statuses = ['pending', 'confirmed', 'collected', 'cancelled']
+        if new_status not in valid_statuses:
+            raise SecViolation(f"Invalid status. Must be one of: {', '.join(valid_statuses)}", "INVALID_INPUT")
+        
+        # Get the reward order
+        reward_order = RewardOrder.query.filter_by(order_id=order_id).first()
+        if not reward_order:
+            return jsonify({'error': 'Reward order not found'}), 404
+        
+        old_status = reward_order.status
+        reward_order.status = new_status
+        reward_order.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        log_security_event(
+            "REWARD_ORDER_STATUS_UPDATED",
+            f"Admin updated order {order_id} status from {old_status} to {new_status}",
+            "INFO"
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Order status updated to {new_status.title()}',
+            'order_id': order_id,
+            'old_status': old_status,
+            'new_status': new_status,
+            'updated_at': reward_order.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        })
+        
+    except SecViolation as e:
+        log_security_event("ORDER_STATUS_UPDATE_VIOLATION", f"Security violation: {e.message}", "WARNING")
+        return jsonify({'error': 'Invalid request data'}), 400
+    except Exception as e:
+        db.session.rollback()
+        log_security_event("ORDER_STATUS_UPDATE_ERROR", f"Status update error: {str(e)}", "ERROR")
+        return jsonify({'error': 'Failed to update order status'}), 500
+
+@rewards_bp.route('/rewards/admin/order_details/<order_id>')
+@require_admin
+def admin_order_details(order_id):
+    """Get detailed information about a specific reward order for admin"""
+    try:
+        current_user = get_current_user()
+        username = current_user['username']
+        
+        # Get the reward order
+        reward_order = RewardOrder.query.filter_by(order_id=order_id).first()
+        
+        if not reward_order:
+            flash("Order not found", "error")
+            return redirect(url_for('rewards.rewards_admin'))
+        
+        return render_template('admin_order_details.html',
+                             username=username,
+                             order=reward_order,
+                             google_maps_api_key=GOOGLE_MAPS_API_KEY)
+        
+    except Exception as e:
+        log_security_event("ADMIN_ORDER_DETAILS_ERROR", f"Order details error: {str(e)}", "ERROR")
+        flash("Error loading order details", "error")
+        return redirect(url_for('rewards.rewards_admin'))
