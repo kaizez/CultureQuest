@@ -6,24 +6,22 @@
     <title>500 - Server Error | CultureQuest</title>
     <style>
         /* Import fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-        /* CSS Variables - Error Theme */
+        /* CSS Variables */
         :root {
-            --error-red: #dc2626;
-            --error-orange: #ea580c;
-            --warning-yellow: #ca8a04;
-            --gradient-error: linear-gradient(135deg, #dc2626 0%, #ea580c 50%, #ca8a04 100%);
-            --gradient-danger: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
-            --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            --bg-dark: #1a0a0a;
+            --error-red: #e53e3e;
+            --error-orange: #f56565;
+            --gradient-error: linear-gradient(135deg, #fc8181 0%, #f56565 50%, #e53e3e 100%);
+            --gradient-dark: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            --bg-light: #f5f7fa;
             --bg-card: rgba(255, 255, 255, 0.95);
-            --bg-glass: rgba(255, 255, 255, 0.1);
-            --text-primary: #fef2f2;
-            --text-secondary: #fecaca;
-            --text-light: #fed7d7;
-            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-            --shadow-error: 0 0 40px rgba(220, 38, 38, 0.4);
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-light: #718096;
+            --shadow-soft: rgba(0, 0, 0, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+            --shadow-error: rgba(229, 62, 62, 0.3);
         }
 
         /* Global Styles */
@@ -35,17 +33,16 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg-dark);
+            background: var(--bg-light);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
-            overflow: hidden;
-            color: var(--text-primary);
+            overflow-x: hidden;
         }
 
-        /* Advanced Background Effects */
+        /* Background Effects */
         .bg-container {
             position: fixed;
             top: 0;
@@ -53,6 +50,7 @@
             width: 100%;
             height: 100%;
             z-index: -1;
+            overflow: hidden;
         }
 
         .gradient-bg {
@@ -62,37 +60,57 @@
             width: 100%;
             height: 100%;
             background: var(--gradient-error);
-            opacity: 0.2;
+            opacity: 0.05;
         }
 
-        /* Matrix-like falling code effect */
-        .matrix-rain {
+        .floating-orbs {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden;
         }
 
-        .matrix-column {
+        .orb {
             position: absolute;
-            top: -100%;
-            color: var(--error-red);
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 18px;
-            opacity: 0.6;
-            animation: matrixFall linear infinite;
+            border-radius: 50%;
+            background: var(--gradient-error);
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
         }
 
-        @keyframes matrixFall {
-            0% { top: -100%; opacity: 1; }
-            100% { top: 100%; opacity: 0; }
+        .orb-1 {
+            width: 100px;
+            height: 100px;
+            top: 15%;
+            left: 20%;
+            animation-delay: 0s;
         }
 
-        /* Error Sparks */
-        .sparks-container {
+        .orb-2 {
+            width: 140px;
+            height: 140px;
+            top: 50%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .orb-3 {
+            width: 70px;
+            height: 70px;
+            bottom: 25%;
+            left: 60%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-25px) rotate(120deg); }
+            66% { transform: translateY(15px) rotate(240deg); }
+        }
+
+        /* Error sparks animation */
+        .sparks {
             position: absolute;
             top: 0;
             left: 0;
@@ -103,325 +121,185 @@
 
         .spark {
             position: absolute;
-            width: 3px;
-            height: 3px;
+            width: 4px;
+            height: 4px;
             background: var(--error-orange);
             border-radius: 50%;
-            animation: sparkFly 4s ease-out infinite;
+            animation: sparkle 3s ease-in-out infinite;
         }
 
-        @keyframes sparkFly {
-            0% { 
-                opacity: 1; 
-                transform: scale(1) rotate(0deg); 
-            }
-            100% { 
-                opacity: 0; 
-                transform: scale(0) rotate(360deg) translate(100px, -100px); 
-            }
-        }
+        .spark:nth-child(1) { top: 20%; left: 30%; animation-delay: 0s; }
+        .spark:nth-child(2) { top: 40%; right: 25%; animation-delay: 1s; }
+        .spark:nth-child(3) { bottom: 30%; left: 70%; animation-delay: 2s; }
+        .spark:nth-child(4) { top: 60%; left: 15%; animation-delay: 1.5s; }
 
-        /* Glitching Circuit Lines */
-        .circuit-lines {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0.1;
-        }
-
-        .circuit-line {
-            position: absolute;
-            background: var(--error-red);
-            animation: circuitPulse 3s ease-in-out infinite;
-        }
-
-        .circuit-line.horizontal {
-            height: 2px;
-            width: 200px;
-            animation-delay: 0s;
-        }
-
-        .circuit-line.vertical {
-            width: 2px;
-            height: 200px;
-            animation-delay: 1s;
-        }
-
-        @keyframes circuitPulse {
-            0%, 100% { opacity: 0.1; box-shadow: none; }
-            50% { opacity: 0.6; box-shadow: 0 0 20px var(--error-red); }
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
         }
 
         /* Main Container */
         .error-container {
             text-align: center;
-            max-width: 750px;
-            padding: 60px 40px;
-            background: var(--bg-glass);
-            border-radius: 30px;
-            box-shadow: var(--shadow-xl);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(220, 38, 38, 0.3);
+            max-width: 650px;
+            padding: 40px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px var(--shadow-medium);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
-            z-index: 10;
+            z-index: 1;
         }
 
-        .error-container::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: var(--gradient-error);
-            border-radius: 32px;
-            z-index: -1;
-            opacity: 0.6;
-            animation: dangerGlow 2s ease-in-out infinite;
-        }
-
-        @keyframes dangerGlow {
-            0%, 100% { opacity: 0.6; filter: blur(3px); }
-            50% { opacity: 0.9; filter: blur(5px); }
-        }
-
-        /* Error Number with Glitch Effect */
+        /* Error Number */
         .error-number {
-            font-size: 180px;
-            font-weight: 900;
+            font-size: 120px;
+            font-weight: 700;
             background: var(--gradient-error);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 20px;
-            line-height: 0.8;
+            line-height: 1;
+            animation: glitch 2s ease-in-out infinite;
             position: relative;
-            animation: serverGlitch 3s ease-in-out infinite;
         }
 
-        @keyframes serverGlitch {
-            0%, 100% { 
-                transform: scale(1) skew(0deg); 
-                filter: hue-rotate(0deg);
-            }
-            20% { 
-                transform: scale(1.02) skew(-1deg); 
-                filter: hue-rotate(90deg);
-            }
-            40% { 
-                transform: scale(0.98) skew(1deg); 
-                filter: hue-rotate(180deg);
-            }
-            60% { 
-                transform: scale(1.01) skew(-0.5deg); 
-                filter: hue-rotate(270deg);
-            }
-            80% { 
-                transform: scale(0.99) skew(0.5deg); 
-                filter: hue-rotate(360deg);
-            }
-        }
-
-        /* Digital Corruption Effect */
-        .corrupted-text {
-            position: relative;
-            display: inline-block;
-        }
-
-        .corrupted-text::before {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 2px;
-            color: rgba(234, 88, 12, 0.8);
-            z-index: -1;
-            animation: corruption1 2s infinite;
-        }
-
-        .corrupted-text::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: -2px;
-            color: rgba(202, 138, 4, 0.8);
-            z-index: -1;
-            animation: corruption2 2s infinite;
-        }
-
-        @keyframes corruption1 {
-            0%, 100% { transform: translateX(0) scaleX(1); }
-            25% { transform: translateX(-3px) scaleX(0.95); }
-            50% { transform: translateX(3px) scaleX(1.05); }
-            75% { transform: translateX(-1px) scaleX(0.98); }
-        }
-
-        @keyframes corruption2 {
-            0%, 100% { transform: translateX(0) scaleY(1); }
-            30% { transform: translateX(2px) scaleY(0.9); }
-            60% { transform: translateX(-2px) scaleY(1.1); }
-            90% { transform: translateX(1px) scaleY(0.95); }
+        @keyframes glitch {
+            0%, 100% { transform: translateX(0); }
+            10% { transform: translateX(-2px); }
+            20% { transform: translateX(2px); }
+            30% { transform: translateX(-1px); }
+            40% { transform: translateX(1px); }
+            50% { transform: translateX(0); }
         }
 
         /* Error Title */
         .error-title {
-            font-size: 42px;
-            font-weight: 700;
+            font-size: 32px;
+            font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 20px;
-            text-shadow: 0 0 30px rgba(220, 38, 38, 0.5);
+            margin-bottom: 16px;
         }
 
         /* Error Message */
         .error-message {
-            font-size: 20px;
+            font-size: 18px;
             color: var(--text-secondary);
             margin-bottom: 30px;
-            line-height: 1.7;
-            max-width: 550px;
-            margin-left: auto;
-            margin-right: auto;
+            line-height: 1.6;
         }
 
-        /* System Status */
-        .system-status {
-            background: rgba(220, 38, 38, 0.1);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            border-radius: 15px;
-            padding: 25px;
-            margin: 30px 0;
+        /* Error Details */
+        .error-details {
+            background: rgba(229, 62, 62, 0.1);
+            border: 1px solid rgba(229, 62, 62, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
             text-align: left;
         }
 
-        .status-title {
-            font-weight: 700;
+        .error-details-title {
+            font-weight: 600;
             color: var(--error-red);
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 18px;
+            gap: 8px;
         }
 
-        .status-list {
+        .error-details-list {
             list-style: none;
             color: var(--text-secondary);
-            font-size: 15px;
+            font-size: 14px;
         }
 
-        .status-list li {
-            margin-bottom: 10px;
-            padding-left: 25px;
+        .error-details-list li {
+            margin-bottom: 8px;
+            padding-left: 20px;
             position: relative;
         }
 
-        .status-list li::before {
-            content: "⚠️";
+        .error-details-list li::before {
+            content: "•";
+            color: var(--error-orange);
             position: absolute;
             left: 0;
-            animation: statusBlink 2s ease-in-out infinite;
-        }
-
-        @keyframes statusBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
         }
 
         /* Action Buttons */
         .error-actions {
             display: flex;
-            gap: 25px;
+            gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 40px;
         }
 
         .btn {
-            padding: 18px 36px;
+            padding: 16px 32px;
             border: none;
-            border-radius: 15px;
+            border-radius: 12px;
             font-weight: 600;
             font-size: 16px;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            gap: 8px;
+            transition: all 0.3s ease;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn:hover::before {
-            left: 100%;
         }
 
         .btn-primary {
             background: var(--gradient-error);
             color: white;
-            box-shadow: var(--shadow-error);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px var(--shadow-error);
         }
 
         .btn-primary:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 15px 35px rgba(220, 38, 38, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--shadow-error);
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
+            background: transparent;
+            color: var(--text-secondary);
+            border: 2px solid rgba(74, 85, 104, 0.2);
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 15px 35px rgba(255, 255, 255, 0.2);
+            background: rgba(74, 85, 104, 0.1);
+            border-color: var(--error-red);
+            color: var(--error-red);
         }
 
         /* Animated Icon */
         .error-icon {
-            font-size: 100px;
-            margin-bottom: 30px;
-            animation: errorShake 2s ease-in-out infinite;
-            filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.5));
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: shake 2s ease-in-out infinite;
         }
 
-        @keyframes errorShake {
-            0%, 100% { transform: translateX(0) rotate(0deg); }
-            25% { transform: translateX(-8px) rotate(-3deg); }
-            50% { transform: translateX(0) rotate(0deg); }
-            75% { transform: translateX(8px) rotate(3deg); }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-5deg); }
+            75% { transform: translateX(5px) rotate(5deg); }
         }
 
         /* Responsive Design */
         @media (max-width: 768px) {
             .error-container {
                 margin: 20px;
-                padding: 40px 25px;
-                border-radius: 25px;
+                padding: 30px 20px;
             }
 
             .error-number {
-                font-size: 120px;
+                font-size: 80px;
             }
 
             .error-title {
-                font-size: 28px;
+                font-size: 24px;
             }
 
             .error-message {
@@ -439,155 +317,116 @@
             }
         }
 
-        /* High contrast mode */
+        /* High contrast mode support */
         @media (prefers-contrast: high) {
             .error-container {
-                background: rgba(0, 0, 0, 0.9);
-                border: 3px solid #dc2626;
+                border: 2px solid #000000;
+                background: #ffffff;
+            }
+
+            .error-number {
+                background: #dc143c;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
             }
         }
 
-        /* Reduced motion */
+        /* Reduced motion for accessibility */
         @media (prefers-reduced-motion: reduce) {
-            *,
-            *::before,
-            *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
+            .error-number,
+            .error-icon,
+            .orb,
+            .spark {
+                animation: none;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Advanced Background Effects -->
+    <!-- Background Effects -->
     <div class="bg-container">
         <div class="gradient-bg"></div>
-        <div class="matrix-rain" id="matrixRain"></div>
-        <div class="sparks-container" id="sparksContainer"></div>
-        <div class="circuit-lines">
-            <div class="circuit-line horizontal" style="top: 20%; left: 10%;"></div>
-            <div class="circuit-line vertical" style="top: 10%; left: 80%;"></div>
-            <div class="circuit-line horizontal" style="top: 70%; left: 60%;"></div>
-            <div class="circuit-line vertical" style="top: 50%; left: 30%;"></div>
+        <div class="floating-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+        <div class="sparks">
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
+            <div class="spark"></div>
         </div>
     </div>
 
     <!-- Error Container -->
     <div class="error-container">
         <div class="error-icon">⚠️</div>
-        <div class="error-number corrupted-text" data-text="500">500</div>
-        <h1 class="error-title corrupted-text" data-text="Internal Server Error">Internal Server Error</h1>
+        <div class="error-number">500</div>
+        <h1 class="error-title">Internal Server Error</h1>
         <p class="error-message">
-            Critical system malfunction detected! Our servers are experiencing a temporary disruption. 
-            Our engineering team has been alerted and is working to restore normal operations.
+            Houston, we have a problem! Our servers are experiencing some technical difficulties. 
+            Our engineering team has been notified and is working to resolve this issue.
         </p>
         
-        <div class="system-status">
-            <div class="status-title">
+        <div class="error-details">
+            <div class="error-details-title">
                 <span>🔧</span>
-                System Diagnostics
+                What you can try:
             </div>
-            <ul class="status-list">
-                <li>Server processes are being restarted</li>
-                <li>Database connections are being restored</li>
-                <li>Error logs are being analyzed</li>
-                <li>Recovery systems are active</li>
-                <li>Estimated resolution time: 2-5 minutes</li>
+            <ul class="error-details-list">
+                <li>Refresh the page in a few moments</li>
+                <li>Clear your browser cache and cookies</li>
+                <li>Check your internet connection</li>
+                <li>Try accessing the page later</li>
+                <li>Contact support if the problem persists</li>
             </ul>
         </div>
         
         <div class="error-actions">
             <a href="/" class="btn btn-primary">
                 <span>🏠</span>
-                Return Home
+                Go Home
             </a>
             <button onclick="location.reload()" class="btn btn-secondary">
                 <span>🔄</span>
-                Retry Connection
+                Refresh Page
             </button>
         </div>
     </div>
 
     <script>
+        // Add some interactivity
         document.addEventListener('DOMContentLoaded', function() {
+            // Auto-refresh after 30 seconds (optional)
+            setTimeout(() => {
+                const refreshBtn = document.querySelector('.btn-secondary');
+                if (refreshBtn) {
+                    refreshBtn.style.background = 'rgba(229, 62, 62, 0.1)';
+                    refreshBtn.style.borderColor = 'var(--error-red)';
+                    refreshBtn.style.color = 'var(--error-red)';
+                    refreshBtn.innerHTML = '<span>🔄</span>Auto-Refresh Available';
+                }
+            }, 30000);
+
+            // Parallax effect for orbs (reduced for accessibility)
             let reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             
             if (!reduceMotion) {
-                // Create matrix rain effect
-                function createMatrixRain() {
-                    const matrixContainer = document.getElementById('matrixRain');
-                    const characters = '01ERROR500SYSTEM010100SERVER01CRASH01';
-                    
-                    for (let i = 0; i < 15; i++) {
-                        const column = document.createElement('div');
-                        column.className = 'matrix-column';
-                        column.style.left = Math.random() * 100 + '%';
-                        column.style.animationDuration = (Math.random() * 3 + 2) + 's';
-                        column.style.animationDelay = Math.random() * 2 + 's';
-                        
-                        let columnText = '';
-                        for (let j = 0; j < 20; j++) {
-                            columnText += characters.charAt(Math.floor(Math.random() * characters.length)) + '<br>';
-                        }
-                        column.innerHTML = columnText;
-                        
-                        matrixContainer.appendChild(column);
-                    }
-                }
-                
-                // Create flying sparks
-                function createSparks() {
-                    const sparksContainer = document.getElementById('sparksContainer');
-                    
-                    setInterval(() => {
-                        const spark = document.createElement('div');
-                        spark.className = 'spark';
-                        spark.style.left = Math.random() * 100 + '%';
-                        spark.style.top = Math.random() * 100 + '%';
-                        spark.style.animationDelay = Math.random() * 2 + 's';
-                        
-                        sparksContainer.appendChild(spark);
-                        
-                        // Remove spark after animation
-                        setTimeout(() => {
-                            if (spark.parentNode === sparksContainer) {
-                                sparksContainer.removeChild(spark);
-                            }
-                        }, 4000);
-                    }, 800);
-                }
-                
-                // Enhanced mouse interaction
                 document.addEventListener('mousemove', (e) => {
-                    const container = document.querySelector('.error-container');
-                    const x = (e.clientX / window.innerWidth) - 0.5;
-                    const y = (e.clientY / window.innerHeight) - 0.5;
+                    const orbs = document.querySelectorAll('.orb');
+                    const x = e.clientX / window.innerWidth;
+                    const y = e.clientY / window.innerHeight;
                     
-                    container.style.transform = `perspective(1000px) rotateX(${y * 8}deg) rotateY(${x * 8}deg)`;
+                    orbs.forEach((orb, index) => {
+                        const speed = (index + 1) * 0.03;
+                        const xMove = (x - 0.5) * 15 * speed;
+                        const yMove = (y - 0.5) * 15 * speed;
+                        
+                        orb.style.transform += ` translate(${xMove}px, ${yMove}px)`;
+                    });
                 });
-                
-                // Reset on mouse leave
-                document.addEventListener('mouseleave', () => {
-                    const container = document.querySelector('.error-container');
-                    container.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
-                });
-                
-                // Initialize effects
-                createMatrixRain();
-                createSparks();
             }
-            
-            // Auto-refresh suggestion after 30 seconds
-            setTimeout(() => {
-                const retryBtn = document.querySelector('.btn-secondary');
-                if (retryBtn) {
-                    retryBtn.style.background = 'rgba(220, 38, 38, 0.2)';
-                    retryBtn.style.borderColor = 'var(--error-red)';
-                    retryBtn.innerHTML = '<span>🔄</span>Connection Ready - Retry Now';
-                    retryBtn.style.animation = 'pulse 1s ease-in-out infinite';
-                }
-            }, 30000);
         });
     </script>
 </body>
