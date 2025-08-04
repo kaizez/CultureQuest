@@ -5,6 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Modern Interface</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
+    <style>
+        /* Inline critical navbar fixes */
+        .navbar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 1000 !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid rgba(91, 33, 182, 0.15) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+        }
+        
+        .navbar-container {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+            padding: 12px 20px !important;
+            min-height: 60px !important;
+        }
+        
+        .navbar-brand {
+            display: flex !important;
+            align-items: center !important;
+        }
+        
+        .navbar-menu {
+            flex: 1 !important;
+            display: flex !important;
+            justify-content: center !important;
+            margin: 0 40px !important;
+        }
+        
+        .navbar-nav {
+            display: flex !important;
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 8px !important;
+        }
+        
+        .navbar-actions {
+            display: flex !important;
+            align-items: center !important;
+            gap: 16px !important;
+        }
+        
+        .nav-link {
+            color: #4a5568 !important;
+            text-decoration: none !important;
+            font-weight: 500 !important;
+            font-size: 14px !important;
+            padding: 10px 16px !important;
+            border-radius: 8px !important;
+            transition: all 0.2s ease !important;
+            white-space: nowrap !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+        
+        .nav-link span {
+            font-size: 14px !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .nav-link:hover {
+            color: #5b21b6 !important;
+            background: rgba(91, 33, 182, 0.1) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        .logo {
+            width: 40px !important;
+            height: 40px !important;
+            background: linear-gradient(135deg, #5b21b6, #7c3aed) !important;
+            border-radius: 8px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: white !important;
+            font-weight: 700 !important;
+            font-size: 18px !important;
+            margin-right: 12px !important;
+        }
+        
+        .navbar-brand h1 {
+            font-size: 24px !important;
+            font-weight: 700 !important;
+            color: #1a1a1a !important;
+            margin: 0 !important;
+        }
+        
+        .sign-in-btn, .demo-btn {
+            padding: 8px 16px !important;
+            border-radius: 6px !important;
+            text-decoration: none !important;
+            font-weight: 500 !important;
+            font-size: 14px !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .sign-in-btn {
+            color: #666 !important;
+            background: transparent !important;
+            border: 1px solid #e5e7eb !important;
+        }
+        
+        .sign-in-btn:hover {
+            color: #333 !important;
+            background: #f9fafb !important;
+        }
+        
+        .demo-btn {
+            color: white !important;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+            border: none !important;
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+        }
+        
+        body {
+            padding-top: 80px !important;
+        }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
@@ -22,29 +154,38 @@
         </div>
     </div>
 
-    <!-- Header -->
-    <header class="admin-header">
-        <nav class="admin-nav">
-            <div class="admin-logo">
-                <h1>Admin Dashboard</h1>
-                <span class="admin-badge">Admin</span>
-            </div>
-            <div class="admin-actions">
-                <a href="{{ url_for('login.admin_export_users') }}" class="admin-btn">
-                    <span>📊</span>
-                    Export Users
-                </a>
-                <a href="{{ url_for('admin_screening.admin_page') }}" class="admin-btn">
-                    <span>🔍</span>
-                    Admin Screening
-                </a>
-                <a href="{{ url_for('login.logout') }}" class="admin-btn danger">
-                    <span>🚪</span>
-                    Logout
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <a href="{{ url_for('chat.chat_rooms') }}">
+                    <div class="logo">Y</div>
+                    <h1>CultureQuest</h1>
                 </a>
             </div>
-        </nav>
-    </header>
+            
+            <div class="navbar-menu">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a href="{{ url_for('chat.chat_rooms') }}" class="nav-link">Chat Rooms</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('rewards.rewards_admin') }}" class="nav-link">Rewards Admin</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('chat_manage.chat_management_dashboard') }}" class="nav-link">Chat Admin</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_screening.admin_page') }}" class="nav-link">Admin Screening</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="navbar-actions">
+                <a href="{{ url_for('login.profile') }}" class="demo-btn">Profile</a>
+                <a href="{{ url_for('login.logout') }}" class="sign-in-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
 
     <!-- Main Content -->
     <main class="admin-main">
@@ -222,9 +363,13 @@
                 <div class="sidebar-card">
                     <h3 class="sidebar-title">Quick Actions</h3>
                     <div class="quick-actions">
-                        <a href="{{ url_for('login.admin_export_users') }}" class="quick-action-btn">
+                        <a href="{{ url_for('login.admin_export_users_excel') }}" class="quick-action-btn">
                             <span>📊</span>
-                            Export All Users
+                            Export All Users to Excel
+                        </a>
+                        <a href="{{ url_for('admin_screening.admin_page') }}" class="quick-action-btn">
+                            <span>🔍</span>
+                            Admin Screening
                         </a>
                         <button onclick="refreshDashboard()" class="quick-action-btn">
                             <span>🔄</span>
@@ -295,17 +440,6 @@
             location.reload();
         }, 300000);
 
-        // Add loading states to export button
-        document.querySelector('a[href*="export"]')?.addEventListener('click', function(e) {
-            const btn = this;
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = '<span class="loading-spinner"></span> Exporting...';
-            
-            // Reset after 3 seconds
-            setTimeout(() => {
-                btn.innerHTML = originalContent;
-            }, 3000);
-        });
 
         // Check session validity on page load and visibility change
         function checkSessionValidity() {
