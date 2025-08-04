@@ -1,17 +1,15 @@
 import requests, time, os, tempfile, json
-<<<<<<< Updated upstream
-from models import ChallengeResponse
-from flask import current_app
-from db import db_session
-=======
 from .models import ChallengeResponse
 from flask import current_app
 from .db import db_session
->>>>>>> Stashed changes
+from sqlalchemy import text
 
 def scan_file_in_background(app, response_id):
     with app.app_context():
-        response = db_session.get(ChallengeResponse, response_id)
+        query = text(f"SELECT * FROM challenge_submissions where id = '{response_id}'")
+        result = db_session.execute(query)
+        response = result.fetchone()
+        # response = db_session.get(ChallengeResponse, response_id)
         print(response)
         if not response or not response.file_content:
             print(f"Error: Could not find response or file content for {response_id}.")

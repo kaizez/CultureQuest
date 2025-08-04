@@ -49,6 +49,12 @@ login_bp = login_module.login_bp
 google_bp = login_module.google_bp
 init_database = login_module.init_database
 
+
+# Import response module
+os.chdir(os.path.join(current_dir, 'response'))
+from response.response import response_bp
+from response.mod import moderate_bp
+
 # Restore original working directory
 os.chdir(old_cwd)
 
@@ -96,6 +102,10 @@ app.config['OAUTHLIB_RELAX_TOKEN_SCOPE'] = True
 # Force HTTPS and correct hostname for OAuth redirects
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 app.config['SERVER_NAME'] = os.environ.get('OAUTH_HOSTNAME', '127.0.0.1:5000')
+
+# RECAPTCHA Config
+app.config['RECAPTCHA_SITE_KEY'] = os.environ.get('RECAPTCHA_SITE_KEY')
+app.config['RECAPTCHA_SECRET_KEY'] = os.environ.get('RECAPTCHA_SECRET_KEY')
 
 # Build database URI from individual environment variables
 db_host = os.environ.get('DB_HOST')
@@ -238,6 +248,10 @@ app.register_blueprint(rewards_bp)  # This will make /rewards routes accessible 
 
 # Login module blueprints
 app.register_blueprint(login_bp)  # Login routes accessible directly
+
+# Challenge response blueprints
+app.register_blueprint(response_bp, url_prefix='/response')
+app.register_blueprint(moderate_bp, url_prefix='/moderate')
 
 # Register Google blueprint if it was created (i.e., if credentials are available)
 if google_bp is not None:

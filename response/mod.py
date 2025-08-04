@@ -5,7 +5,7 @@ from flask_limiter.util import get_remote_address
 from .utils import *
 from .db import db_session
 import threading
-from .models import ChallengeResponse, Comment
+from .models import Comment
 from sqlalchemy import select, or_, desc
 
 moderate_bp = Blueprint('moderate', __name__, template_folder='templates')
@@ -16,10 +16,9 @@ limiter = Limiter(
     default_limits=["10 per minute"]
 )
 
-
 @moderate_bp.route('/download-file/<string:response_id>')
 def download_file(response_id):
-    query = text(f"SELECT * FROM challenge_response where id = {response_id}")
+    query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
     result = db_session.execute(query)
     response_record = result.fetchone()
     if not response_record or not response_record.file_content:
@@ -35,7 +34,7 @@ def download_file(response_id):
 @moderate_bp.route('/rescan-file/<string:response_id>', methods=['POST'])
 @limiter.limit("5 per minute")
 def admin_rescan_file(response_id):
-    query = text(f"SELECT * FROM challenge_response where id = {response_id}")
+    query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
     result = db_session.execute(query)
     response = result.fetchone()
     if not response:
@@ -46,8 +45,7 @@ def admin_rescan_file(response_id):
         flash("Cannot re-scan. File content is missing from the database.", "danger")
         return redirect(url_for('moderate.admin_uploaded_content_detail', response_id=response.id))
 
-    try:
-        
+    try:        
         app_instance = current_app._get_current_object()
         scan_thread = threading.Thread(target=scan_file_in_background, args=(app_instance, response.id))
         scan_thread.start()
@@ -58,23 +56,42 @@ def admin_rescan_file(response_id):
     return redirect(url_for('moderate.admin_uploaded_content_detail', response_id=response.id))
 
 @moderate_bp.route('/uploaded-content')
-def admin_uploaded_content_list():    
-    query = text(f"SELECT * FROM challenge_response where id = {response_id}")
-    result = db_session.execute(query)
-    response_record = result.fetchone()
+def admin_uploaded_content_list():        
     responses_stmt = select(ChallengeResponse).order_by(desc(ChallengeResponse.submission_date))
     responses = db_session.execute(responses_stmt).scalars().all()
+
+    # Step 2: Efficiently fetch all needed challenge titles
+    challenge_ids = {res.challenge_id for res in responses}
+    challenge_titles = {}
+    if challenge_ids:
+        # Assuming the table with challenge definitions is 'challenges'
+        ids_list = ", ".join(map(str, challenge_ids))
+        query = text(f"SELECT id, challenge_name FROM challenge_submissions WHERE id IN ({ids_list})")
+        title_results = db_session.execute(query).fetchall()
+        challenge_titles = {row[0]: row[1] for row in title_results}
+        print(ids_list)
+
+    # Step 3: Attach the title to each response object
+    for response in responses:
+        response.challenge_title = challenge_titles.get(response.challenge_id, 'Challenge1')
+
     return render_template('admin_chall.html', responses=responses)
 
 @moderate_bp.route('/uploaded-content/<string:response_id>')
 def admin_uploaded_content_detail(response_id):
-    response = db_session.get(ChallengeResponse, response_id)
+    query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
+    result = db_session.execute(query)
+    response = result.fetchone()
     if not response:
         flash(f"Response with ID {response_id} not found.", "danger")
         return redirect(url_for('moderate.admin_uploaded_content_list'))
+    query = text(f"SELECT challenge_name FROM challenge_submissions where id = '{response.challenge_id}'")
+    challenge = db_session.execute(query).fetchone()
 
-    scan_results = None
-    scan_summary = None 
+    if challenge is None:
+        challenge = 'Challenge1'
+
+    scan_results = scan_summary = None
     if response.virustotal_scan_results:
         scan_results = json.loads(response.virustotal_scan_results)
         if scan_results and 'data' in scan_results and 'attributes' in scan_results['data']:
@@ -82,13 +99,15 @@ def admin_uploaded_content_detail(response_id):
 
     return render_template('admin_chall_details.html', 
                            response=response, 
-                           challenge=response.challenge,
+                           challenge=challenge,
                            scan_results=scan_results, 
                            scan_summary=scan_summary)
 
 @moderate_bp.route('/update-response-status/<string:response_id>/<string:action>', methods=['POST'])
 def admin_update_response_status(response_id, action):
-    response = db_session.get(ChallengeResponse, response_id)
+    query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
+    result = db_session.execute(query)
+    response = result.fetchone()
     if not response:
         flash("Response not found.", "danger")
         return redirect(url_for('moderate.admin_uploaded_content_list'))
@@ -113,7 +132,9 @@ def admin_moderate_comments():
 
 @moderate_bp.route('/update-comment-status/<string:comment_id>/<string:action>', methods=['POST'])
 def admin_update_comment_status(comment_id, action):
-    comment = db_session.get(Comment, comment_id)
+    query = text(f"SELECT * FROM comment where id = '{comment_id}'")
+    result = db_session.execute(query)
+    comment = result.fetchone()
     if not comment:
         flash("Comment not found.", "danger")
         return redirect(url_for('moderate.admin_moderate_comments'))

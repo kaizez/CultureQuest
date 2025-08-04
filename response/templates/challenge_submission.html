@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container py-4 px-4 mx-auto md:p-6">
     <header class="mb-4">
-        <h1 class="h4 md:h3 fw-bold text-gray-800">Submit Your Experience for <span class="text-dark">"{{ challenge.title }}"</span></h1>
+        <h1 class="h4 md:h3 fw-bold text-gray-800">Submit Your Experience for <span class="text-dark">"{{ challenge.challenge_name }}"</span></h1>
         <p class="text-gray-600 mt-2">Share your completed project and reflection_story below to earn your points!</p>
     </header>
 
@@ -174,7 +174,7 @@
                     <i class="fas fa-check text-success fs-4"></i>
                 </div>
                 <h2 class="h5 fw-semibold text-gray-800 mb-2">Submission Successful!</h2>
-                <p class="text-gray-600 mb-4">Your experience for "{{ challenge.title }}" has been submitted successfully. Points will be awarded soon!</p>
+                <p class="text-gray-600 mb-4">Your experience for "{{ challenge.challenge_name }}" has been submitted successfully. Points will be awarded soon!</p>
                 <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
                     <a href="{{ url_for('response.wip_challenge_details', challenge_id=challenge.id) }}" class="btn btn-primary rounded transition">Back to My Challenge</a>
                     <a href="#" class="btn btn-outline-secondary rounded transition">View My Submissions</a>

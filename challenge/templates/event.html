@@ -55,7 +55,8 @@
                             {% endif %}
                         </div>
                         <div class="challenge-card-content">
-                            <h3 class="challenge-card-title">{{ challenge['challenge_name'] or challenge['name'] }}</h3>
+                            <a href="{{ url_for('response.challenge_description', challenge_id=challenge.id) }}" style="text-decoration: none; color: inherit;">
+                            <h3 class="challenge-card-title">{{ challenge['challenge_name'] or challenge['name'] }}</h3></a>
                         </div>
                     </div>
                 {% endfor %}

@@ -1,23 +1,16 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 from datetime import datetime, timedelta
-from forms import SubmissionForm, AcceptChallengeForm, CommentForm
+from .forms import SubmissionForm, AcceptChallengeForm, CommentForm
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from utils import *
-<<<<<<< Updated upstream
-from db import db_session
-from werkzeug.utils import secure_filename
-import threading
-from models import Challenge, ChallengeResponse, Comment
-=======
+from .utils import *
 from .db import db_session
 from werkzeug.utils import secure_filename
 import threading
-from .models import Challenge, ChallengeResponse, Comment
->>>>>>> Stashed changes
+from .models import ChallengeResponse, Comment
 from sqlalchemy import select, desc, create_engine, text, inspect
 
-response_bp = Blueprint('challenge', __name__)
+response_bp = Blueprint('response', __name__, static_url_path='/response/static', static_folder='static')
 
 limiter = Limiter(
     app=current_app,
@@ -36,10 +29,13 @@ def ratelimit_handler(e):
 
 @response_bp.route('/challenges')
 def challenges():
-    # engine = create_engine("mysql+pymysql://SQLUser:Pleasestopleakingenv@staging.nypdsf.me:8080/culturequest")
     query = text(f"SELECT * FROM challenge_submissions")
     result = db_session.execute(query)
     rows = result.fetchall()
+    # user_id = session.get('user_id') # need to test whether return in '' or js str
+    user_id = r'"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"'
+    query = text(f"SELECT points from user_points where user_id={user_id}")
+    points = db_session.execute(query).fetchone()
     # new_challenges = [c for c in all_challenges if c.status == 'NEW']
     # current_challenges = [c for c in all_challenges if c.status in ['IN PROGRESS', 'NEEDS REVIEW']]
     # done_challenges = [c for c in all_challenges if c.status == 'COMPLETED']
@@ -51,12 +47,12 @@ def challenges():
     return render_template('chall_hub.html',
                            new_challenges=new_challenges,
                            current_challenges=current_challenges,
-                           done_challenges=done_challenges)
+                           done_challenges=done_challenges,
+                           points=points)
 
 @response_bp.route('/challenges/<string:challenge_id>')
 def challenge_description(challenge_id):
-    engine = create_engine("mysql+pymysql://SQLUser:Pleasestopleakingenv@staging.nypdsf.me:8080/culturequest")
-    query = text(f"SELECT * FROM challenge_submissions where id = {challenge_id}")
+    query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
     result = db_session.execute(query)
     challenge = result.fetchone()
     # all_challenges_stmt = select(Challenge)
@@ -64,8 +60,6 @@ def challenge_description(challenge_id):
     # new_challenges = [c for c in all_challenges if c.status == 'NEW']
     # current_challenges = [c for c in all_challenges if c.status in ['IN PROGRESS', 'NEEDS REVIEW']]
     # done_challenges = [c for c in all_challenges if c.status == 'COMPLETED']
-    
-    # challenge = db_session.get(Challenge, challenge_id)
     if not challenge:
         return "Challenge not found", 404
     form = AcceptChallengeForm()
@@ -78,8 +72,7 @@ def challenge_description(challenge_id):
 
 @response_bp.route('/wip-challenges/<string:challenge_id>')
 def wip_challenge_details(challenge_id):
-    # engine = create_engine("mysql+pymysql://SQLUser:Pleasestopleakingenv@staging.nypdsf.me:8080/culturequest")
-    query = text(f"SELECT * FROM challenge_submissions where id = {challenge_id}")
+    query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
     result = db_session.execute(query)
     challenge = result.fetchone()
     comment_form = CommentForm()
@@ -91,12 +84,13 @@ def wip_challenge_details(challenge_id):
     return render_template('challenge_wip.html',
                            challenge=challenge,
                            comment_form=comment_form,
-                           rate_limit_info=rate_limit_info)
+                           rate_limit_info=rate_limit_info,
+                           config=current_app.config)
 
 @response_bp.route('/wip-challenges/<string:challenge_id>/add-comment', methods=['POST'])
 @limiter.limit("5 per minute") 
 def add_comment_to_wip_challenge(challenge_id):
-    query = text(f"SELECT * FROM challenge_submissions where id = {challenge_id}")
+    query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
     result = db_session.execute(query)
     challenge = result.fetchone()
     form = CommentForm()
@@ -135,7 +129,7 @@ def add_comment_to_wip_challenge(challenge_id):
 @response_bp.route('/submit-challenge/<string:challenge_id>', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def challenge_submission(challenge_id):
-    query = text(f"SELECT * FROM challenge_submissions where id = {challenge_id}")
+    query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
     result = db_session.execute(query)
     challenge = result.fetchone()
 
@@ -184,15 +178,15 @@ def challenge_submission(challenge_id):
                         
                         # challenge.status = 'COMPLETED'
                         # challenge.progress_percent = 100
-                        # db_session.commit()
+                        db_session.commit()
                 
                         if new_response.file_content:
                             app_instance = current_app._get_current_object()
                             scan_thread = threading.Thread(target=scan_file_in_background, args=(app_instance, new_response.id))
                             scan_thread.start()
                         
-                        flash(f'Challenge "{challenge.title}" submitted successfully!', 'success')
-                        return redirect(url_for('challenge.challenges'))
+                        flash(f'Challenge "{challenge.challenge_name}" submitted successfully!', 'success')
+                        return redirect(url_for('response.challenges'))
 
                     except Exception as e:
                         print(e)
@@ -205,8 +199,8 @@ def challenge_submission(challenge_id):
                 # challenge.progress_percent = 100
                 try:
                     # db_session.commit()
-                    # flash(f'Your challenge "{challenge.title}" has been successfully completed and submitted!', 'success')
-                    return redirect(url_for('challenge.challenges'))
+                    flash(f'Your challenge "{challenge.challenge_name}" has been successfully completed and submitted!', 'success')
+                    return redirect(url_for('response.challenges'))
                 except Exception as e:
                     print(e)
                     db_session.rollback()
@@ -225,7 +219,7 @@ def challenge_submission(challenge_id):
 def accept_challenge(challenge_id):
     form = AcceptChallengeForm()
     if form.validate_on_submit():
-        query = text(f"SELECT * FROM challenge_submissions where id = {challenge_id}")
+        query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
         result = db_session.execute(query)
         challenge = result.fetchone()
         
@@ -233,21 +227,10 @@ def accept_challenge(challenge_id):
         # challenge.progress_percent = 5
         # challenge.xp = challenge.xp or 0
         
-        duration_parts = challenge.duration.split()
-        if len(duration_parts) == 2 and duration_parts[1] in ['days', 'weeks']:
-            value = int(duration_parts[0])
-            if duration_parts[1] == 'days':
-                end_date = datetime.utcnow() + timedelta(days=value)
-            else:
-                end_date = datetime.utcnow() + timedelta(weeks=value)
-            
-            challenge.duration_left = f"{(end_date - datetime.utcnow()).days} days left"
-        else:
-            challenge.duration_left = challenge.duration
-
+        
         try:
             db_session.commit()
-            flash(f'You have successfully accepted the "{challenge.title}" challenge! Head to My Challenges to see your progress.', 'success')
+            flash(f'You have successfully accepted the "{challenge.challenge_name}" challenge! Head to My Challenges to see your progress.', 'success')
         except Exception as e:
             db_session.rollback()
             flash(f'Error accepting challenge: {e}', 'danger')
@@ -255,12 +238,12 @@ def accept_challenge(challenge_id):
     else:
         flash('Invalid request. Please try again.', 'danger')
 
-    return redirect(url_for('challenge.wip_challenge_details', challenge_id=challenge.id))
+    return redirect(url_for('response.wip_challenge_details', challenge_id=challenge.id))
 
 @response_bp.route('/report-comment/<string:comment_id>', methods=['POST'])
 @limiter.limit("15 per minute")
 def report_comment(comment_id):
-    query = text(f"SELECT * FROM comment where id = {comment_id}")
+    query = text(f"SELECT * FROM comment where id = '{comment_id}'")
     result = db_session.execute(query)
     comment = result.fetchone()
     if comment:
@@ -269,5 +252,5 @@ def report_comment(comment_id):
         flash('Comment has been reported for review.', 'info')
     else:
         flash('Comment not found.', 'danger')
-    return redirect(url_for('challenge.challenges'))
+    return redirect(url_for('response.challenges'))
 

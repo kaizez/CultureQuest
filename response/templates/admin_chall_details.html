@@ -7,7 +7,7 @@
     </a>
 
     <header class="mb-4">
-        <h1 class="h4 h3-md fw-bold text-gray-800">Submission for: {{ response.challenge.title }}</h1>
+        <h1 class="h4 h3-md fw-bold text-gray-800">Submission for: {{ challenge }}</h1>
         <p class="text-secondary mt-2">Review the submitted file and its scan results.</p>
     </header>
 
@@ -17,7 +17,7 @@
         </div>
         <div class="card-body">
             <p><strong>Response ID:</strong> {{ response.id }}</p>
-            <p><strong>Challenge:</strong> {{ response.challenge.title }} (ID: {{ response.challenge.id }})</p>
+            <p><strong>Challenge:</strong> {{ challenge }} (ID: {{ response.challenge_id }})</p>
             <p><strong>User ID:</strong> {{ response.user_id }}</p>
             <p><strong>Submitted On:</strong> {{ response.submission_date.strftime('%Y-%m-%d %H:%M:%S') if response.submission_date else 'Not recorded' }}</p>
             <p><strong>Submission Status:</strong> <span class="badge bg-info">{{ response.status }}</span></p>
