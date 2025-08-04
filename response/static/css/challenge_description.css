@@ -1,0 +1,7 @@
+/* static/css/challenge_description.css */
+.transition-all {
+    transition: all 0.3s ease-in-out;
+}
+.hover-scale-105:hover {
+    transform: scale(1.05);
+}

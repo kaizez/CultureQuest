@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-WTF
+Flask-Limiter
+python-dotenv
+requests
+PyMySQL
+Werkzeug
+bleach
