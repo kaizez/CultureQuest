@@ -43,7 +43,8 @@ def create_challenge():
                 return render_template('challenge.html', form=form)
 
         insert_challenge(challenge_name, description, completion_criteria, media_filename)
-        return redirect(url_for('challenge.success'))
+        flash('Challenge created successfully!', 'success')
+        return render_template('challenge.html', form=ChallengeForm(), show_success_popup=True)
 
     elif form.is_submitted():
         flash('Please correct the errors in the form.', 'danger')
