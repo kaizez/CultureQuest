@@ -1022,6 +1022,65 @@ a:focus-visible {
   }
 }
 
+/* Flash Messages */
+.flash-messages {
+  margin-bottom: -20px;
+  margin-top: -20px;
+}
+
+.flash-message {
+  padding: 4px 16px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  animation: slideInDown 0.3s ease-out;
+}
+
+.flash-error,
+.flash-message.flash-error {
+  background-color: transparent !important;
+  color: #F56565 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.flash-error .flash-text,
+.flash-message.flash-error .flash-text {
+  color: #F56565 !important;
+}
+
+.flash-success {
+  background-color: var(--success-color);
+  color: white;
+  border: 1px solid #38A169;
+  box-shadow: 0 2px 8px rgba(72, 187, 120, 0.2);
+}
+
+.flash-warning {
+  background-color: var(--warning-color);
+  color: white;
+  border: 1px solid #D69E2E;
+  box-shadow: 0 2px 8px rgba(237, 137, 54, 0.2);
+}
+
+.flash-text {
+  flex: 1;
+}
+
+@keyframes slideInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   :root {
@@ -1035,5 +1094,10 @@ a:focus-visible {
   .login-card,
   .signup-section {
     border: 2px solid #000000;
+  }
+  
+  .flash-error {
+    background-color: #dc143c;
+    border-color: #b71c1c;
   }
 }
