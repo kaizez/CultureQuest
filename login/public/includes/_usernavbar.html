@@ -15,10 +15,14 @@
                 <li class="nav-item">
                     <a href="{{ url_for('rewards.rewards_page') }}" class="nav-link">Rewards</a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('event.event_page') }}" class="nav-link">Events</a>
+                </li>
             </ul>
         </div>
         
         <div class="navbar-actions">
+            <a href="/challenge_form/" class="admin-btn">Host</a>
             <a href="{{ url_for('login.profile') }}" class="demo-btn">Profile</a>
             <a href="{{ url_for('login.logout') }}" class="sign-in-btn">Logout</a>
         </div>

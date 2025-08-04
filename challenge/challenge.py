@@ -2,24 +2,14 @@ from flask import Blueprint, render_template, redirect, url_for, flash, session
 from db_handler import insert_challenge, check_and_update_rate_limit  # Import the rate limiting function
 from file_upload import save_file  # Import file upload logic
 from input_sanitizer import validate_challenge_input  # Protects against injection attacks
+from auth_decorators import login_required  # Import centralized authentication decorator
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField
 from flask_wtf.file import FileField, FileAllowed
 from wtforms.validators import DataRequired, Length
-from functools import wraps
 
 # Create a Blueprint for the challenge form
 challenge_bp = Blueprint('challenge', __name__, template_folder='templates')
-
-# Login required decorator - Protects against unauthorized access
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session or 'email' not in session:
-            # Redirect to login page if not authenticated - Protects against unauthenticated access
-            return redirect('/login')
-        return f(*args, **kwargs)
-    return decorated_function
 
 # WTForm for Challenge - Protects against malformed input and enforces data validation
 class ChallengeForm(FlaskForm):
@@ -32,8 +22,8 @@ class ChallengeForm(FlaskForm):
 @login_required  # Protects against unauthorized challenge creation
 def create_challenge():
     # Check if the user has exceeded the rate limit before proceeding - Protects against spam/DoS attacks
-    email = session.get('email')  # Get the user's email from the session
-    if email and not check_and_update_rate_limit(email):
+    user_id = session.get('user_id')  # Get the user_id from the session
+    if user_id and not check_and_update_rate_limit(user_id):
         return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded - Protects against abuse
 
     form = ChallengeForm()

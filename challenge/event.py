@@ -1,27 +1,19 @@
 from flask import Blueprint, render_template, request, session, redirect
 from db_handler import fetch_challenges, check_and_update_rate_limit  # Fetch function from db_handler.py
+from auth_decorators import login_required  # Import centralized authentication decorator
 import math
-from functools import wraps
 
 # Create a Blueprint for the event page
 event_bp = Blueprint('event', __name__, template_folder='templates')
 
-# Login required decorator - Protects against unauthorized access
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session or 'email' not in session:
-            # Redirect to login page if not authenticated - Protects against unauthenticated access
-            return redirect('/login')
-        return f(*args, **kwargs)
-    return decorated_function
+# Authentication decorator is now imported from auth_decorators.py
 
 @event_bp.route('/')
 @login_required  # Protects against unauthorized event viewing
 def event_page():
     # Check if the user has exceeded the rate limit before proceeding - Protects against spam/DoS attacks
-    email = session.get('email')  # Get the user's email from the session
-    if email and not check_and_update_rate_limit(email):
+    user_id = session.get('user_id')  # Get the user_id from the session
+    if user_id and not check_and_update_rate_limit(user_id):
         return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded - Protects against abuse
     
     page = request.args.get('page', 1, type=int)  # Protects against invalid page parameters

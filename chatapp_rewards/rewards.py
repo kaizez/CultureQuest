@@ -7,6 +7,11 @@ from models import db, UserPoints, RewardItem, RewardRedemption, UploadedFile
 from datetime import datetime
 from chat import scan_file_with_virustotal, allowed_file
 from auth_utils import require_login, require_admin, get_current_user, get_user_id, get_username
+from security import (
+    SecurityMiddleware, InputValidator, CSRFProtection, RateLimiter,
+    SecurityViolation as SecViolation, validate_and_sanitize_input,
+    log_security_event, SECURITY_CONFIG
+)
 
 rewards_bp = Blueprint('rewards', __name__)
 
@@ -40,36 +45,52 @@ def rewards_page():
 
 @rewards_bp.route('/rewards/redeem', methods=['POST'])
 @require_login
+@RateLimiter.rate_limit(limit_per_minute=30)
+@CSRFProtection.require_csrf_token
 def redeem_reward():
     """Handle reward redemption"""
-    data = request.get_json()
-    reward_id = data.get('reward_id')
-    
-    if not reward_id:
-        return jsonify({'error': 'Missing reward_id'}), 400
-    
-    # Get current user from session
-    current_user = get_current_user()
-    user_id = current_user['user_id']
-    username = current_user['username']
-    
-    # Get user points
-    user_points = get_or_create_user_points(user_id, username)
-    
-    # Get reward item
-    reward_item = RewardItem.query.get(reward_id)
-    if not reward_item or not reward_item.is_active:
-        return jsonify({'error': 'Reward not found or inactive'}), 404
-    
-    # Check if user has enough points
-    if user_points.points < reward_item.cost:
-        return jsonify({'error': 'Insufficient points'}), 400
-    
-    # Check stock
-    if reward_item.stock <= 0:
-        return jsonify({'error': 'Item out of stock'}), 400
-    
     try:
+        data = request.get_json()
+        if not data:
+            raise SecViolation("Invalid JSON data", "INVALID_INPUT")
+        
+        # Validate reward_id
+        reward_id = data.get('reward_id')
+        if not reward_id:
+            raise SecViolation("Missing reward_id", "INVALID_INPUT")
+        
+        reward_id = InputValidator.validate_integer(
+            reward_id, min_value=1, max_value=999999, field_name="reward_id"
+        )
+        
+        # Get current user from session
+        current_user = get_current_user()
+        user_id = current_user['user_id']
+        username = current_user['username']
+        
+        # Get user points
+        user_points = get_or_create_user_points(user_id, username)
+        
+        # Get reward item
+        reward_item = RewardItem.query.get(reward_id)
+        if not reward_item or not reward_item.is_active:
+            return jsonify({'error': 'Reward not found or inactive'}), 404
+        
+        # Check if user has enough points
+        if user_points.points < reward_item.cost:
+            return jsonify({'error': 'Insufficient points'}), 400
+        
+        # Check stock
+        if reward_item.stock <= 0:
+            return jsonify({'error': 'Item out of stock'}), 400
+        
+        # Log redemption attempt
+        log_security_event(
+            "REWARD_REDEMPTION_ATTEMPT",
+            f"User {username} attempting to redeem reward {reward_item.name}",
+            "INFO"
+        )
+        
         # Deduct points from user
         user_points.points -= reward_item.cost
         user_points.updated_at = datetime.utcnow()
@@ -89,6 +110,12 @@ def redeem_reward():
         db.session.add(redemption)
         db.session.commit()
         
+        log_security_event(
+            "REWARD_REDEEMED",
+            f"User {username} successfully redeemed {reward_item.name}",
+            "INFO"
+        )
+        
         return jsonify({
             'success': True,
             'message': f'Successfully redeemed {reward_item.name}!',
@@ -96,8 +123,12 @@ def redeem_reward():
             'remaining_stock': reward_item.stock
         })
         
+    except SecViolation as e:
+        log_security_event("REWARD_REDEEM_VIOLATION", f"Security violation: {e.message}", "WARNING")
+        return jsonify({'error': 'Invalid request data'}), 400
     except Exception as e:
         db.session.rollback()
+        log_security_event("REWARD_REDEEM_ERROR", f"Redemption error: {str(e)}", "ERROR")
         return jsonify({'error': 'Failed to process redemption'}), 500
 
 @rewards_bp.route('/rewards/admin')
@@ -124,22 +155,48 @@ def rewards_admin():
 
 @rewards_bp.route('/rewards/admin/add_item', methods=['POST'])
 @require_admin
+@RateLimiter.rate_limit(limit_per_minute=10)
+@CSRFProtection.require_csrf_token
 def add_reward_item():
     """Add a new reward item with image upload"""
     try:
-        # Get form data
+        # Validate form data
         name = request.form.get('name')
         description = request.form.get('description', '')
-        cost = int(request.form.get('cost'))
-        stock = int(request.form.get('stock', 0))
+        cost = request.form.get('cost')
+        stock = request.form.get('stock', 0)
+        
+        # Validate and sanitize inputs
+        name = InputValidator.validate_string(name, max_length=100, min_length=1, field_name="name")
+        name = InputValidator.sanitize_html(name)
+        
+        if description:
+            description = InputValidator.validate_string(description, max_length=1000, field_name="description")
+            description = InputValidator.sanitize_html(description)
+        
+        cost = InputValidator.validate_integer(cost, min_value=1, max_value=999999, field_name="cost")
+        stock = InputValidator.validate_integer(stock, min_value=0, max_value=999999, field_name="stock")
         
         # Handle image upload
         image_url = ''
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                if not allowed_file(file.filename):
-                    return jsonify({'error': 'Invalid file type. Only images are allowed.'}), 400
+                # Validate file upload with security checks
+                try:
+                    file_info = InputValidator.validate_file_upload(file, SECURITY_CONFIG['MAX_FILE_SIZE'])
+                    
+                    # Additional check for image files only
+                    if file_info['extension'] not in {'png', 'jpg', 'jpeg', 'gif'}:
+                        raise SecViolation("Only image files are allowed for reward items", "INVALID_FILE_TYPE")
+                        
+                except SecViolation as e:
+                    log_security_event(
+                        "REWARD_IMAGE_UPLOAD_VIOLATION",
+                        f"Image upload violation: {e.message}",
+                        "WARNING"
+                    )
+                    return jsonify({'error': str(e)}), 400
                 
                 # Create a unique filename
                 filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
@@ -200,32 +257,55 @@ def add_reward_item():
         
         return jsonify({'success': True, 'message': 'Reward item added successfully'})
         
+    except SecViolation as e:
+        log_security_event("REWARD_ADD_VIOLATION", f"Security violation: {e.message}", "WARNING")
+        return jsonify({'error': 'Invalid input data'}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Failed to add reward item: {str(e)}'}), 500
+        log_security_event("REWARD_ADD_ERROR", f"Add reward item error: {str(e)}", "ERROR")
+        return jsonify({'error': 'Failed to add reward item'}), 500
 
 @rewards_bp.route('/rewards/admin/update_stock', methods=['POST'])
 @require_admin
+@RateLimiter.rate_limit(limit_per_minute=30)
+@CSRFProtection.require_csrf_token
 def update_stock():
     """Update stock for a reward item"""
-    data = request.get_json()
-    reward_id = data.get('reward_id')
-    new_stock = data.get('stock')
-    
     try:
+        data = request.get_json()
+        if not data:
+            raise SecViolation("Invalid JSON data", "INVALID_INPUT")
+        
+        reward_id = InputValidator.validate_integer(
+            data.get('reward_id'), min_value=1, max_value=999999, field_name="reward_id"
+        )
+        new_stock = InputValidator.validate_integer(
+            data.get('stock'), min_value=0, max_value=999999, field_name="stock"
+        )
+        
         reward_item = RewardItem.query.get(reward_id)
         if not reward_item:
             return jsonify({'error': 'Reward item not found'}), 404
         
-        reward_item.stock = int(new_stock)
+        reward_item.stock = new_stock
         reward_item.updated_at = datetime.utcnow()
         
         db.session.commit()
         
+        log_security_event(
+            "REWARD_STOCK_UPDATED",
+            f"Stock updated for reward {reward_item.name}: {new_stock}",
+            "INFO"
+        )
+        
         return jsonify({'success': True, 'message': 'Stock updated successfully'})
         
+    except SecViolation as e:
+        log_security_event("STOCK_UPDATE_VIOLATION", f"Security violation: {e.message}", "WARNING")
+        return jsonify({'error': 'Invalid input data'}), 400
     except Exception as e:
         db.session.rollback()
+        log_security_event("STOCK_UPDATE_ERROR", f"Stock update error: {str(e)}", "ERROR")
         return jsonify({'error': 'Failed to update stock'}), 500
 
 @rewards_bp.route('/rewards/admin/update_points', methods=['POST'])

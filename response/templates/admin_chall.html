@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chall_hub.css') }}">
+{% endblock %}
+{% block content %}
+<div class="container py-4 px-4 mx-auto">
+    <header class="mb-4">
+        <h1 class="h4 h3-md fw-bold text-gray-800">Admin: Uploaded Challenge Content</h1>
+        <p class="text-secondary mt-2">Review files submitted for challenges.</p>
+    </header>
+
+    <ul class="nav nav-tabs mb-4" id="challengeTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-challenges" type="button" role="tab" aria-controls="pending-challenges" aria-selected="true">Pending</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved-challenges" type="button" role="tab" aria-controls="approved-challenges" aria-selected="false">Approved</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected-challenges" type="button" role="tab" aria-controls="rejected-challenges" aria-selected="false">Rejected</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="pending-challenges" role="tabpanel" aria-labelledby="pending-tab">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for response in responses if response.mod_status == 'PENDING' %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ response.challenge.title }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">User ID: {{ response.user_id }}</small><br>
+                                    <small class="text-muted">File: {{ response.filename }}</small><br>
+                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </p>
+                                <a href="{{ url_for('moderate.admin_uploaded_content_detail', response_id=response.id) }}" class="btn btn-primary btn-sm">View Details</a>
+                                <form action="{{ url_for('moderate.admin_update_response_status', response_id=response.id, action='approve') }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                </form>
+                                <form action="{{ url_for('moderate.admin_update_response_status', response_id=response.id, action='reject') }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="approved-challenges" role="tabpanel" aria-labelledby="approved-tab">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for response in responses if response.mod_status == 'APPROVED' %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ response.challenge.title }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">User ID: {{ response.user_id }}</small><br>
+                                    <small class="text-muted">File: {{ response.filename }}</small><br>
+                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </p>
+                                <a href="{{ url_for('moderate.admin_uploaded_content_detail', response_id=response.id) }}" class="btn btn-primary btn-sm">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="rejected-challenges" role="tabpanel" aria-labelledby="rejected-tab">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for response in responses if response.mod_status == 'REJECTED' %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ response.challenge.title }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">User ID: {{ response.user_id }}</small><br>
+                                    <small class="text-muted">File: {{ response.filename }}</small><br>
+                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </p>
+                                <a href="{{ url_for('moderate.admin_uploaded_content_detail', response_id=response.id) }}" class="btn btn-primary btn-sm">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
