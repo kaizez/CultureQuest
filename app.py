@@ -49,12 +49,6 @@ login_bp = login_module.login_bp
 google_bp = login_module.google_bp
 init_database = login_module.init_database
 
-
-# Import chatapp_rewards module
-os.chdir(os.path.join(current_dir, 'response'))
-from response import response_bp
-#from response.mod import moderate_bp
-
 # Restore original working directory
 os.chdir(old_cwd)
 
@@ -85,6 +79,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production-' + 
 
 # Configure multiple template directories
 template_loaders = [
+    FileSystemLoader(os.path.join(current_dir, 'templates')),  # Root templates for error pages
     FileSystemLoader(os.path.join(current_dir, 'challenge/templates')),
     FileSystemLoader(os.path.join(current_dir, 'chatapp_rewards/templates')),  
     FileSystemLoader(os.path.join(current_dir, 'login/public'))
@@ -101,11 +96,6 @@ app.config['OAUTHLIB_RELAX_TOKEN_SCOPE'] = True
 # Force HTTPS and correct hostname for OAuth redirects
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 app.config['SERVER_NAME'] = os.environ.get('OAUTH_HOSTNAME', '127.0.0.1:5000')
-
-# RECAPTCHA Config
-app.config['RECAPTCHA_SITE_KEY'] = os.environ.get('RECAPTCHA_SITE_KEY')
-app.config['RECAPTCHA_SECRET_KEY'] = os.environ.get('RECAPTCHA_SECRET_KEY')
-
 
 # Build database URI from individual environment variables
 db_host = os.environ.get('DB_HOST')
@@ -237,7 +227,7 @@ with app.app_context():
 
 # Register Blueprints without URL prefixes so routes are accessible directly
 # Challenge module blueprints
-app.register_blueprint(challenge_bp, url_prefix='/host')
+app.register_blueprint(challenge_bp, url_prefix='/host')  # Keep /host for challenge routes
 app.register_blueprint(admin_screening_bp, url_prefix='/admin/dashboard/screening')  # Keep /admin for admin routes  
 app.register_blueprint(event_bp, url_prefix='/event')  # Keep /event for event routes
 
@@ -248,10 +238,6 @@ app.register_blueprint(rewards_bp)  # This will make /rewards routes accessible 
 
 # Login module blueprints
 app.register_blueprint(login_bp)  # Login routes accessible directly
-
-# Challenge response blueprints
-app.register_blueprint(response_bp, url_prefix='/response')
-#app.register_blueprint(moderate_bp, url_prefix='/moderate')
 
 # Register Google blueprint if it was created (i.e., if credentials are available)
 if google_bp is not None:
@@ -271,6 +257,28 @@ def serve_challenge_uploads(filename):
         return send_from_directory(upload_path, filename)
     abort(404)
 
+
+# Global Error Handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    """Handle 404 errors globally"""
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors globally"""
+    return render_template('500.html'), 500
+
+@app.errorhandler(403)
+def forbidden_error(error):
+    """Handle 403 errors - redirect to 404 for security"""
+    return render_template('404.html'), 404
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Handle any unhandled exceptions globally"""
+    print(f"Unhandled exception: {error}")
+    return render_template('500.html'), 500
 
 # SocketIO event handlers for chat functionality
 @socketio.on('join')
