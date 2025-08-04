@@ -12,8 +12,8 @@ event_bp = Blueprint('event', __name__, template_folder='templates')
 @login_required  # Protects against unauthorized event viewing
 def event_page():
     # Check if the user has exceeded the rate limit before proceeding - Protects against spam/DoS attacks
-    email = session.get('email')  # Get the user's email from the session
-    if email and not check_and_update_rate_limit(email):
+    user_id = session.get('user_id')  # Get the user_id from the session
+    if user_id and not check_and_update_rate_limit(user_id):
         return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded - Protects against abuse
     
     page = request.args.get('page', 1, type=int)  # Protects against invalid page parameters

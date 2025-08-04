@@ -99,25 +99,28 @@ class RateLimit(db.Model):
     __tablename__ = 'RateLimit'  # Specify the table name
 
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)  # User email for rate limiting - Protects against anonymous abuse
+    email = db.Column(db.String(255), unique=True, nullable=True)  # User email for rate limiting - Protects against anonymous abuse
+    user_id = db.Column(db.String(255), unique=True, nullable=True)  # User ID for rate limiting - Protects against anonymous abuse
     request_count = db.Column(db.Integer, default=1)  # Number of requests made - Protects against rapid requests
     last_request = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Last request timestamp - Protects against time-based attacks
 
-    def __init__(self, email, request_count=1, last_request=None):
+    def __init__(self, email=None, user_id=None, request_count=1, last_request=None):
         self.email = email
+        self.user_id = user_id
         self.request_count = request_count
         self.last_request = last_request or datetime.utcnow()
 
     def __repr__(self):
-        return f"<RateLimit(email={self.email}, request_count={self.request_count}, last_request={self.last_request})>"
+        identifier = self.user_id or self.email
+        return f"<RateLimit(identifier={identifier}, request_count={self.request_count}, last_request={self.last_request})>"
     
-def check_and_update_rate_limit(email):
-    """Check and update the rate limit for a given user by email - Protects against abuse and DoS attacks."""
+def check_and_update_rate_limit(user_id):
+    """Check and update the rate limit for a given user by user_id - Protects against abuse and DoS attacks."""
     # Get the current time
     now = datetime.utcnow()
 
     # Check if the user has a record in the RateLimit table - Protects against bypass attempts
-    rate_limit_record = db.session.query(RateLimit).filter_by(email=email).first()
+    rate_limit_record = db.session.query(RateLimit).filter_by(user_id=user_id).first()
 
     if rate_limit_record:
         # Check if the request is within the time window - Protects against time-based bypass
@@ -139,7 +142,7 @@ def check_and_update_rate_limit(email):
             return True
     else:
         # No record found for the user, create a new record - Initialize tracking for new users
-        new_record = RateLimit(email=email, request_count=1, last_request=now)
+        new_record = RateLimit(user_id=user_id, request_count=1, last_request=now)
         db.session.add(new_record)
         db.session.commit()  # Atomic operation - Protects against duplicate records
         return True

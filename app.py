@@ -53,7 +53,7 @@ init_database = login_module.init_database
 # Import chatapp_rewards module
 os.chdir(os.path.join(current_dir, 'response'))
 from response import response_bp
-from mod import moderate_bp
+#from mod import moderate_bp
 
 # Restore original working directory
 os.chdir(old_cwd)
@@ -232,7 +232,7 @@ with app.app_context():
 
 # Register Blueprints without URL prefixes so routes are accessible directly
 # Challenge module blueprints
-app.register_blueprint(challenge_bp, url_prefix='/host')  # Keep /host for challenge routes
+app.register_blueprint(challenge_bp, url_prefix='/challenge_form')  # Keep /host for challenge routes
 app.register_blueprint(admin_screening_bp, url_prefix='/admin/dashboard/screening')  # Keep /admin for admin routes  
 app.register_blueprint(event_bp, url_prefix='/event')  # Keep /event for event routes
 
@@ -246,7 +246,7 @@ app.register_blueprint(login_bp)  # Login routes accessible directly
 
 # Challenge response blueprints
 app.register_blueprint(response_bp, url_prefix='/response')
-app.register_blueprint(moderate_bp, url_prefix='/moderate')
+#app.register_blueprint(moderate_bp, url_prefix='/moderate')
 
 # Register Google blueprint if it was created (i.e., if credentials are available)
 if google_bp is not None:
