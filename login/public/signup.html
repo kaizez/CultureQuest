@@ -701,7 +701,7 @@
             console.error('Email check error:', error);
           }
           
-          return { valid: true, message: '' };
+          return { valid: true, message: 'Valid email ✓' };
         },
         
         password: (val) => {
@@ -1137,7 +1137,7 @@
           emailValidation.textContent = 'Email is already taken';
           emailValidation.className = 'validation-message error';
         } else {
-          emailValidation.textContent = 'Valid email format';
+          emailValidation.textContent = 'Valid email ✓';
           emailValidation.className = 'validation-message success';
         }
       } catch (error) {
