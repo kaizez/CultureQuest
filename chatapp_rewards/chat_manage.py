@@ -2,6 +2,11 @@ from flask import Blueprint, render_template, jsonify, request
 from models import db, SecurityViolation, MutedUser, ChatRoom
 from datetime import datetime, timedelta
 from auth_utils import require_login, require_admin, get_current_user, get_user_id, get_username
+from security import (
+    SecurityMiddleware, InputValidator, CSRFProtection, RateLimiter,
+    SecurityViolation as SecViolation, validate_and_sanitize_input,
+    log_security_event, SECURITY_CONFIG
+)
 
 chat_manage_bp = Blueprint('chat_manage', __name__)
 
@@ -75,30 +80,51 @@ def update_violation_status(violation_id):
 
 @chat_manage_bp.route('/api/admin/mute-user', methods=['POST'])
 @require_admin
+@RateLimiter.rate_limit(limit_per_minute=20)
+@CSRFProtection.require_csrf_token
 def mute_user():
     """API endpoint to mute a user in a specific room"""
-    data = request.get_json()
-    
-    if not data or 'room_id' not in data:
-        return jsonify({'error': 'room_id is required'}), 400
-    
-    # Support both user_id (preferred) and user_name (backwards compatibility)
-    user_id = data.get('user_id')
-    user_name = data.get('user_name', '').strip()
-    
-    if not user_id and not user_name:
-        return jsonify({'error': 'Either user_id or user_name is required'}), 400
-    
-    room_id = data['room_id']
-    duration_hours = data.get('duration_hours', None)  # None for permanent mute
-    reason = data.get('reason', 'Security violation')
-    
-    # Validate room exists
-    room = ChatRoom.query.get(room_id)
-    if not room:
-        return jsonify({'error': 'Room not found'}), 404
-    
     try:
+        data = request.get_json()
+        
+        if not data:
+            raise SecViolation("Invalid JSON data", "INVALID_INPUT")
+        
+        # Validate required fields
+        room_id = InputValidator.validate_integer(
+            data.get('room_id'), min_value=1, max_value=999999, field_name="room_id"
+        )
+        
+        # Support both user_id (preferred) and user_name (backwards compatibility)
+        user_id = data.get('user_id')
+        user_name = data.get('user_name', '').strip()
+        
+        if not user_id and not user_name:
+            raise SecViolation("Either user_id or user_name is required", "INVALID_INPUT")
+        
+        # Validate user_name if provided
+        if user_name:
+            user_name = InputValidator.validate_username(user_name)
+        
+        # Validate duration if provided
+        duration_hours = data.get('duration_hours', None)
+        if duration_hours is not None:
+            duration_hours = InputValidator.validate_integer(
+                duration_hours, min_value=1, max_value=8760, field_name="duration_hours"  # Max 1 year
+            )
+        
+        # Validate and sanitize reason
+        reason = data.get('reason', 'Security violation')
+        reason = InputValidator.validate_string(
+            reason, max_length=500, field_name="reason"
+        )
+        reason = InputValidator.sanitize_html(reason)
+        
+        # Validate room exists
+        room = ChatRoom.query.get(room_id)
+        if not room:
+            return jsonify({'error': 'Room not found'}), 404
+        
         # Check if user is already muted in this room
         if user_id:
             existing_mute = MutedUser.query.filter_by(
@@ -160,9 +186,12 @@ def mute_user():
             'mute': mute.to_dict()
         })
         
+    except SecViolation as e:
+        log_security_event("MUTE_USER_VIOLATION", f"Security violation: {e.message}", "WARNING")
+        return jsonify({'error': 'Invalid input data'}), 400
     except Exception as e:
         db.session.rollback()
-        print(f"Error muting user: {e}")
+        log_security_event("MUTE_USER_ERROR", f"Mute user error: {str(e)}", "ERROR")
         return jsonify({'error': 'Failed to mute user'}), 500
 
 @chat_manage_bp.route('/api/admin/unmute-user', methods=['POST'])

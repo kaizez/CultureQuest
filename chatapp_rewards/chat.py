@@ -13,6 +13,11 @@ from datetime import datetime
 from markupsafe import escape
 from urllib.parse import urlparse
 from auth_utils import require_login, require_admin, get_current_user, get_user_id, get_username
+from security import (
+    SecurityMiddleware, InputValidator, CSRFProtection, RateLimiter, 
+    SecurityViolation as SecViolation, validate_and_sanitize_input,
+    log_security_event, SECURITY_CONFIG, AccessControl
+)
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -383,32 +388,68 @@ def get_rooms():
 
 @chat_bp.route('/api/rooms', methods=['POST'])
 @require_login
+@RateLimiter.rate_limit(limit_per_minute=10)
+@CSRFProtection.require_csrf_token
 def create_room():
     """API endpoint to create a new chat room"""
-    data = request.get_json()
-    
-    if not data or 'name' not in data:
-        return jsonify({'error': 'Room name is required'}), 400
-    
-    name = data['name'].strip()
-    description = data.get('description', '').strip()
-    
-    if len(name) > 100:
-        return jsonify({'error': 'Room name too long'}), 400
-    
-    if len(description) > 500:
-        return jsonify({'error': 'Description too long'}), 400
-    
-    # Check if room with same name already exists
-    existing_room = ChatRoom.query.filter_by(name=name, is_active=True).first()
-    if existing_room:
-        return jsonify({'error': 'Room with this name already exists'}), 400
-    
-    new_room = ChatRoom(name=name, description=description)
-    db.session.add(new_room)
-    db.session.commit()
-    
-    return jsonify(new_room.to_dict()), 201
+    try:
+        data = request.get_json()
+        
+        if not data:
+            raise SecViolation("Invalid JSON data", "INVALID_INPUT")
+        
+        # Validate and sanitize input
+        schema = {
+            'name': {
+                'type': 'string',
+                'required': True,
+                'max_length': SECURITY_CONFIG['MAX_ROOM_NAME_LENGTH'],
+                'min_length': 1,
+                'sanitize_html': True
+            },
+            'description': {
+                'type': 'string',
+                'required': False,
+                'max_length': 500,
+                'sanitize_html': True
+            }
+        }
+        
+        validated_data = validate_and_sanitize_input(data, schema)
+        name = validated_data['name']
+        description = validated_data.get('description', '')
+        
+        # Log room creation attempt
+        current_user = get_current_user()
+        log_security_event(
+            "ROOM_CREATE_ATTEMPT",
+            f"User {current_user['username']} creating room: {name}",
+            "INFO"
+        )
+        
+        # Check if room with same name already exists
+        existing_room = ChatRoom.query.filter_by(name=name, is_active=True).first()
+        if existing_room:
+            return jsonify({'error': 'Room with this name already exists'}), 409
+        
+        new_room = ChatRoom(name=name, description=description)
+        db.session.add(new_room)
+        db.session.commit()
+        
+        log_security_event(
+            "ROOM_CREATED",
+            f"Room '{name}' created successfully by {current_user['username']}",
+            "INFO"
+        )
+        
+        return jsonify(new_room.to_dict()), 201
+        
+    except SecViolation as e:
+        log_security_event("ROOM_CREATE_VIOLATION", f"Security violation: {e.message}", "WARNING")
+        return jsonify({'error': 'Invalid input data'}), 400
+    except Exception as e:
+        log_security_event("ROOM_CREATE_ERROR", f"Unexpected error: {str(e)}", "ERROR")
+        return jsonify({'error': 'Failed to create room'}), 500
 
 @chat_bp.route('/history/<int:room_id>')
 @require_login
@@ -471,28 +512,38 @@ def check_mute_status(room_id):
 
 @chat_bp.route('/upload/<int:room_id>', methods=['POST'])
 @require_login
+@RateLimiter.rate_limit(limit_per_minute=20)  # Rate limit file uploads
 def upload_file(room_id):
     """Handle file uploads with virus scanning for a specific room"""
     from flask import current_app
     
-    room = ChatRoom.query.get_or_404(room_id)
-    if not room.is_active:
-        return jsonify({'error': 'Chat room is not available'}), 400
-    
     try:
+        # Validate room_id
+        room_id = InputValidator.validate_integer(
+            room_id, min_value=1, max_value=999999, field_name="room_id"
+        )
+        
+        room = ChatRoom.query.get_or_404(room_id)
+        if not room.is_active:
+            return jsonify({'error': 'Chat room is not available'}), 400
+        
         # Get current user from session
         current_user = get_current_user()
         user_id = current_user['user_id']
         user_name = current_user['username']
+        
+        # Validate and sanitize message
         message = request.form.get('message', '')
-
-        # Basic input validation for user_name and message
-        if len(user_name) > 50 or len(message) > 500:
-            return jsonify({'error': 'Input too long'}), 400
-
-        # Sanitize inputs
-        user_name = str(escape(user_name))
-        message = str(escape(message))
+        if message:
+            message = InputValidator.validate_string(
+                message, 
+                max_length=SECURITY_CONFIG['MAX_MESSAGE_LENGTH'],
+                field_name="message"
+            )
+            message = InputValidator.sanitize_html(message)
+        
+        # Validate username (defensive check)
+        user_name = InputValidator.validate_username(user_name)
         
         # Check if user is muted in this room
         if is_user_muted(str(user_name), room_id, user_id):
@@ -536,21 +587,31 @@ def upload_file(room_id):
                 return jsonify({'success': True, 'message': 'Message sent successfully'})
             return jsonify({'error': 'No selected file'}), 400
 
-        if file and allowed_file(file.filename):
+        if file:
+            # Validate file upload with security checks
+            try:
+                file_info = InputValidator.validate_file_upload(file, SECURITY_CONFIG['MAX_FILE_SIZE'])
+            except SecViolation as e:
+                log_security_event(
+                    "FILE_UPLOAD_VIOLATION",
+                    f"File upload violation by {user_name}: {e.message}",
+                    "WARNING"
+                )
+                return jsonify({'error': str(e)}), 400
+            
             # Sanitize filename
-            filename = secure_filename(file.filename)
+            filename = secure_filename(file_info['filename'])
             unique_filename = f"{uuid.uuid4()}_{filename}"
             
-            # Read file data into memory for scanning and storage
+            # Read file data into memory for scanning and storage  
             file_data = file.read()
             file_size = len(file_data)
             mime_type = file.content_type or 'application/octet-stream'
             
-            # Check file size limit (50MB max)
-            MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-            if file_size > MAX_FILE_SIZE:
+            # Double-check file size (defensive programming)
+            if file_size > SECURITY_CONFIG['MAX_FILE_SIZE']:
                 return jsonify({
-                    'error': f'File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB, got {file_size // (1024*1024)}MB'
+                    'error': f'File too large. Maximum size is {SECURITY_CONFIG["MAX_FILE_SIZE"] // (1024*1024)}MB, got {file_size // (1024*1024)}MB'
                 }), 400
             
             # Create a temporary file for VirusTotal scanning
@@ -673,100 +734,224 @@ def handle_chat_message(socketio, json):
     """Handle chat message with URL scanning"""
     from flask import session
     
-    # Check if user is authenticated
-    if 'username' not in session or 'user_id' not in session:
-        socketio.emit('error', {'message': 'Authentication required'})
-        return
-    
-    room_id = json.get('room_id')
-    if not room_id:
-        return
-    
-    # Verify room exists
-    room = ChatRoom.query.get(room_id)
-    if not room or not room.is_active:
-        return
-    
-    print('received message:', json)
+    try:
+        # Check if user is authenticated
+        if 'username' not in session or 'user_id' not in session:
+            socketio.emit('error', {'message': 'Authentication required'})
+            return
+        
+        room_id = json.get('room_id')
+        if not room_id:
+            return
+        
+        # Validate room_id
+        try:
+            room_id = InputValidator.validate_integer(
+                room_id, min_value=1, max_value=999999, field_name="room_id"
+            )
+        except SecViolation:
+            return
+        
+        # Verify room exists
+        room = ChatRoom.query.get(room_id)
+        if not room or not room.is_active:
+            return
+        
+        print('received message:', json)
 
-    # Get user info from session instead of message data
-    user_name = session['username']
-    user_id = session['user_id']
-    message = json.get('message', '')
+        # Get user info from session instead of message data
+        user_name = session['username']
+        user_id = session['user_id']
+        message = json.get('message', '')
 
-    # Basic input validation
-    if len(user_name) > 50 or len(message) > 500:
-        return
-
-    # Sanitize inputs
-    user_name = str(escape(user_name))
-    message = str(escape(message))
-    
-    # Check if user is muted in this room
-    if is_user_muted(str(user_name), room_id, user_id):
-        emit('mute_notification', {
-            'message': 'You are muted in this room and cannot send messages.',
-            'room_id': room_id
-        })
-        return
-
-    # Check for URLs in the message
-    urls = extract_urls(message)
-    url_scan_results = []
-    violations_to_add = []
-    
-    if urls and VIRUSTOTAL_API_KEY:
-        for url in urls:
-            print(f"Scanning URL: {url}")
-            is_safe, scan_result, scan_message = scan_url_with_virustotal(url)
-            url_scan_results.append({
-                'url': url,
-                'is_safe': is_safe,
-                'scan_result': scan_result,
-                'scan_message': scan_message
-            })
-            
-            # Collect security violations for unsafe URLs
-            if not is_safe:
-                violation = SecurityViolation(
-                    user_name=str(user_name),
-                    violation_type='url',
-                    content=url,
-                    message_content=str(message),
-                    detection_details=json_module.dumps(scan_result) if scan_result else None,
-                    room_id=room_id
+        # Validate and sanitize inputs
+        try:
+            user_name = InputValidator.validate_username(user_name)
+            if message:
+                message = InputValidator.validate_string(
+                    message,
+                    max_length=SECURITY_CONFIG['MAX_MESSAGE_LENGTH'],
+                    field_name="message"
                 )
-                violations_to_add.append(violation)
+                message = InputValidator.sanitize_html(message)
+        except SecViolation as e:
+            log_security_event(
+                "CHAT_MESSAGE_VIOLATION",
+                f"Message validation failed for {user_name}: {e.message}",
+                "WARNING"
+            )
+            emit('error', {'message': 'Invalid message content'})
+            return
+        
+        # Check if user is muted in this room
+        if is_user_muted(str(user_name), room_id, user_id):
+            emit('mute_notification', {
+                'message': 'You are muted in this room and cannot send messages.',
+                'room_id': room_id
+            })
+            return
 
-    # Prepare the final message with URL scan results
-    final_message = message
-    if url_scan_results:
-        final_message += "\n\n🔍 URL Scan Results:"
-        for result in url_scan_results:
-            if result['is_safe']:
-                final_message += f"\n✅ {result['url']}: {result['scan_message']}"
-            else:
-                final_message += f"\n⚠️ {result['url']}: {result['scan_message']}"
+        # Check for URLs in the message
+        urls = extract_urls(message)
+        url_scan_results = []
+        violations_to_add = []
+        
+        if urls and VIRUSTOTAL_API_KEY:
+            for url in urls:
+                print(f"Scanning URL: {url}")
+                is_safe, scan_result, scan_message = scan_url_with_virustotal(url)
+                url_scan_results.append({
+                    'url': url,
+                    'is_safe': is_safe,
+                    'scan_result': scan_result,
+                    'scan_message': scan_message
+                })
+                
+                # Collect security violations for unsafe URLs
+                if not is_safe:
+                    violation = SecurityViolation(
+                        user_name=str(user_name),
+                        violation_type='url',
+                        content=url,
+                        message_content=str(message),
+                        detection_details=json_module.dumps(scan_result) if scan_result else None,
+                        room_id=room_id
+                    )
+                    violations_to_add.append(violation)
 
-    # Save message to database
-    new_msg = Message(
-        user_id=user_id,
-        user_name=user_name,
-        message=final_message,
-        timestamp=datetime.utcnow(),
-        room_id=room_id
-    )
-    db.session.add(new_msg)
-    
-    # Add any security violations to database
-    for violation in violations_to_add:
-        db.session.add(violation)
-    
-    # Commit all changes together
-    db.session.commit()
+        # Prepare the final message with URL scan results
+        final_message = message
+        if url_scan_results:
+            final_message += "\n\n🔍 URL Scan Results:"
+            for result in url_scan_results:
+                if result['is_safe']:
+                    final_message += f"\n✅ {result['url']}: {result['scan_message']}"
+                else:
+                    final_message += f"\n⚠️ {result['url']}: {result['scan_message']}"
 
-    # Emit message to room including timestamp from database
-    emit('my response', new_msg.to_dict(), room=f'room_{room_id}')
+        # Save message to database
+        new_msg = Message(
+            user_id=user_id,
+            user_name=user_name,
+            message=final_message,
+            timestamp=datetime.utcnow(),
+            room_id=room_id
+        )
+        db.session.add(new_msg)
+        
+        # Add any security violations to database
+        for violation in violations_to_add:
+            db.session.add(violation)
+        
+        # Commit all changes together
+        db.session.commit()
+
+        # Emit message to room including timestamp from database
+        emit('my response', new_msg.to_dict(), room=f'room_{room_id}')
+        
+    except Exception as e:
+        log_security_event(
+            "CHAT_MESSAGE_ERROR",
+            f"Unexpected error in chat message handling: {str(e)}",
+            "ERROR"
+        )
+        emit('error', {'message': 'Message processing failed'})
+
+@chat_bp.route('/api/chat/<int:room_id>/delete', methods=['DELETE'])
+@require_login
+@RateLimiter.rate_limit(limit_per_minute=5)  # Strict rate limiting for destructive operations
+@CSRFProtection.require_csrf_token
+def delete_chat_room(room_id):
+    """Delete entire chat room and all associated data"""
+    try:
+        # Validate room_id
+        room_id = InputValidator.validate_integer(
+            room_id, min_value=1, max_value=999999, field_name="room_id"
+        )
+        
+        # Get current user info
+        current_user = get_current_user()
+        user_id = current_user['user_id']
+        username = current_user['username']
+        
+        # Log the deletion attempt
+        log_security_event(
+            "CHAT_ROOM_DELETE_ATTEMPT", 
+            f"User {username} attempting to delete room {room_id}",
+            "WARNING"
+        )
+        
+        # Get the chat room
+        room = ChatRoom.query.get_or_404(room_id)
+        
+        print(f"User {username} ({user_id}) attempting to delete chat room {room_id}: {room.name}")
+        
+        # For security, we could add admin-only restriction here, but based on requirements 
+        # it seems any user should be able to delete a chat room
+        # If you want admin-only, uncomment the next two lines:
+        # if not require_admin():
+        #     return jsonify({'error': 'Admin access required'}), 403
+        
+        # Get all related data counts for logging
+        messages_count = Message.query.filter_by(room_id=room_id).count()
+        files_count = UploadedFile.query.join(Message).filter(Message.room_id == room_id).count()
+        violations_count = SecurityViolation.query.filter_by(room_id=room_id).count()
+        muted_users_count = MutedUser.query.filter_by(room_id=room_id).count()
+        
+        print(f"Deleting chat room {room_id} with:")
+        print(f"  - {messages_count} messages")
+        print(f"  - {files_count} uploaded files")
+        print(f"  - {violations_count} security violations")
+        print(f"  - {muted_users_count} muted user records")
+        
+        # Delete all uploaded files associated with messages in this room
+        # First get all file IDs to delete
+        file_ids = db.session.query(UploadedFile.id).join(Message).filter(Message.room_id == room_id).all()
+        file_ids = [f[0] for f in file_ids]
+        
+        if file_ids:
+            # Delete the uploaded files
+            UploadedFile.query.filter(UploadedFile.id.in_(file_ids)).delete(synchronize_session=False)
+            print(f"Deleted {len(file_ids)} uploaded files")
+        
+        # Delete all security violations for this room
+        SecurityViolation.query.filter_by(room_id=room_id).delete()
+        print(f"Deleted {violations_count} security violations")
+        
+        # Delete all muted user records for this room
+        MutedUser.query.filter_by(room_id=room_id).delete()
+        print(f"Deleted {muted_users_count} muted user records")
+        
+        # Delete all messages in this room (this will cascade to delete files due to foreign key)
+        Message.query.filter_by(room_id=room_id).delete()
+        print(f"Deleted {messages_count} messages")
+        
+        # Finally delete the chat room itself
+        db.session.delete(room)
+        
+        # Commit all deletions
+        db.session.commit()
+        
+        print(f"Successfully deleted chat room {room_id}: {room.name}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Chat room "{room.name}" and all associated data deleted successfully',
+            'deleted_data': {
+                'messages': messages_count,
+                'files': len(file_ids),
+                'violations': violations_count,
+                'muted_users': muted_users_count
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting chat room {room_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to delete chat room: {str(e)}'
+        }), 500
 
 @chat_bp.route('/file/<int:file_id>')
 @require_login

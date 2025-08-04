@@ -162,12 +162,40 @@ body.chat-body main.main-content {
     color: #6c757d;
 }
 
+.chat-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .chat-header-right .header-action-btn {
     background: none;
     border: none;
     font-size: 24px;
     color: #6c757d;
     cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.chat-header-right .header-action-btn:hover {
+    background-color: #f8f9fa;
+    color: #343a40;
+}
+
+.chat-header-right .delete-chat-btn {
+    color: #dc3545;
+}
+
+.chat-header-right .delete-chat-btn:hover {
+    background-color: #f8f9fa;
+    color: #c82333;
+}
+
+.chat-header-right .delete-chat-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* Message Area */
