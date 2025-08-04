@@ -48,3 +48,8 @@ et-xmlfile==2.0.0
 
 # Email
 secure-smtplib==0.1.1
+
+# SSL/TLS Certificates
+# Note: mkcert is a standalone tool for local HTTPS development
+# Download from: https://github.com/FiloSottile/mkcert/releases
+# Certificates are already generated and stored in login/ folder

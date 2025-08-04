@@ -90,7 +90,7 @@ app.jinja_loader = ChoiceLoader(template_loaders)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 
 # Configure OAuth settings
-app.config['OAUTHLIB_INSECURE_TRANSPORT'] = os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', 'False').lower() == 'true'
+app.config['OAUTHLIB_INSECURE_TRANSPORT'] = False
 app.config['OAUTHLIB_RELAX_TOKEN_SCOPE'] = True
 
 # Force HTTPS and correct hostname for OAuth redirects
@@ -310,12 +310,12 @@ if __name__ == '__main__':
     cert_file = 'login/localhost+1.pem'
     key_file = 'login/localhost+1-key.pem'
     
-    # For now, let's use HTTP to debug the connection issues
-    print("* Starting application in HTTP mode for debugging...")
-    print("* Application starting at: http://127.0.0.1:5000")
+    print("* Starting application in HTTPS mode...")
+    print("* Application starting at: https://127.0.0.1:5000")
     
     try:
-        socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+        socketio.run(app, host='127.0.0.1', port=5000, debug=True, 
+                    ssl_context=(cert_file, key_file))
     except Exception as e:
         print(f"X Failed to start server: {e}")
         import traceback
