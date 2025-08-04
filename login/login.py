@@ -1142,6 +1142,7 @@ def login():
     password = request.form.get('password')
 
     if not username or not password:
+        flash('Error. Try again.', 'error')
         return redirect(url_for('login.login_page'))
 
     # Check for admin login
@@ -1180,6 +1181,8 @@ def login():
         
         return redirect(url_for('login.landing_page'))
     
+    # Invalid credentials - show error message
+    flash('Error. Try again.', 'error')
     return redirect(url_for('login.login_page'))
 
 @login_bp.route('/profile')
