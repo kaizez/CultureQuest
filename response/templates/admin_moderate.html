@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "resp_base.html" %}
 
 {% block content %}
 <div class="container py-4 px-4 mx-auto">
@@ -30,7 +30,7 @@
                         <td>{{ comment.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ comment.user_id }}</td>
                         <td>
-                            <a href="{{ url_for('challenge.wip_challenge_details', challenge_id=comment.challenge.id) }}" target="_blank" title="{{ comment.challenge.title }}">
+                            <a href="{{ url_for('response.wip_challenge_details', challenge_id=comment.challenge.id) }}" target="_blank" title="{{ comment.challenge.title }}">
                                 {{ comment.challenge_id }}
                             </a>
                         </td>

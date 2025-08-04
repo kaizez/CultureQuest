@@ -53,7 +53,7 @@ init_database = login_module.init_database
 # Import chatapp_rewards module
 os.chdir(os.path.join(current_dir, 'response'))
 from response import response_bp
-#from mod import moderate_bp
+#from response.mod import moderate_bp
 
 # Restore original working directory
 os.chdir(old_cwd)
@@ -101,6 +101,11 @@ app.config['OAUTHLIB_RELAX_TOKEN_SCOPE'] = True
 # Force HTTPS and correct hostname for OAuth redirects
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 app.config['SERVER_NAME'] = os.environ.get('OAUTH_HOSTNAME', '127.0.0.1:5000')
+
+# RECAPTCHA Config
+app.config['RECAPTCHA_SITE_KEY'] = os.environ.get('RECAPTCHA_SITE_KEY')
+app.config['RECAPTCHA_SECRET_KEY'] = os.environ.get('RECAPTCHA_SECRET_KEY')
+
 
 # Build database URI from individual environment variables
 db_host = os.environ.get('DB_HOST')

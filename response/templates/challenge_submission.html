@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "resp_base.html" %}
 {% block content %}
 <div class="container py-4 px-4 mx-auto md:p-6">
     <header class="mb-4">
@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ url_for('challenge.challenge_submission', challenge_id=challenge.id) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('response.challenge_submission', challenge_id=challenge.id) }}" enctype="multipart/form-data">
         {{ form.g_recaptcha_response }}
         {{ form.csrf_token }}
         <div class="card shadow-sm overflow-hidden">
@@ -176,7 +176,7 @@
                 <h2 class="h5 fw-semibold text-gray-800 mb-2">Submission Successful!</h2>
                 <p class="text-gray-600 mb-4">Your experience for "{{ challenge.title }}" has been submitted successfully. Points will be awarded soon!</p>
                 <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                    <a href="{{ url_for('challenge.wip_challenge_details', challenge_id=challenge.id) }}" class="btn btn-primary rounded transition">Back to My Challenge</a>
+                    <a href="{{ url_for('response.wip_challenge_details', challenge_id=challenge.id) }}" class="btn btn-primary rounded transition">Back to My Challenge</a>
                     <a href="#" class="btn btn-outline-secondary rounded transition">View My Submissions</a>
                 </div>
             </div>
@@ -193,5 +193,5 @@
         'recaptcha_site_key': config.RECAPTCHA_SITE_KEY
     } | tojson }}
 </script>
-<script src="{{ url_for('static', filename='js/challenge_submission.js') }}"></script>
+<script src="{{ url_for('response.static', filename='js/challenge_submission.js') }}"></script>
 {% endblock %}
