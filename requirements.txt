@@ -1,0 +1,50 @@
+# Core Flask Framework
+Flask==2.3.3
+Werkzeug==2.3.7
+Jinja2==3.1.2
+MarkupSafe==2.1.3
+itsdangerous==2.1.2
+click==8.1.7
+blinker==1.6.3
+
+# Database
+Flask-SQLAlchemy==3.0.5
+SQLAlchemy==2.0.23
+PyMySQL==1.1.0
+
+# Flask Extensions
+Flask-Login==0.6.3
+Flask-SocketIO==5.3.6
+Flask-WTF==1.2.1
+Flask-Session==0.5.0
+WTForms==3.1.2
+
+# Google OAuth Authentication
+Flask-Dance==7.0.0
+google-auth==2.23.4
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.2.0
+googleapis-common-protos==1.61.0
+google-api-python-client==2.108.0
+
+# Security Libraries
+bleach==6.1.0  # XSS protection via HTML sanitization
+python-magic==0.4.27  # File upload validation
+cryptography==41.0.7  # Secure encryption functions
+bcrypt==4.1.2  # Secure password hashing
+pyotp==2.9.0  # Two-factor authentication
+secure==0.3.0  # Security headers
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+urllib3==2.1.0
+pytz==2023.3
+
+# File Processing
+Pillow==10.1.0  # Image processing
+openpyxl==3.1.5  # Excel export
+et-xmlfile==2.0.0
+
+# Email
+secure-smtplib==0.1.1
