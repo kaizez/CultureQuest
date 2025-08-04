@@ -13,14 +13,16 @@
                     <a href="{{ url_for('chat.chat_rooms') }}" class="nav-link">Chat Rooms</a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ url_for('rewards.rewards_page') }}" class="nav-link">Rewards</a>
-                </li>
-                <li class="nav-item">
                     <a href="{{ url_for('rewards.rewards_admin') }}" class="nav-link">Rewards Admin</a>
                 </li>
                 <li class="nav-item">
                     <a href="{{ url_for('chat_manage.chat_management_dashboard') }}" class="nav-link">Chat Admin</a>
                 </li>
+                {% if session.get('is_admin') %}
+                <li class="nav-item">
+                    <a href="{{ url_for('admin_screening.admin_page') }}" class="nav-link">Admin Screening</a>
+                </li>
+                {% endif %}
             </ul>
         </div>
         
