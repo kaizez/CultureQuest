@@ -1,7 +1,7 @@
-    {% extends "base.html" %}
+    {% extends "resp_base.html" %}
 
     {% block styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/challenge_description.css') }}">
+    <link rel="stylesheet" href="{{ url_for('response.static', filename='css/challenge_description.css') }}">
     {% endblock %}
 
     {% block content %}
@@ -43,14 +43,14 @@
                     <h3 class="h5 fw-semibold mb-4" style="color: #2d3748;">Challenge Actions</h3>
                     <p class="text-secondary mb-4">Ready to embark on this journey? Accept the challenge to begin tracking your progress!</p>
 
-                    <form method="POST" action="{{ url_for('challenge.accept_challenge', challenge_id=challenge.id) }}">
+                    <form method="POST" action="{{ url_for('response.accept_challenge', challenge_id=challenge.id) }}">
                         {{ form.csrf_token }}
                         <button type="submit" id="accept-challenge-btn" class="btn btn-success w-100 fw-bold py-3 px-4 rounded-lg transition-all hover-scale-105">
                             <i class="fas fa-play-circle me-2"></i> Accept Challenge
                         </button>
                     </form>
 
-                    <a href="{{ url_for('challenge.challenges') }}" class="btn btn-light w-100 mt-3 fw-bold py-3 px-4 rounded-lg text-center transition-all">
+                    <a href="{{ url_for('response.challenges') }}" class="btn btn-light w-100 mt-3 fw-bold py-3 px-4 rounded-lg text-center transition-all">
                         <i class="fas fa-arrow-left me-2"></i> Back to Challenges
                     </a>
                 </div>

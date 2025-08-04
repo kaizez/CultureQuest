@@ -2,10 +2,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash, Response
 import json
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from utils import *
-from db import db_session
+from .utils import *
+from .db import db_session
 import threading
-from models import ChallengeResponse, Comment
+from .models import ChallengeResponse, Comment
 from sqlalchemy import select, or_, desc
 
 moderate_bp = Blueprint('moderate', __name__, template_folder='templates')
@@ -19,7 +19,9 @@ limiter = Limiter(
 
 @moderate_bp.route('/download-file/<string:response_id>')
 def download_file(response_id):
-    response_record = db_session.get(ChallengeResponse, response_id)
+    query = text(f"SELECT * FROM challenge_response where id = {response_id}")
+    result = db_session.execute(query)
+    response_record = result.fetchone()
     if not response_record or not response_record.file_content:
         flash("File not found.", "danger")
         return redirect(url_for('moderate.admin_uploaded_content_list'))
@@ -33,7 +35,9 @@ def download_file(response_id):
 @moderate_bp.route('/rescan-file/<string:response_id>', methods=['POST'])
 @limiter.limit("5 per minute")
 def admin_rescan_file(response_id):
-    response = db_session.get(ChallengeResponse, response_id)
+    query = text(f"SELECT * FROM challenge_response where id = {response_id}")
+    result = db_session.execute(query)
+    response = result.fetchone()
     if not response:
         flash("Response not found.", "danger")
         return redirect(url_for('moderate.admin_uploaded_content_list'))
@@ -54,7 +58,10 @@ def admin_rescan_file(response_id):
     return redirect(url_for('moderate.admin_uploaded_content_detail', response_id=response.id))
 
 @moderate_bp.route('/uploaded-content')
-def admin_uploaded_content_list():
+def admin_uploaded_content_list():    
+    query = text(f"SELECT * FROM challenge_response where id = {response_id}")
+    result = db_session.execute(query)
+    response_record = result.fetchone()
     responses_stmt = select(ChallengeResponse).order_by(desc(ChallengeResponse.submission_date))
     responses = db_session.execute(responses_stmt).scalars().all()
     return render_template('admin_chall.html', responses=responses)

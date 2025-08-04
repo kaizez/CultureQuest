@@ -1,7 +1,13 @@
 import requests, time, os, tempfile, json
+<<<<<<< Updated upstream
 from models import ChallengeResponse
 from flask import current_app
 from db import db_session
+=======
+from .models import ChallengeResponse
+from flask import current_app
+from .db import db_session
+>>>>>>> Stashed changes
 
 def scan_file_in_background(app, response_id):
     with app.app_context():

@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "resp_base.html" %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/chall_hub.css') }}">
+<link rel="stylesheet" href="{{ url_for('response.static', filename='css/chall_hub.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -16,8 +16,7 @@
             
             <div class="bg-purple-subtle text-purple px-4 py-2 rounded-pill d-flex align-items-center">
                 <i class="fas fa-trophy me-2"></i>
-                <span>850 XP</span>
-                <!-- <span>{{user_points.points}}</span> -->
+                <span>{{points.points}}</span>
             </div>
         </div>
     </div>
@@ -110,12 +109,10 @@
                             <h3 class="h5 fw-bold text-gray-800 mb-2">{{ challenge.challenge_name }}</h3>
                             <p class="text-secondary mb-3">{{ challenge.description | truncate(100) }}</p>
                             <div class="d-flex align-items-center text-muted small mb-3">
-                                <i class="far fa-clock me-2"></i>
-                                <span>{{ challenge.duration }}</span>
                                 <i class="fas fa-trophy ms-4 me-2"></i>
                                 <span>{{ challenge.points or 0 }} XP</span>
                             </div>
-                            <a href="{{ url_for('challenge.challenge_description', challenge_id=challenge.id) }}"
+                            <a href="{{ url_for('response.challenge_description', challenge_id=challenge.id) }}"
                                 class="btn btn-primary w-100 fw-bold py-2 px-4 rounded transition-all text-center">
                                 Start Challenge
                             </a>
@@ -167,14 +164,12 @@
                             </div>
 
                             <div class="d-flex align-items-center text-muted small mb-3">
-                                <i class="far fa-clock me-2"></i>
-                                <span>{{ challenge.duration_left }}</span>
                                 <i class="fas fa-trophy ms-4 me-2"></i>
                                 <span>{{ challenge.points }} XP</span>
                             </div>
 
                             <div class="d-flex" style="gap: 0.5rem;">
-                                <a href="{{ url_for('challenge.wip_challenge_details', challenge_id=challenge.id) }}"
+                                <a href="{{ url_for('response.wip_challenge_details', challenge_id=challenge.id) }}"
                                     class="btn btn-primary flex-fill fw-bold py-2 px-4 rounded transition-all text-center">
                                     Continue
                                 </a>
@@ -231,7 +226,7 @@
                             </div>
 
                             <div class="d-flex" style="gap: 0.5rem;">
-                                <a href="{{ url_for('challenge.wip_challenge_details', challenge_id=challenge.id) }}"
+                                <a href="{{ url_for('response.wip_challenge_details', challenge_id=challenge.id) }}"
                                     class="btn btn-light flex-fill fw-bold py-2 px-4 rounded transition-all text-center">
                                     View Details
                                 </a>
@@ -260,5 +255,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/chall_hub.js') }}"></script>
+<script src="{{ url_for('response.static', filename='js/chall_hub.js') }}"></script>
 {% endblock %}
