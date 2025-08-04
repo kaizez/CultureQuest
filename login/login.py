@@ -1127,9 +1127,9 @@ def signup2():
             return jsonify({
                 'success': True,
                 'message': 'Account created successfully!',
-                'redirect_url': url_for('login.profile')
+                'redirect_url': url_for('login.landing_page')
             })
-        return redirect(url_for('login.profile'))
+        return redirect(url_for('login.landing_page'))
     else:
         if is_ajax:
             return jsonify({'error': 'Error creating account. Please try again.'}), 500
@@ -1164,7 +1164,7 @@ def login():
         session['user_id'] = user['id']
         session['is_admin'] = False
         
-        return redirect(url_for('login.profile'))
+        return redirect(url_for('login.landing_page'))
     
     # Check if it's a Google user trying to login manually by email
     user_by_email = find_user_by_email(username)
@@ -1178,14 +1178,20 @@ def login():
         session['user_id'] = user_by_email['id']
         session['is_admin'] = False
         
-        return redirect(url_for('login.profile'))
+        return redirect(url_for('login.landing_page'))
     
     return redirect(url_for('login.login_page'))
 
 @login_bp.route('/profile')
 def profile():
     """User profile page"""
-    if 'username' in session and not session.get('is_admin', False):
+    if 'username' in session:
+        # Check if user is admin
+        if session.get('is_admin', False):
+            # Redirect admin to admin dashboard
+            return redirect(url_for('login.admin_dashboard'))
+        
+        # Handle regular users
         username = session['username']
         user = find_user_by_username(username)
         if user:
@@ -1396,7 +1402,7 @@ def google_callback():
             session['user_id'] = existing_user['id']
             session['is_admin'] = False
             
-            return redirect(url_for('login.profile'))
+            return redirect(url_for('login.landing_page'))
         else:
             # New user or Google user without username/password - redirect to signup2
             # Store Google info in session for signup2
@@ -1972,6 +1978,85 @@ def admin_export_users():
     response.headers['Content-Disposition'] = 'attachment; filename=users_export.csv'
     
     return response
+
+@login_bp.route('/admin/users/export/excel')
+@admin_required
+def admin_export_users_excel():
+    """Export users to Excel format"""
+    from flask import make_response
+    import io
+    
+    try:
+        # Try to import openpyxl for Excel functionality
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        # Create workbook and worksheet
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Users Export"
+        
+        # Define headers
+        headers = ['ID', 'Username', 'Email', 'Is Google User', 'Email Verified', 'Occupation', 
+                  'Birthday', 'Labels', 'Online Start', 'Online End', 
+                  'Created At', 'Last Login']
+        
+        # Write headers with formatting
+        header_font = Font(bold=True, color='FFFFFF')
+        header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+        header_alignment = Alignment(horizontal='center', vertical='center')
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+        
+        # Write user data
+        users = load_users()
+        for row, user in enumerate(users, 2):
+            ws.cell(row=row, column=1, value=user.get('id', ''))
+            ws.cell(row=row, column=2, value=user.get('username', ''))
+            ws.cell(row=row, column=3, value=user.get('email', ''))
+            ws.cell(row=row, column=4, value='Yes' if user.get('is_google_user', False) else 'No')
+            ws.cell(row=row, column=5, value='Yes' if user.get('email_verified', False) else 'No')
+            ws.cell(row=row, column=6, value=user.get('occupation', ''))
+            ws.cell(row=row, column=7, value=user.get('birthday', ''))
+            ws.cell(row=row, column=8, value=user.get('labels', ''))
+            ws.cell(row=row, column=9, value=user.get('online_start_time', ''))
+            ws.cell(row=row, column=10, value=user.get('online_end_time', ''))
+            ws.cell(row=row, column=11, value=str(user.get('created_at', '')))
+            ws.cell(row=row, column=12, value=str(user.get('last_login', '')))
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to memory
+        excel_file = io.BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+        
+        # Create response
+        response = make_response(excel_file.getvalue())
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = 'attachment; filename=users_export.xlsx'
+        
+        return response
+        
+    except ImportError:
+        # Fallback to CSV if openpyxl is not available
+        flash('Excel export requires openpyxl package. Exporting as CSV instead.', 'warning')
+        return redirect(url_for('login.admin_export_users'))
 
 # Admin 2FA Routes
 @login_bp.route('/admin/2fa')
