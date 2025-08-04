@@ -24,16 +24,6 @@
                         <h3 class="h6 fw-medium mb-2 d-flex align-items-center" style="color: #4a5568;">
                             <i class="fas fa-comments me-2"></i> Comments
                         </h3>
-                        <div class="mb-4" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                            {% for comment in challenge.comments %}
-                            <div class="bg-light p-3 rounded">
-                                <p class="small fw-semibold" style="color: #4a5568;">{{ comment.user }}</p>
-                                <p class="small text-secondary">{{ comment.text }}</p>
-                            </div>
-                            {% else %}
-                            <p class="text-secondary small">No comments yet. Be the first to share your experience!</p>
-                            {% endfor %}
-                        </div>
                     
                 </div>
             </div>

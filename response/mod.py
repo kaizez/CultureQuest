@@ -7,8 +7,7 @@ from .db import db_session
 import threading
 from .models import Comment
 from sqlalchemy import select, or_, desc
-from auth_utils import require_admin, get_user_id
-
+from auth_utils import require_admin
 moderate_bp = Blueprint('moderate', __name__, template_folder='templates')
 
 limiter = Limiter(
