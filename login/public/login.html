@@ -68,8 +68,10 @@
         {% if messages %}
           <div class="flash-messages">
             {% for category, message in messages %}
-              <div class="flash-message flash-{{ category }}">
-                <span class="flash-text">{{ message|e }}</span>
+              <div class="flash-message flash-{{ category }}" 
+                   {% if category == 'error' %}style="background-color: transparent !important; color: #F56565 !important; border: none !important;"{% endif %}>
+                <span class="flash-text" 
+                      {% if category == 'error' %}style="color: #F56565 !important;"{% endif %}>{{ message|e }}</span>
               </div>
             {% endfor %}
           </div>
