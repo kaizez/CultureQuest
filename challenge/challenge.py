@@ -11,8 +11,6 @@ from wtforms.validators import DataRequired, Length
 # Create a Blueprint for the challenge form
 challenge_bp = Blueprint('challenge', __name__, template_folder='templates')
 
-# Authentication decorator is now imported from auth_decorators.py
-
 # WTForm for Challenge - Protects against malformed input and enforces data validation
 class ChallengeForm(FlaskForm):
     challenge_name = StringField('Challenge Name', validators=[DataRequired(), Length(max=100)])  # Protects against empty names and buffer overflow
