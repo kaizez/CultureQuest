@@ -2,39 +2,14 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from db_handler import fetch_challenges, update_challenge_status, check_and_update_rate_limit  # Import necessary functions
 from input_sanitizer import validate_admin_input  # Protects against injection attacks in admin panel
 from security_logger import log_authorization_failure, log_admin_action, log_rate_limit_exceeded  # Protects against unmonitored admin activity
-from functools import wraps
+from auth_decorators import admin_required, login_required  # Import centralized authentication decorators
 from datetime import datetime
 from challenge_models import db  # Import db session for secure database operations
 
 # Create a Blueprint for the admin screening page
 admin_screening_bp = Blueprint('admin_screening', __name__, template_folder='templates')
 
-# Admin required decorator - Protects against unauthorized access to admin functions
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Check if user is logged in
-        if 'username' not in session or 'email' not in session:
-            return redirect('/login')
-        
-        # Check if user has admin role - Protects against privilege escalation attacks
-        user_role = session.get('role', 'user')  # Default to 'user' if no role specified
-        if user_role not in ['admin', 'super_admin', 'moderator']:
-            log_authorization_failure(['admin', 'super_admin', 'moderator'], user_role)  # Log unauthorized access attempt
-            return "Access Denied: Admin privileges required", 403  # Protects against unauthorized admin access
-        
-        return f(*args, **kwargs)
-    return decorated_function
-
-# Login required decorator (simplified to just check if user is logged in)
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Check if user is logged in - Protects against unauthorized access
-        if 'username' not in session or 'email' not in session:
-            return redirect('/login')
-        return f(*args, **kwargs)
-    return decorated_function
+# Authentication decorators are now imported from auth_decorators.py
 
 @admin_screening_bp.route('/', methods=['GET', 'POST'])
 @admin_required  # Protects against non-admin users accessing admin functionality

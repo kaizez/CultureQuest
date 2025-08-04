@@ -2,24 +2,16 @@ from flask import Blueprint, render_template, redirect, url_for, flash, session
 from db_handler import insert_challenge, check_and_update_rate_limit  # Import the rate limiting function
 from file_upload import save_file  # Import file upload logic
 from input_sanitizer import validate_challenge_input  # Protects against injection attacks
+from auth_decorators import login_required  # Import centralized authentication decorator
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField
 from flask_wtf.file import FileField, FileAllowed
 from wtforms.validators import DataRequired, Length
-from functools import wraps
 
 # Create a Blueprint for the challenge form
 challenge_bp = Blueprint('challenge', __name__, template_folder='templates')
 
-# Login required decorator - Protects against unauthorized access
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'username' not in session or 'email' not in session:
-            # Redirect to login page if not authenticated - Protects against unauthenticated access
-            return redirect('/login')
-        return f(*args, **kwargs)
-    return decorated_function
+# Authentication decorator is now imported from auth_decorators.py
 
 # WTForm for Challenge - Protects against malformed input and enforces data validation
 class ChallengeForm(FlaskForm):
