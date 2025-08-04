@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Server Error | CultureQuest</title>
+    <style>
+        /* Import fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        /* CSS Variables - Error Theme */
+        :root {
+            --error-red: #dc2626;
+            --error-orange: #ea580c;
+            --warning-yellow: #ca8a04;
+            --gradient-error: linear-gradient(135deg, #dc2626 0%, #ea580c 50%, #ca8a04 100%);
+            --gradient-danger: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
+            --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            --bg-dark: #1a0a0a;
+            --bg-card: rgba(255, 255, 255, 0.95);
+            --bg-glass: rgba(255, 255, 255, 0.1);
+            --text-primary: #fef2f2;
+            --text-secondary: #fecaca;
+            --text-light: #fed7d7;
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            --shadow-error: 0 0 40px rgba(220, 38, 38, 0.4);
+        }
+
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        /* Advanced Background Effects */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .gradient-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-error);
+            opacity: 0.2;
+        }
+
+        /* Matrix-like falling code effect */
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .matrix-column {
+            position: absolute;
+            top: -100%;
+            color: var(--error-red);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 18px;
+            opacity: 0.6;
+            animation: matrixFall linear infinite;
+        }
+
+        @keyframes matrixFall {
+            0% { top: -100%; opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        /* Error Sparks */
+        .sparks-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .spark {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: var(--error-orange);
+            border-radius: 50%;
+            animation: sparkFly 4s ease-out infinite;
+        }
+
+        @keyframes sparkFly {
+            0% { 
+                opacity: 1; 
+                transform: scale(1) rotate(0deg); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: scale(0) rotate(360deg) translate(100px, -100px); 
+            }
+        }
+
+        /* Glitching Circuit Lines */
+        .circuit-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+        }
+
+        .circuit-line {
+            position: absolute;
+            background: var(--error-red);
+            animation: circuitPulse 3s ease-in-out infinite;
+        }
+
+        .circuit-line.horizontal {
+            height: 2px;
+            width: 200px;
+            animation-delay: 0s;
+        }
+
+        .circuit-line.vertical {
+            width: 2px;
+            height: 200px;
+            animation-delay: 1s;
+        }
+
+        @keyframes circuitPulse {
+            0%, 100% { opacity: 0.1; box-shadow: none; }
+            50% { opacity: 0.6; box-shadow: 0 0 20px var(--error-red); }
+        }
+
+        /* Main Container */
+        .error-container {
+            text-align: center;
+            max-width: 750px;
+            padding: 60px 40px;
+            background: var(--bg-glass);
+            border-radius: 30px;
+            box-shadow: var(--shadow-xl);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            position: relative;
+            z-index: 10;
+        }
+
+        .error-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: var(--gradient-error);
+            border-radius: 32px;
+            z-index: -1;
+            opacity: 0.6;
+            animation: dangerGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes dangerGlow {
+            0%, 100% { opacity: 0.6; filter: blur(3px); }
+            50% { opacity: 0.9; filter: blur(5px); }
+        }
+
+        /* Error Number with Glitch Effect */
+        .error-number {
+            font-size: 180px;
+            font-weight: 900;
+            background: var(--gradient-error);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            line-height: 0.8;
+            position: relative;
+            animation: serverGlitch 3s ease-in-out infinite;
+        }
+
+        @keyframes serverGlitch {
+            0%, 100% { 
+                transform: scale(1) skew(0deg); 
+                filter: hue-rotate(0deg);
+            }
+            20% { 
+                transform: scale(1.02) skew(-1deg); 
+                filter: hue-rotate(90deg);
+            }
+            40% { 
+                transform: scale(0.98) skew(1deg); 
+                filter: hue-rotate(180deg);
+            }
+            60% { 
+                transform: scale(1.01) skew(-0.5deg); 
+                filter: hue-rotate(270deg);
+            }
+            80% { 
+                transform: scale(0.99) skew(0.5deg); 
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        /* Digital Corruption Effect */
+        .corrupted-text {
+            position: relative;
+            display: inline-block;
+        }
+
+        .corrupted-text::before {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 2px;
+            color: rgba(234, 88, 12, 0.8);
+            z-index: -1;
+            animation: corruption1 2s infinite;
+        }
+
+        .corrupted-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: -2px;
+            color: rgba(202, 138, 4, 0.8);
+            z-index: -1;
+            animation: corruption2 2s infinite;
+        }
+
+        @keyframes corruption1 {
+            0%, 100% { transform: translateX(0) scaleX(1); }
+            25% { transform: translateX(-3px) scaleX(0.95); }
+            50% { transform: translateX(3px) scaleX(1.05); }
+            75% { transform: translateX(-1px) scaleX(0.98); }
+        }
+
+        @keyframes corruption2 {
+            0%, 100% { transform: translateX(0) scaleY(1); }
+            30% { transform: translateX(2px) scaleY(0.9); }
+            60% { transform: translateX(-2px) scaleY(1.1); }
+            90% { transform: translateX(1px) scaleY(0.95); }
+        }
+
+        /* Error Title */
+        .error-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(220, 38, 38, 0.5);
+        }
+
+        /* Error Message */
+        .error-message {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.7;
+            max-width: 550px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* System Status */
+        .system-status {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .status-title {
+            font-weight: 700;
+            color: var(--error-red);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+        }
+
+        .status-list {
+            list-style: none;
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .status-list li {
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .status-list li::before {
+            content: "⚠️";
+            position: absolute;
+            left: 0;
+            animation: statusBlink 2s ease-in-out infinite;
+        }
+
+        @keyframes statusBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Action Buttons */
+        .error-actions {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .btn {
+            padding: 18px 36px;
+            border: none;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient-error);
+            color: white;
+            box-shadow: var(--shadow-error);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(220, 38, 38, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animated Icon */
+        .error-icon {
+            font-size: 100px;
+            margin-bottom: 30px;
+            animation: errorShake 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.5));
+        }
+
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-8px) rotate(-3deg); }
+            50% { transform: translateX(0) rotate(0deg); }
+            75% { transform: translateX(8px) rotate(3deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .error-container {
+                margin: 20px;
+                padding: 40px 25px;
+                border-radius: 25px;
+            }
+
+            .error-number {
+                font-size: 120px;
+            }
+
+            .error-title {
+                font-size: 28px;
+            }
+
+            .error-message {
+                font-size: 16px;
+            }
+
+            .error-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 280px;
+            }
+        }
+
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            .error-container {
+                background: rgba(0, 0, 0, 0.9);
+                border: 3px solid #dc2626;
+            }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Advanced Background Effects -->
+    <div class="bg-container">
+        <div class="gradient-bg"></div>
+        <div class="matrix-rain" id="matrixRain"></div>
+        <div class="sparks-container" id="sparksContainer"></div>
+        <div class="circuit-lines">
+            <div class="circuit-line horizontal" style="top: 20%; left: 10%;"></div>
+            <div class="circuit-line vertical" style="top: 10%; left: 80%;"></div>
+            <div class="circuit-line horizontal" style="top: 70%; left: 60%;"></div>
+            <div class="circuit-line vertical" style="top: 50%; left: 30%;"></div>
+        </div>
+    </div>
+
+    <!-- Error Container -->
+    <div class="error-container">
+        <div class="error-icon">⚠️</div>
+        <div class="error-number corrupted-text" data-text="500">500</div>
+        <h1 class="error-title corrupted-text" data-text="Internal Server Error">Internal Server Error</h1>
+        <p class="error-message">
+            Critical system malfunction detected! Our servers are experiencing a temporary disruption. 
+            Our engineering team has been alerted and is working to restore normal operations.
+        </p>
+        
+        <div class="system-status">
+            <div class="status-title">
+                <span>🔧</span>
+                System Diagnostics
+            </div>
+            <ul class="status-list">
+                <li>Server processes are being restarted</li>
+                <li>Database connections are being restored</li>
+                <li>Error logs are being analyzed</li>
+                <li>Recovery systems are active</li>
+                <li>Estimated resolution time: 2-5 minutes</li>
+            </ul>
+        </div>
+        
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">
+                <span>🏠</span>
+                Return Home
+            </a>
+            <button onclick="location.reload()" class="btn btn-secondary">
+                <span>🔄</span>
+                Retry Connection
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            
+            if (!reduceMotion) {
+                // Create matrix rain effect
+                function createMatrixRain() {
+                    const matrixContainer = document.getElementById('matrixRain');
+                    const characters = '01ERROR500SYSTEM010100SERVER01CRASH01';
+                    
+                    for (let i = 0; i < 15; i++) {
+                        const column = document.createElement('div');
+                        column.className = 'matrix-column';
+                        column.style.left = Math.random() * 100 + '%';
+                        column.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                        column.style.animationDelay = Math.random() * 2 + 's';
+                        
+                        let columnText = '';
+                        for (let j = 0; j < 20; j++) {
+                            columnText += characters.charAt(Math.floor(Math.random() * characters.length)) + '<br>';
+                        }
+                        column.innerHTML = columnText;
+                        
+                        matrixContainer.appendChild(column);
+                    }
+                }
+                
+                // Create flying sparks
+                function createSparks() {
+                    const sparksContainer = document.getElementById('sparksContainer');
+                    
+                    setInterval(() => {
+                        const spark = document.createElement('div');
+                        spark.className = 'spark';
+                        spark.style.left = Math.random() * 100 + '%';
+                        spark.style.top = Math.random() * 100 + '%';
+                        spark.style.animationDelay = Math.random() * 2 + 's';
+                        
+                        sparksContainer.appendChild(spark);
+                        
+                        // Remove spark after animation
+                        setTimeout(() => {
+                            if (spark.parentNode === sparksContainer) {
+                                sparksContainer.removeChild(spark);
+                            }
+                        }, 4000);
+                    }, 800);
+                }
+                
+                // Enhanced mouse interaction
+                document.addEventListener('mousemove', (e) => {
+                    const container = document.querySelector('.error-container');
+                    const x = (e.clientX / window.innerWidth) - 0.5;
+                    const y = (e.clientY / window.innerHeight) - 0.5;
+                    
+                    container.style.transform = `perspective(1000px) rotateX(${y * 8}deg) rotateY(${x * 8}deg)`;
+                });
+                
+                // Reset on mouse leave
+                document.addEventListener('mouseleave', () => {
+                    const container = document.querySelector('.error-container');
+                    container.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+                });
+                
+                // Initialize effects
+                createMatrixRain();
+                createSparks();
+            }
+            
+            // Auto-refresh suggestion after 30 seconds
+            setTimeout(() => {
+                const retryBtn = document.querySelector('.btn-secondary');
+                if (retryBtn) {
+                    retryBtn.style.background = 'rgba(220, 38, 38, 0.2)';
+                    retryBtn.style.borderColor = 'var(--error-red)';
+                    retryBtn.innerHTML = '<span>🔄</span>Connection Ready - Retry Now';
+                    retryBtn.style.animation = 'pulse 1s ease-in-out infinite';
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>
