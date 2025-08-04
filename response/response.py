@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 import threading
 from .models import ChallengeResponse, Comment
 from sqlalchemy import select, desc, create_engine, text, inspect
+from auth_utils import require_login, get_user_id
 
 response_bp = Blueprint('response', __name__, static_url_path='/response/static', static_folder='static')
 
@@ -28,6 +29,7 @@ def ratelimit_handler(e):
     return redirect(url_for('landing_page'))
 
 @response_bp.route('/challenges')
+@require_login
 def challenges():
     query = text(f"SELECT * FROM challenge_submissions")
     result = db_session.execute(query)
@@ -51,6 +53,7 @@ def challenges():
                            points=points)
 
 @response_bp.route('/challenges/<string:challenge_id>')
+@require_login
 def challenge_description(challenge_id):
     query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
     result = db_session.execute(query)
@@ -71,6 +74,7 @@ def challenge_description(challenge_id):
                            comments=None)
 
 @response_bp.route('/wip-challenges/<string:challenge_id>')
+@require_login
 def wip_challenge_details(challenge_id):
     query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
     result = db_session.execute(query)
@@ -88,6 +92,7 @@ def wip_challenge_details(challenge_id):
                            config=current_app.config)
 
 @response_bp.route('/wip-challenges/<string:challenge_id>/add-comment', methods=['POST'])
+@require_login
 @limiter.limit("5 per minute") 
 def add_comment_to_wip_challenge(challenge_id):
     query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
@@ -127,6 +132,7 @@ def add_comment_to_wip_challenge(challenge_id):
         return jsonify({'success': False, 'message': errors[0] if errors else 'Invalid data submitted.'}), 422
 
 @response_bp.route('/submit-challenge/<string:challenge_id>', methods=['GET', 'POST'])
+@require_login
 @limiter.limit("5 per minute")
 def challenge_submission(challenge_id):
     query = text(f"SELECT * FROM challenge_submissions where id = '{challenge_id}'")
@@ -216,6 +222,7 @@ def challenge_submission(challenge_id):
     return render_template('challenge_submission.html', challenge=challenge, form=form)
 
 @response_bp.route('/challenges/accept/<string:challenge_id>', methods=['POST'])
+@require_login
 def accept_challenge(challenge_id):
     form = AcceptChallengeForm()
     if form.validate_on_submit():
@@ -241,6 +248,7 @@ def accept_challenge(challenge_id):
     return redirect(url_for('response.wip_challenge_details', challenge_id=challenge.id))
 
 @response_bp.route('/report-comment/<string:comment_id>', methods=['POST'])
+@require_login
 @limiter.limit("15 per minute")
 def report_comment(comment_id):
     query = text(f"SELECT * FROM comment where id = '{comment_id}'")

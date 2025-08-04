@@ -7,6 +7,7 @@ from .db import db_session
 import threading
 from .models import Comment
 from sqlalchemy import select, or_, desc
+from auth_utils import require_admin, get_user_id
 
 moderate_bp = Blueprint('moderate', __name__, template_folder='templates')
 
@@ -17,6 +18,7 @@ limiter = Limiter(
 )
 
 @moderate_bp.route('/download-file/<string:response_id>')
+@require_admin
 def download_file(response_id):
     query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
     result = db_session.execute(query)
@@ -32,6 +34,7 @@ def download_file(response_id):
     )
 
 @moderate_bp.route('/rescan-file/<string:response_id>', methods=['POST'])
+@require_admin
 @limiter.limit("5 per minute")
 def admin_rescan_file(response_id):
     query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
@@ -56,6 +59,7 @@ def admin_rescan_file(response_id):
     return redirect(url_for('moderate.admin_uploaded_content_detail', response_id=response.id))
 
 @moderate_bp.route('/uploaded-content')
+@require_admin
 def admin_uploaded_content_list():        
     responses_stmt = select(ChallengeResponse).order_by(desc(ChallengeResponse.submission_date))
     responses = db_session.execute(responses_stmt).scalars().all()
@@ -78,6 +82,7 @@ def admin_uploaded_content_list():
     return render_template('admin_chall.html', responses=responses)
 
 @moderate_bp.route('/uploaded-content/<string:response_id>')
+@require_admin
 def admin_uploaded_content_detail(response_id):
     query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
     result = db_session.execute(query)
@@ -104,6 +109,7 @@ def admin_uploaded_content_detail(response_id):
                            scan_summary=scan_summary)
 
 @moderate_bp.route('/update-response-status/<string:response_id>/<string:action>', methods=['POST'])
+@require_admin
 def admin_update_response_status(response_id, action):
     query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
     result = db_session.execute(query)
@@ -125,12 +131,14 @@ def admin_update_response_status(response_id, action):
     return redirect(url_for('moderate.admin_uploaded_content_list'))
 
 @moderate_bp.route('/moderate-comments')
+@require_admin
 def admin_moderate_comments():
     comments_stmt = select(Comment).filter(or_(Comment.status == 'PENDING', Comment.status == 'REPORTED')).order_by(desc(Comment.timestamp))
     pending_comments = db_session.execute(comments_stmt).scalars().all()
     return render_template('admin_moderate.html', comments=pending_comments)
 
 @moderate_bp.route('/update-comment-status/<string:comment_id>/<string:action>', methods=['POST'])
+@require_admin
 def admin_update_comment_status(comment_id, action):
     query = text(f"SELECT * FROM comment where id = '{comment_id}'")
     result = db_session.execute(query)
