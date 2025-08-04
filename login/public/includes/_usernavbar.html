@@ -22,7 +22,7 @@
         </div>
         
         <div class="navbar-actions">
-            <a href="/challenge_form/" class="admin-btn">Host</a>
+            <a href="/{{ url_for('challenge.create_challenge') }}" class="admin-btn">Host</a>
             <a href="{{ url_for('login.profile') }}" class="demo-btn">Profile</a>
             <a href="{{ url_for('login.logout') }}" class="sign-in-btn">Logout</a>
         </div>
