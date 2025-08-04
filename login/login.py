@@ -2211,10 +2211,30 @@ def send_security_breach_email(admin_email, attempts, timestamp):
         print(f"Failed to send security breach email: {e}")
         return False
 
+# Error Handlers
+@login_bp.errorhandler(404)
+def not_found_error(error):
+    """Handle 404 errors"""
+    return render_template('404.html'), 404
+
+@login_bp.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors"""
+    return render_template('500.html'), 500
+
+@login_bp.errorhandler(403)
+def forbidden_error(error):
+    """Handle 403 errors - redirect to 404 for security"""
+    return render_template('404.html'), 404
+
+@login_bp.errorhandler(Exception)
+def handle_exception(error):
+    """Handle any unhandled exceptions"""
+    print(f"Unhandled exception: {error}")
+    return render_template('500.html'), 500
+
 # Initialize database when blueprint is imported
 try:
     init_database()
 except Exception as e:
     print(f"Warning: Could not initialize database on import: {e}")
-
-# No error handlers - let Flask handle errors naturally
