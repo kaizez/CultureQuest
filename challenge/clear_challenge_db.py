@@ -15,6 +15,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from challenge_models import db, ChallengeSubmission
+from db_handler import RateLimit
 from flask import Flask
 
 def load_env():

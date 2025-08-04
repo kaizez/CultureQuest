@@ -1,26 +1,24 @@
-from flask import Blueprint, render_template, request, session, redirect
+from flask import Blueprint, render_template, request, session
 from db_handler import fetch_challenges, check_and_update_rate_limit  # Fetch function from db_handler.py
-from auth_decorators import login_required  # Import centralized authentication decorator
+from auth_decorators import login_required  # Import authentication decorator
 import math
 
 # Create a Blueprint for the event page
 event_bp = Blueprint('event', __name__, template_folder='templates')
 
-# Authentication decorator is now imported from auth_decorators.py
-
 @event_bp.route('/')
-@login_required  # Protects against unauthorized event viewing
+@login_required  # Require authentication for event viewing
 def event_page():
-    # Check if the user has exceeded the rate limit before proceeding - Protects against spam/DoS attacks
-    user_id = session.get('user_id')  # Get the user_id from the session
+    # Check if the user has exceeded the rate limit before proceeding
+    user_id = session.get('user_id')  # Get the user's ID from the session
     if user_id and not check_and_update_rate_limit(user_id):
-        return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded - Protects against abuse
+        return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded
     
-    page = request.args.get('page', 1, type=int)  # Protects against invalid page parameters
-    per_page = 8  # 8 challenges per page (2x4 grid) - Protects against excessive data loading
+    page = request.args.get('page', 1, type=int)
+    per_page = 8  # 8 challenges per page (2x4 grid)
     
-    # Fetch all approved challenges from the database - Protects against showing unapproved content
-    challenges = fetch_challenges(status_filter='Approved')  # Only approved challenges - Protects against data leakage
+    # Fetch all approved challenges from the database
+    challenges = fetch_challenges(status_filter='Approved')  # Only approved challenges
     
     if not challenges:
         return render_template('event.html', 

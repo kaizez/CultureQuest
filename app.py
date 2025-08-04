@@ -237,7 +237,7 @@ with app.app_context():
 
 # Register Blueprints without URL prefixes so routes are accessible directly
 # Challenge module blueprints
-app.register_blueprint(challenge_bp, url_prefix='/challenge_form')  # Keep /host for challenge routes
+app.register_blueprint(challenge_bp, url_prefix='/host')
 app.register_blueprint(admin_screening_bp, url_prefix='/admin/dashboard/screening')  # Keep /admin for admin routes  
 app.register_blueprint(event_bp, url_prefix='/event')  # Keep /event for event routes
 
