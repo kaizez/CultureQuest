@@ -183,6 +183,71 @@ body {
     color: #dc2626;
 }
 
+.status-pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.status-completed {
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.status-cancelled {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* Admin Order Actions */
+.order-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.status-select {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.status-select:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-view-order {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    color: #0369a1;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-view-order:hover {
+    background: #dbeafe;
+    transform: translateY(-1px);
+}
+
+.status-updating {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
 .stock-input {
     width: 80px;
     padding: 4px 8px;
@@ -511,6 +576,73 @@ body {
             </tbody>
         </table>
     </div>
+
+    <!-- Recent Reward Orders -->
+    <div class="admin-section full-width-section">
+        <h2 class="section-title">Recent Reward Orders</h2>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Username</th>
+                    <th>Item</th>
+                    <th>Collection Date</th>
+                    <th>Collection Point</th>
+                    <th>Distance</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                <tr>
+                    <td><code>{{ order.order_id[:12] }}...</code></td>
+                    <td>{{ order.username }}</td>
+                    <td>{{ order.reward_item.name if order.reward_item else 'Unknown' }}</td>
+                    <td>{{ order.collection_date.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        {% if order.assigned_carpark_name %}
+                            {{ order.assigned_carpark_name[:30] }}{{ '...' if order.assigned_carpark_name|length > 30 else '' }}
+                        {% else %}
+                            <span style="color: #6b7280;">Not assigned</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if order.carpark_distance %}
+                            {{ "%.1f"|format(order.carpark_distance) }} km
+                        {% else %}
+                            <span style="color: #6b7280;">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge {% if order.status == 'pending' %}status-pending{% elif order.status == 'confirmed' %}status-active{% elif order.status == 'collected' %}status-completed{% else %}status-cancelled{% endif %}">
+                            {{ order.status.title() }}
+                        </span>
+                    </td>
+                    <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <div class="order-actions">
+                            <select class="status-select" onchange="updateOrderStatus('{{ order.order_id }}', this.value, this)" data-current-status="{{ order.status }}">
+                                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                                <option value="collected" {% if order.status == 'collected' %}selected{% endif %}>Collected</option>
+                                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                            <button class="btn-view-order" onclick="viewOrderDetails('{{ order.order_id }}')" title="View Details">👁️</button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; color: #6b7280; padding: 40px;">
+                        No reward orders yet
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}
 
@@ -780,6 +912,191 @@ function deleteItem(rewardId, itemName) {
             showNotification('Failed to delete item. Please try again.', 'error');
         });
     });
+}
+
+// Admin Order Management Functions
+function updateOrderStatus(orderId, newStatus, selectElement) {
+    const currentStatus = selectElement.dataset.currentStatus;
+    
+    // Don't update if status hasn't changed
+    if (newStatus === currentStatus) {
+        return;
+    }
+    
+    // Show loading state
+    selectElement.disabled = true;
+    selectElement.parentElement.classList.add('status-updating');
+    
+    fetch('/rewards/admin/update_order_status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_id: orderId,
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the status badge in the same row
+            const row = selectElement.closest('tr');
+            const statusBadge = row.querySelector('.status-badge');
+            
+            // Update badge text and class
+            statusBadge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+            statusBadge.className = 'status-badge status-' + getStatusClass(newStatus);
+            
+            // Update select element data attribute
+            selectElement.dataset.currentStatus = newStatus;
+            
+            // Show success notification
+            showNotification(data.message, 'success');
+            
+            // Log the action
+            console.log(`Order ${orderId} status updated to ${newStatus}`);
+            
+        } else {
+            // Revert select to previous value
+            selectElement.value = currentStatus;
+            showNotification(data.error || 'Failed to update status', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating order status:', error);
+        selectElement.value = currentStatus;
+        showNotification('Network error: Could not update status', 'error');
+    })
+    .finally(() => {
+        selectElement.disabled = false;
+        selectElement.parentElement.classList.remove('status-updating');
+    });
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'pending': return 'pending';
+        case 'confirmed': return 'active';
+        case 'collected': return 'completed';
+        case 'cancelled': return 'cancelled';
+        default: return 'pending';
+    }
+}
+
+function viewOrderDetails(orderId) {
+    // Create a more detailed order info display
+    const shortOrderId = orderId.substring(0, 12) + '...';
+    
+    // Find the row to get order details
+    const selectElement = document.querySelector(`select[onchange*="${orderId}"]`);
+    const row = selectElement.closest('tr');
+    const cells = row.querySelectorAll('td');
+    
+    const orderInfo = {
+        id: shortOrderId,
+        username: cells[1].textContent.trim(),
+        item: cells[2].textContent.trim(),
+        collectionDate: cells[3].textContent.trim(),
+        collectionPoint: cells[4].textContent.trim(),
+        distance: cells[5].textContent.trim(),
+        status: cells[6].textContent.trim(),
+        created: cells[7].textContent.trim()
+    };
+    
+    const detailsMessage = `
+        <strong>Order Details:</strong><br>
+        <strong>ID:</strong> ${orderInfo.id}<br>
+        <strong>User:</strong> ${orderInfo.username}<br>
+        <strong>Item:</strong> ${orderInfo.item}<br>
+        <strong>Collection Date:</strong> ${orderInfo.collectionDate}<br>
+        <strong>Collection Point:</strong> ${orderInfo.collectionPoint}<br>
+        <strong>Distance:</strong> ${orderInfo.distance}<br>
+        <strong>Status:</strong> ${orderInfo.status}<br>
+        <strong>Created:</strong> ${orderInfo.created}
+    `;
+    
+    // Show detailed info in a styled alert (could be enhanced to modal)
+    showOrderDetailsModal(detailsMessage);
+}
+
+function showOrderDetailsModal(content) {
+    // Remove existing modals
+    $('.order-details-modal').remove();
+    
+    const modal = $(`
+        <div class="order-details-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        ">
+            <div style="
+                background: white;
+                padding: 24px;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                max-width: 500px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+            ">
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 16px;
+                    border-bottom: 1px solid #e5e7eb;
+                    padding-bottom: 12px;
+                ">
+                    <h3 style="margin: 0; color: #1f2937;">Order Details</h3>
+                    <button class="close-btn" style="
+                        background: none;
+                        border: none;
+                        font-size: 24px;
+                        cursor: pointer;
+                        color: #6b7280;
+                    ">&times;</button>
+                </div>
+                <div style="
+                    color: #374151;
+                    line-height: 1.6;
+                ">${content}</div>
+                <div style="
+                    margin-top: 20px;
+                    text-align: right;
+                ">
+                    <button class="ok-btn" style="
+                        padding: 8px 16px;
+                        border: none;
+                        background: #6366f1;
+                        color: white;
+                        border-radius: 6px;
+                        cursor: pointer;
+                    ">Close</button>
+                </div>
+            </div>
+        </div>
+    `);
+    
+    modal.find('.close-btn, .ok-btn').click(function() {
+        modal.remove();
+    });
+    
+    // Close on background click
+    modal.click(function(e) {
+        if (e.target === this) {
+            $(this).remove();
+        }
+    });
+    
+    $('body').append(modal);
 }
 </script>
 {% endblock %}

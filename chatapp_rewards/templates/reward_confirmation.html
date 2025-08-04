@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+
+{% block title %}Reward Collection Confirmation{% endblock %}
+
+{% block extra_css %}
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+.confirmation-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 24px;
+}
+
+.confirmation-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.page-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+}
+
+.success-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 36px;
+    color: white;
+}
+
+.confirmation-details {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 32px;
+    margin-bottom: 24px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #374151;
+}
+
+.detail-value {
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.collection-info {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+}
+
+.collection-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0c4a6e;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.carpark-info {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.collection-point-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.collection-point-address {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.collection-point-distance {
+    color: #059669;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Legacy support */
+.carpark-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.carpark-address {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.carpark-distance {
+    color: #059669;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+#confirmationMap {
+    height: 250px;
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.next-steps {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 32px;
+    margin-bottom: 24px;
+}
+
+.next-steps h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 16px;
+}
+
+.step-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 12px 0;
+}
+
+.step-number {
+    width: 24px;
+    height: 24px;
+    background: #6366f1;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.step-text {
+    color: #374151;
+    line-height: 1.5;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 32px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-primary {
+    background: #6366f1;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5856eb;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+.map-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: #f3f4f6;
+    border-radius: 8px;
+    color: #6b7280;
+    text-align: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .confirmation-container {
+        padding: 24px 16px;
+    }
+
+    .page-title {
+        font-size: 28px;
+    }
+
+    .confirmation-details,
+    .next-steps {
+        padding: 24px;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirmation-container">
+    <!-- Header -->
+    <div class="confirmation-header">
+        <div class="success-icon">✓</div>
+        <h1 class="page-title">Reward Claimed Successfully!</h1>
+        <p>Your reward has been reserved for collection</p>
+    </div>
+
+    <!-- Order Details -->
+    <div class="confirmation-details">
+        <div class="detail-row">
+            <span class="detail-label">Order ID:</span>
+            <span class="detail-value">{{ order.order_id }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Reward Item:</span>
+            <span class="detail-value">{{ order.reward_item.name }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Points Spent:</span>
+            <span class="detail-value">{{ order.points_spent }} points</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Collection Date:</span>
+            <span class="detail-value">{{ order.collection_date.strftime('%B %d, %Y') }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Status:</span>
+            <span class="detail-value" style="color: #059669; font-weight: 600;">{{ order.status.title() }}</span>
+        </div>
+    </div>
+
+    <!-- Collection Information -->
+    <div class="collection-info">
+        <div class="collection-title">
+            📍 Polytechnic Collection Point
+        </div>
+        
+        {% if order.assigned_carpark_name %}
+        <div class="collection-point-info">
+            <div class="collection-point-name">{{ order.assigned_carpark_name }}</div>
+            <div class="collection-point-address">{{ order.assigned_carpark_address }}</div>
+            {% if order.carpark_distance %}
+            <div class="collection-point-distance">📍 {{ "%.2f"|format(order.carpark_distance) }} km from your location</div>
+            {% endif %}
+            
+            <div id="confirmationMap">
+                <div class="map-placeholder">
+                    <div>
+                        📍 Loading collection point map...<br>
+                        <small>{{ order.assigned_carpark_name }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="collection-point-info">
+            <div class="collection-point-name">Collection point will be assigned</div>
+            <div class="collection-point-address">We'll notify you of the nearest polytechnic collection point based on your address: {{ order.customer_address }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- What's Next Section -->
+    <div class="next-steps">
+        <h3>What's Next?</h3>
+        <ul class="step-list">
+            <li class="step-item">
+                <div class="step-number">1</div>
+                <div class="step-text">
+                    <strong>Save your Order ID:</strong> {{ order.order_id }} - You'll need this for collection
+                </div>
+            </li>
+            <li class="step-item">
+                <div class="step-number">2</div>
+                <div class="step-text">
+                    <strong>Visit the collection point</strong> on {{ order.collection_date.strftime('%B %d, %Y') }} or later
+                </div>
+            </li>
+            <li class="step-item">
+                <div class="step-number">3</div>
+                <div class="step-text">
+                    <strong>Bring a valid ID</strong> and your Order ID for verification
+                </div>
+            </li>
+            <li class="step-item">
+                <div class="step-number">4</div>
+                <div class="step-text">
+                    <strong>Contact support</strong> if you have any questions about your order
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{{ url_for('rewards.rewards_page') }}" class="btn btn-secondary">
+            Back to Rewards
+        </a>
+        <button onclick="window.print()" class="btn btn-primary">
+            Print Confirmation
+        </button>
+    </div>
+</div>
+
+{% if google_maps_api_key and google_maps_api_key != 'YOUR_GOOGLE_MAPS_API_KEY_HERE' %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initConfirmationMap" async defer></script>
+{% endif %}
+
+{% if order.assigned_carpark_latitude and order.assigned_carpark_longitude %}
+<script>
+let confirmationMap;
+let confirmationMarker;
+
+function initConfirmationMap() {
+    const lat = {{ order.assigned_carpark_latitude }};
+    const lng = {{ order.assigned_carpark_longitude }};
+    const collectionPointName = "{{ order.assigned_carpark_name }}";
+    
+    // Check if Google Maps API is loaded
+    if (typeof google === 'undefined' || !google.maps) {
+        initFallbackConfirmationMap(lat, lng, collectionPointName);
+        return;
+    }
+    
+    try {
+        const collectionPointLocation = { lat: lat, lng: lng };
+        
+        confirmationMap = new google.maps.Map(document.getElementById('confirmationMap'), {
+            center: collectionPointLocation,
+            zoom: 16,
+            styles: [
+                {
+                    featureType: "poi",
+                    elementType: "labels",
+                    stylers: [{ visibility: "off" }]
+                }
+            ]
+        });
+        
+        confirmationMarker = new google.maps.Marker({
+            position: collectionPointLocation,
+            map: confirmationMap,
+            title: collectionPointName,
+            animation: google.maps.Animation.DROP
+        });
+        
+        // Add click listener to marker for directions
+        confirmationMarker.addListener('click', function() {
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+            window.open(url, '_blank');
+        });
+        
+        // Add click listener to map for directions
+        confirmationMap.addListener('click', function() {
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+            window.open(url, '_blank');
+        });
+        
+    } catch (error) {
+        console.error('Error initializing Google Maps:', error);
+        initFallbackConfirmationMap(lat, lng, collectionPointName);
+    }
+}
+
+function initFallbackConfirmationMap(lat, lng, name) {
+    const mapElement = document.getElementById('confirmationMap');
+    
+    mapElement.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; border-radius: 8px; color: #6b7280; cursor: pointer;" onclick="openDirections(${lat}, ${lng})">
+            <div style="text-align: center;">
+                📍 ${name}<br>
+                <small>Click to open directions in Google Maps</small>
+            </div>
+        </div>
+    `;
+    
+    mapElement.style.cursor = 'pointer';
+    mapElement.title = 'Click to open directions in Google Maps';
+}
+
+function openDirections(lat, lng) {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    window.open(url, '_blank');
+}
+
+// Initialize map when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // If Google Maps API is not loaded, use fallback
+    if (typeof google === 'undefined' || !google.maps) {
+        const lat = {{ order.assigned_carpark_latitude }};
+        const lng = {{ order.assigned_carpark_longitude }};
+        const collectionPointName = "{{ order.assigned_carpark_name }}";
+        initFallbackConfirmationMap(lat, lng, collectionPointName);
+    }
+    // If Google Maps is loaded, initConfirmationMap will be called by the API callback
+});
+</script>
+{% else %}
+<script>
+// No collection point assigned, show placeholder
+document.addEventListener('DOMContentLoaded', function() {
+    const mapElement = document.getElementById('confirmationMap');
+    if (mapElement) {
+        mapElement.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; border-radius: 8px; color: #6b7280;">
+                <div style="text-align: center;">
+                    📍 Collection Point Not Yet Assigned<br>
+                    <small>You'll receive location details once assigned</small>
+                </div>
+            </div>
+        `;
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -218,3 +218,66 @@ class RewardRedemption(db.Model):
             'status': self.status,
             'redeemed_at': self.redeemed_at.strftime('%Y-%m-%d %H:%M:%S') if self.redeemed_at else ''
         }
+
+class RewardOrder(db.Model):
+    __table_args__ = mysql_table_args
+    
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.String(50), nullable=False, unique=True)
+    user_id = db.Column(db.String(36), nullable=False)  # Links to login system user ID (UUID)
+    username = db.Column(db.String(50), nullable=False)
+    reward_item_id = db.Column(db.Integer, db.ForeignKey('reward_item.id'), nullable=False)
+    collection_date = db.Column(db.Date, nullable=False)
+    customer_address = db.Column(db.Text, nullable=False)
+    customer_latitude = db.Column(db.Float, nullable=True)
+    customer_longitude = db.Column(db.Float, nullable=True)
+    # Note: Field names use 'carpark' for backwards compatibility, but these represent collection points (polytechnics)
+    assigned_carpark_name = db.Column(db.String(200), nullable=True)  # Collection point name
+    assigned_carpark_address = db.Column(db.Text, nullable=True)  # Collection point address
+    assigned_carpark_latitude = db.Column(db.Float, nullable=True)  # Collection point latitude
+    assigned_carpark_longitude = db.Column(db.Float, nullable=True)  # Collection point longitude
+    carpark_distance = db.Column(db.Float, nullable=True)  # Distance to collection point in km
+    points_spent = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, confirmed, collected, cancelled
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship to reward item
+    reward_item = db.relationship('RewardItem', backref='reward_orders')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'order_id': self.order_id,
+            'user_id': self.user_id,
+            'username': self.username,
+            'reward_item_id': self.reward_item_id,
+            'collection_date': self.collection_date.strftime('%Y-%m-%d') if self.collection_date else '',
+            'customer_address': self.customer_address,
+            'customer_latitude': self.customer_latitude,
+            'customer_longitude': self.customer_longitude,
+            'assigned_carpark_name': self.assigned_carpark_name,
+            'assigned_carpark_address': self.assigned_carpark_address,
+            'assigned_carpark_latitude': self.assigned_carpark_latitude,
+            'assigned_carpark_longitude': self.assigned_carpark_longitude,
+            'carpark_distance': self.carpark_distance,
+            'points_spent': self.points_spent,
+            'status': self.status,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else '',
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else ''
+        }
+    
+    def get_customer_info(self):
+        """Get customer information for compatibility with reference implementation"""
+        return {
+            'address': self.customer_address,
+            'assigned_carpark': {  # Legacy key name for compatibility - represents collection point
+                'name': self.assigned_carpark_name,
+                'address': self.assigned_carpark_address,
+                'coordinates': {
+                    'lat': self.assigned_carpark_latitude,
+                    'lng': self.assigned_carpark_longitude
+                },
+                'distance': self.carpark_distance
+            } if self.assigned_carpark_name else None
+        }
