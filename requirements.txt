@@ -17,6 +17,7 @@ Flask-Login==0.6.3
 Flask-SocketIO==5.3.6
 Flask-WTF==1.2.1
 Flask-Session==0.5.0
+Flask-Limiter==3.5.0
 WTForms==3.1.2
 
 # Google OAuth Authentication
@@ -29,7 +30,7 @@ google-api-python-client==2.108.0
 
 # Security Libraries
 bleach==6.1.0  # XSS protection via HTML sanitization
-python-magic==0.4.27  # File upload validation
+python-magic-bin==0.4.14  # File upload validation (Windows compatible)
 cryptography==41.0.7  # Secure encryption functions
 bcrypt==4.1.2  # Secure password hashing
 pyotp==2.9.0  # Two-factor authentication
