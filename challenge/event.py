@@ -7,7 +7,7 @@ import math
 event_bp = Blueprint('event', __name__, template_folder='templates')
 
 @event_bp.route('/')
-@login_required  # Require authentication for event viewing
+@login_required  # Require authentication for event viewing   Authorization Controls with Decorators
 def event_page():
     # Check if the user has exceeded the rate limit before proceeding
     user_id = session.get('user_id')  # Get the user's ID from the session

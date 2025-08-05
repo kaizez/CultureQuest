@@ -10,7 +10,7 @@ def configure_security(app: Flask):
     """Configure comprehensive security settings for the Flask application."""
     
     # Session Security Configuration - Protects against session hijacking
-    app.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only - Protects against session theft over HTTP
+    app.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only - Protects against session theft over HTTP   Session Security with Secure Cookies Lines 13-16
     app.config['SESSION_COOKIE_HTTPONLY'] = True  # No JavaScript access - Protects against XSS session theft
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection - Protects against cross-site request forgery
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)  # Session timeout - Protects against stale session attacks
@@ -24,7 +24,7 @@ def configure_security(app: Flask):
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour CSRF token timeout - Protects against token replay attacks
     
     # Security Headers Middleware
-    @app.after_request
+    @app.after_request #  Session Security with Secure Cookies Lines 27-55
     def set_security_headers(response):
         """Add security headers to all responses - Protects against various web attacks."""
         

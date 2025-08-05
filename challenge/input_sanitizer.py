@@ -8,15 +8,15 @@ import bleach
 from markupsafe import Markup
 
 # Allowed HTML tags for rich text content - Protects against XSS while allowing safe formatting
-ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li']
+ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li'] #  XSS Protection with HTML Sanitization Lines 11-12
 ALLOWED_ATTRIBUTES = {}  # No attributes allowed - Protects against attribute-based XSS
 
-def sanitize_html(input_text):
+def sanitize_html(input_text): # INPUT SANITIZATION LINE 14-27
     """Sanitize HTML content to prevent XSS attacks - Protects against script injection."""
     if not input_text:
         return ""
     
-    # Use bleach to clean HTML - Protects against malicious HTML/JavaScript
+    # Use bleach to clean HTML - Protects against malicious HTML/JavaScript   XSS Protection with HTML Sanitization Lines 19-25
     cleaned = bleach.clean(
         input_text,
         tags=ALLOWED_TAGS,
@@ -26,7 +26,7 @@ def sanitize_html(input_text):
     
     return cleaned
 
-def sanitize_text_input(input_text, max_length=None):
+def sanitize_text_input(input_text, max_length=None): # INPUT SANITIZATION LINE 29-47
     """Sanitize plain text input - Protects against injection and overflow attacks."""
     if not input_text:
         return ""
@@ -34,7 +34,7 @@ def sanitize_text_input(input_text, max_length=None):
     # Convert to string and strip whitespace
     text = str(input_text).strip()
     
-    # HTML encode to prevent XSS - Protects against script injection in text fields
+    # HTML encode to prevent XSS - Protects against script injection in text fields   XSS Protection with HTML Sanitization Lines 37-38
     text = html.escape(text)
     
     # Remove potentially dangerous characters - Protects against injection attacks
@@ -106,7 +106,7 @@ def sanitize_sql_input(input_text):
     
     return text.strip()
 
-def validate_challenge_input(form_data):
+def validate_challenge_input(form_data): # INPUT SANITIZATION LINE 109-140
     """Validate and sanitize challenge form input - Protects against various injection attacks."""
     sanitized = {}
     
@@ -118,7 +118,7 @@ def validate_challenge_input(form_data):
         )
     
     # Sanitize description - Allow some HTML but prevent XSS
-    if 'description' in form_data:
+    if 'description' in form_data: #  XSS Protection with HTML Sanitization Lines 121-130
         sanitized['description'] = sanitize_html(form_data['description'])
         if len(sanitized['description']) > 500:
             sanitized['description'] = sanitized['description'][:500]

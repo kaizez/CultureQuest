@@ -11,7 +11,7 @@ mysql_table_args = {
     'mysql_collate': 'utf8mb4_unicode_ci'
 }
 
-class ChallengeSubmission(db.Model):
+class ChallengeSubmission(db.Model): # SQL Injection Prevention via ORM Lines 14-29
     __tablename__ = 'challenge_submissions'
     __table_args__ = mysql_table_args
     

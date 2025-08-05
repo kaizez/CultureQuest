@@ -12,11 +12,11 @@ admin_screening_bp = Blueprint('admin_screening', __name__, template_folder='tem
 # Authentication decorators are now imported from auth_decorators.py
 
 @admin_screening_bp.route('/', methods=['GET', 'POST'])
-@admin_required  # Protects against non-admin users accessing admin functionality
+@admin_required  # Protects against non-admin users accessing admin functionality   Authorization Controls with Decorators
 def admin_page():
     # Check if the user has exceeded the rate limit before proceeding - Protects against spam/DoS attacks
     user_id = session.get('user_id')  # Get the user_id from the session
-    if user_id and not check_and_update_rate_limit(user_id):
+    if user_id and not check_and_update_rate_limit(user_id): #RATE LIMITING LINE 19-21
         log_rate_limit_exceeded(user_id)  # Log rate limit violation for monitoring
         return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded - Protects against abuse
 
@@ -50,7 +50,7 @@ def admin_page():
             log_admin_action('status_update', challenge_id, f'Status: {status}, Points: {points}')  # Log admin action for audit
             update_challenge_status(challenge_id, status, comments, points)
         else:
-            # Use SQLAlchemy ORM to prevent SQL injection attacks
+            # Use SQLAlchemy ORM to prevent SQL injection attacks Lines 54-61
             from challenge_models import ChallengeSubmission
             challenge = ChallengeSubmission.query.get(challenge_id)
             if challenge:

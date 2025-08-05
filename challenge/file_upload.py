@@ -10,18 +10,18 @@ except ImportError:
     MAGIC_AVAILABLE = False
 from security_logger import log_file_upload_attempt  # Protects against unmonitored file uploads
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi'}  # Protects against dangerous file types
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi'}  # Protects against dangerous file types  Secure File Upload Lines 13, 15
 UPLOAD_FOLDER = 'static/uploads/'
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB - Protects against DoS attacks via large file uploads
 ALLOWED_MIME_TYPES = {
     'image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/avi'
 }  # Protects against MIME type spoofing attacks
 
-def allowed_file(filename):
+def allowed_file(filename): # Secure File Upload Lines 20-22
     """Check if the file has an allowed extension - Protects against dangerous file types."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def validate_file_content(file_path):
+def validate_file_content(file_path): # Secure File Upload Lines 24-34
     """Validate file content matches expected type - Protects against malicious files with fake extensions."""
     if not MAGIC_AVAILABLE:
         print("[WARNING] Magic not available - skipping file content validation")
@@ -33,7 +33,7 @@ def validate_file_content(file_path):
     except Exception:
         return False  # Protects against corrupted or malicious files
 
-def check_file_size(file):
+def check_file_size(file): # Secure File Upload Lines 36-41
     """Check file size limits - Protects against DoS attacks via oversized uploads."""
     file.seek(0, os.SEEK_END)  # Go to end of file
     size = file.tell()  # Get current position (file size)
@@ -47,7 +47,7 @@ def generate_filename(original_filename):
     filename = ''.join(random.choices(string.ascii_letters + string.digits, k=16)) + '.' + ext
     return filename
 
-def save_file(file):
+def save_file(file): # Secure File Upload Lines 50-110
     """Validate and save the uploaded file with comprehensive security checks."""
     if not file or not file.filename:
         log_file_upload_attempt("", 0, False, "No file provided")  # Log failed upload attempt

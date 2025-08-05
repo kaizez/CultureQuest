@@ -2,7 +2,7 @@ from flask import session, redirect, request, jsonify, flash, url_for
 from functools import wraps
 from security_logger import log_authorization_failure
 
-def login_required(f):
+def login_required(f): #  Authorization Controls with Decorators Lines 5-30
     """Login required decorator - Protects against unauthorized access"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -29,7 +29,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def admin_required(f):
+def admin_required(f): #  Authorization Controls with Decorators Lines 32-65
     """Admin required decorator - Protects against unauthorized access to admin functions"""
     @wraps(f)
     def decorated_function(*args, **kwargs):

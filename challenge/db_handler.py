@@ -154,7 +154,7 @@ def sync_challenge_chat_sessions():
         db.session.rollback()
         print(f"[ERROR] Failed to sync challenge-chat sessions: {str(e)}")
 
-def insert_challenge(challenge_name, description, completion_criteria, media_filename, media_data=None, media_mime_type=None):
+def insert_challenge(challenge_name, description, completion_criteria, media_filename, media_data=None, media_mime_type=None): # SQL Injection Prevention via ORM Lines 157-184
     """Insert a new challenge into the database using SQLAlchemy - Protects against SQL injection via ORM."""
     try:
         challenge = ChallengeSubmission(
@@ -269,7 +269,7 @@ class RateLimit(db.Model):
         identifier = self.user_id or self.email
         return f"<RateLimit(identifier={identifier}, request_count={self.request_count}, last_request={self.last_request})>"
     
-def check_and_update_rate_limit(user_id):
+def check_and_update_rate_limit(user_id): #RATE LIMITING LINE 272-303
     """Check and update the rate limit for a given user by user_id - Protects against abuse and DoS attacks."""
     # Get the current time
     now = datetime.utcnow()

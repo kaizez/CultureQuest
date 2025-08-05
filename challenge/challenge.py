@@ -18,10 +18,10 @@ class ChallengeForm(FlaskForm):
     media = FileField('Media', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'], 'Images and videos only!')])
 
 @challenge_bp.route('/', methods=['GET', 'POST'])
-@login_required  # Require authentication for challenge creation
+@login_required  # Require authentication for challenge creation   Authorization Controls with Decorators
 def create_challenge():
     # Check if the user has exceeded the rate limit before proceeding
-    user_id = session.get('user_id')  # Get the user's ID from the session
+    user_id = session.get('user_id')  # Get the user's ID from the session RATE LIMITING LINE 24-26
     if user_id and not check_and_update_rate_limit(user_id):
         return "Too Many Requests", 429  # 429 Too Many Requests if rate limit is exceeded
 
