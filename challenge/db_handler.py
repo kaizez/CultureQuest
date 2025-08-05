@@ -154,7 +154,7 @@ def sync_challenge_chat_sessions():
         db.session.rollback()
         print(f"[ERROR] Failed to sync challenge-chat sessions: {str(e)}")
 
-def insert_challenge(challenge_name, description, completion_criteria, media_filename):
+def insert_challenge(challenge_name, description, completion_criteria, media_filename, media_data=None, media_mime_type=None):
     """Insert a new challenge into the database using SQLAlchemy - Protects against SQL injection via ORM."""
     try:
         challenge = ChallengeSubmission(
@@ -162,6 +162,8 @@ def insert_challenge(challenge_name, description, completion_criteria, media_fil
             description=description,
             completion_criteria=completion_criteria,
             media_filename=media_filename,
+            media_data=media_data,
+            media_mime_type=media_mime_type,
             name=challenge_name,  # Set legacy field for backward compatibility
             status='On Hold'  # Default safe status - Protects against privilege escalation
         )
@@ -236,13 +238,15 @@ def get_challenge_by_id(challenge_id):
         return None
 
 # Legacy function names for backward compatibility
-def insert_challenge_legacy(name, email, phone, description, media_filename):
+def insert_challenge_legacy(name, email, phone, description, media_filename, media_data=None, media_mime_type=None):
     """Legacy insert function for backward compatibility."""
     return insert_challenge(
         challenge_name=name,
         description=description,
         completion_criteria="Please provide completion proof",
-        media_filename=media_filename
+        media_filename=media_filename,
+        media_data=media_data,
+        media_mime_type=media_mime_type
     )
 
 class RateLimit(db.Model):

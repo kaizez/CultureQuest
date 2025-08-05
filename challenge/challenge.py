@@ -34,22 +34,22 @@ def create_challenge():
         # Handle media file upload
         media_file = form.media.data
         media_filename = None
+        media_data = None
+        media_mime_type = None
 
         if media_file:
             try:
-                media_filename = save_file(media_file)
+                media_filename, media_data, media_mime_type = save_file(media_file)
             except ValueError as e:
                 flash(str(e), 'danger')
                 return render_template('challenge.html', form=form)
 
-        insert_challenge(challenge_name, description, completion_criteria, media_filename)
-        return redirect(url_for('challenge.success'))
+        insert_challenge(challenge_name, description, completion_criteria, media_filename, media_data, media_mime_type)
+        flash('Challenge created successfully!', 'success')
+        return render_template('challenge.html', form=ChallengeForm(), show_success_popup=True)
 
     elif form.is_submitted():
         flash('Please correct the errors in the form.', 'danger')
 
     return render_template('challenge.html', form=form)
 
-@challenge_bp.route('/success')
-def success():
-    return "Challenge created successfully!"

@@ -56,6 +56,11 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Show success popup if challenge was created
+        {% if show_success_popup %}
+        showSuccessPopup();
+        {% endif %}
+
         // Add smooth form interactions
         const textareas = document.querySelectorAll('.form-textarea');
         textareas.forEach(textarea => {
@@ -78,5 +83,77 @@
             this.style.transform = 'translateY(0)';
         });
     });
+
+    function showSuccessPopup() {
+        // Create popup overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        `;
+
+        // Create popup content
+        const popup = document.createElement('div');
+        popup.style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+        `;
+
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: scale(0.8); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        popup.innerHTML = `
+            <div style="color: #10b981; font-size: 48px; margin-bottom: 16px;">✓</div>
+            <h2 style="color: #111827; margin-bottom: 12px; font-size: 24px;">Success!</h2>
+            <p style="color: #6b7280; margin-bottom: 24px; font-size: 16px;">Your challenge has been created successfully!</p>
+            <button onclick="closePopup()" style="
+                background: #6366f1;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 16px;
+                cursor: pointer;
+                transition: background 0.2s;
+            " onmouseover="this.style.background='#5856eb'" onmouseout="this.style.background='#6366f1'">
+                Continue
+            </button>
+        `;
+
+        overlay.appendChild(popup);
+        document.body.appendChild(overlay);
+
+        // Close popup function
+        window.closePopup = function() {
+            document.body.removeChild(overlay);
+        };
+
+        // Close on overlay click
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                closePopup();
+            }
+        });
+    }
 </script>
 {% endblock %}

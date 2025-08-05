@@ -2,7 +2,7 @@ import os
 import sys
 import uuid
 import pymysql
-from flask import Flask, render_template, send_from_directory, abort, session
+from flask import Flask, render_template, send_from_directory, abort, session, Response
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
 from jinja2 import FileSystemLoader, ChoiceLoader
@@ -268,11 +268,31 @@ else:
 # Handle uploaded files from challenge module specifically
 @app.route('/uploads/<filename>')
 def serve_challenge_uploads(filename):
-    """Serve uploaded files from challenge module"""
-    upload_path = os.path.join(current_dir, 'challenge/static/uploads')
-    if os.path.exists(os.path.join(upload_path, filename)):
-        return send_from_directory(upload_path, filename)
-    abort(404)
+    """Serve uploaded files from database"""
+    try:
+        # Import here to avoid circular imports
+        sys.path.insert(0, os.path.join(current_dir, 'challenge'))
+        from challenge_models import ChallengeSubmission
+        
+        # Find challenge with this media filename
+        challenge = ChallengeSubmission.query.filter_by(media_filename=filename).first()
+        
+        if challenge and challenge.media_data:
+            # Serve from database
+            return Response(
+                challenge.media_data,
+                mimetype=challenge.media_mime_type or 'application/octet-stream',
+                headers={'Content-Disposition': f'inline; filename="{filename}"'}
+            )
+        else:
+            # Fallback to filesystem (for backward compatibility)
+            upload_path = os.path.join(current_dir, 'challenge/static/uploads')
+            if os.path.exists(os.path.join(upload_path, filename)):
+                return send_from_directory(upload_path, filename)
+            abort(404)
+    except Exception as e:
+        print(f"Error serving file {filename}: {str(e)}")
+        abort(404)
 
 
 # Global Error Handlers

@@ -79,14 +79,21 @@ def save_file(file):
     
     # Use secure filename generation - Protects against directory traversal
     filename = generate_filename(file.filename)
+    
+    # Read file data for database storage
+    file.seek(0)
+    file_data = file.read()
+    
+    # Save temporary file for content validation
     file_path = os.path.join(UPLOAD_FOLDER, filename)
     
     # Ensure the upload folder exists with secure permissions
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER, mode=0o755)  # Protects against unauthorized directory access
     
-    # Save the file securely
-    file.save(file_path)
+    # Save the file temporarily for validation
+    with open(file_path, 'wb') as temp_file:
+        temp_file.write(file_data)
     
     # Validate file content after saving - Protects against malicious files with fake extensions
     if not validate_file_content(file_path):
@@ -94,7 +101,10 @@ def save_file(file):
         log_file_upload_attempt(file.filename, file_size, False, "File content validation failed")  # Log failed upload attempt
         raise ValueError("File content validation failed")
     
+    # Remove temporary file - we'll store in database instead
+    os.remove(file_path)
+    
     # Log successful upload
     log_file_upload_attempt(file.filename, file_size, True, None)
     
-    return filename  # Return the saved filename for later use
+    return filename, file_data, mime_type  # Return filename, binary data, and MIME type

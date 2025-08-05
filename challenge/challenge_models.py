@@ -20,6 +20,8 @@ class ChallengeSubmission(db.Model):
     description = db.Column(db.Text, nullable=False)
     completion_criteria = db.Column(db.Text, nullable=False)
     media_filename = db.Column(db.String(255), nullable=True)
+    media_data = db.Column(db.LargeBinary(length=16777215), nullable=True)  # MEDIUMBLOB - 16MB max
+    media_mime_type = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(20), default='On Hold')  # 'On Hold', 'Approved', 'Rejected'
     comments = db.Column(db.Text, nullable=True)
     points = db.Column(db.Integer, nullable=True)  # Points awarded for the submission
