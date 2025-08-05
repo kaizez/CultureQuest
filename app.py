@@ -273,10 +273,10 @@ def serve_challenge_uploads(filename):
         # Import here to avoid circular imports
         sys.path.insert(0, os.path.join(current_dir, 'challenge'))
         from challenge_models import ChallengeSubmission
-        
+
         # Find challenge with this media filename
         challenge = ChallengeSubmission.query.filter_by(media_filename=filename).first()
-        
+
         if challenge and challenge.media_data:
             # Serve from database
             return Response(
@@ -347,13 +347,26 @@ if __name__ == '__main__':
     cert_file = 'login/localhost+1.pem'
     key_file = 'login/localhost+1-key.pem'
     
-    # For now, let's use HTTP to debug the connection issues
-    print("* Starting application in HTTP mode for debugging...")
-    print("* Application starting at: http://127.0.0.1:5000")
-    
-    try:
-        socketio.run(app, host='127.0.0.1', port=5000, debug=True)
-    except Exception as e:
-        print(f"X Failed to start server: {e}")
-        import traceback
-        traceback.print_exc()
+    # Check if certificate files exist
+    if os.path.exists(cert_file) and os.path.exists(key_file):
+        print("* Starting application in HTTPS mode...")
+        print("* Application starting at: https://127.0.0.1:5000")
+        
+        try:
+            socketio.run(app, host='127.0.0.1', port=5000, debug=True, 
+                        ssl_context=(cert_file, key_file))
+        except Exception as e:
+            print(f"X Failed to start HTTPS server: {e}")
+            print("* Falling back to HTTP mode...")
+            socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+    else:
+        print("* Certificate files not found, starting in HTTP mode...")
+        print(f"* Looking for: {cert_file} and {key_file}")
+        print("* Application starting at: http://127.0.0.1:5000")
+        
+        try:
+            socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+        except Exception as e:
+            print(f"X Failed to start server: {e}")
+            import traceback
+            traceback.print_exc()
