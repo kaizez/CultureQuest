@@ -6,6 +6,7 @@ from flask import Flask, render_template, send_from_directory, abort, session, R
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
 from jinja2 import FileSystemLoader, ChoiceLoader
+from secure import Secure
 
 # Add current directory and module directories to Python path for proper imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -144,6 +145,15 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Initialize security headers
+secure_headers = Secure()
+
+@app.after_request
+def set_security_headers(response):
+    """Add security headers to all responses"""
+    secure_headers.framework.flask(response)
+    return response
 
 # Initialize extensions
 db.init_app(app)

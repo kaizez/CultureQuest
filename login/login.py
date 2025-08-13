@@ -36,6 +36,11 @@ load_dotenv()
 # Create login blueprint
 login_bp = Blueprint('login', __name__, template_folder='public')
 
+# Security: Failed login tracking for account lockout
+failed_login_attempts = {}
+LOCKOUT_THRESHOLD = 5  # Number of failed attempts before lockout
+LOCKOUT_DURATION = timedelta(minutes=15)  # Lockout duration
+
 # Admin credentials
 ADMIN_USERNAME = 'Jonas'
 ADMIN_PASSWORD = 'Cu@tureQues!2403'
@@ -65,6 +70,189 @@ if os.getenv('GOOGLE_CLIENT_ID') and os.getenv('GOOGLE_CLIENT_SECRET'):
         ],
         redirect_to='login.google_callback'
     )
+
+# Security Functions
+def check_account_lockout(identifier):
+    """Check if an account is locked due to failed login attempts"""
+    if identifier in failed_login_attempts:
+        attempts_data = failed_login_attempts[identifier]
+        if attempts_data['count'] >= LOCKOUT_THRESHOLD:
+            time_since_lockout = datetime.now() - attempts_data['timestamp']
+            if time_since_lockout < LOCKOUT_DURATION:
+                return True, LOCKOUT_DURATION - time_since_lockout
+    return False, None
+
+def record_failed_login(identifier, ip_address):
+    """Record a failed login attempt"""
+    current_time = datetime.now()
+    
+    if identifier in failed_login_attempts:
+        # Check if we should reset the counter (more than lockout duration passed)
+        time_since_last = current_time - failed_login_attempts[identifier]['timestamp']
+        if time_since_last > LOCKOUT_DURATION:
+            failed_login_attempts[identifier] = {
+                'count': 1,
+                'timestamp': current_time,
+                'ip_address': ip_address
+            }
+        else:
+            failed_login_attempts[identifier]['count'] += 1
+            failed_login_attempts[identifier]['timestamp'] = current_time
+            failed_login_attempts[identifier]['ip_address'] = ip_address
+    else:
+        failed_login_attempts[identifier] = {
+            'count': 1,
+            'timestamp': current_time,
+            'ip_address': ip_address
+        }
+    
+    print(f"🚨 Failed login attempt {failed_login_attempts[identifier]['count']}/5 for {identifier} from {ip_address}")
+    
+    # Lock account in database if threshold reached
+    if failed_login_attempts[identifier]['count'] >= LOCKOUT_THRESHOLD:
+        print(f"🔒 Account {identifier} locked due to {failed_login_attempts[identifier]['count']} failed attempts")
+        
+        # Lock in database - try to find user by username or email
+        user = find_user_by_username(identifier)
+        if not user:
+            user = find_user_by_email(identifier)
+        
+        if user:
+            connection = get_db_connection()
+            if connection:
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute("UPDATE users SET is_locked = TRUE WHERE id = %s", (user['id'],))
+                        connection.commit()
+                        print(f"🔒 Account {identifier} locked in database")
+                except Exception as e:
+                    print(f"Error locking account in database: {e}")
+                finally:
+                    connection.close()
+        
+        # Send security alert email
+        send_security_alert_email(identifier, ip_address, failed_login_attempts[identifier]['count'])
+
+def clear_failed_login_attempts(identifier):
+    """Clear failed login attempts for successful login"""
+    if identifier in failed_login_attempts:
+        del failed_login_attempts[identifier]
+
+def manually_lock_user(identifier):
+    """Manually lock a user account (admin function)"""
+    # Add to memory-based tracking for immediate effect
+    failed_login_attempts[identifier] = {
+        'count': LOCKOUT_THRESHOLD,
+        'timestamp': datetime.now(),
+        'ip_address': 'Admin Action',
+        'manual_lock': True
+    }
+    print(f"🔒 Admin manually locked account: {identifier}")
+
+def manually_unlock_user(identifier):
+    """Manually unlock a user account (admin function)"""
+    if identifier in failed_login_attempts:
+        del failed_login_attempts[identifier]
+        print(f"🔓 Admin manually unlocked account: {identifier}")
+        return True
+    return False
+
+def get_locked_users():
+    """Get list of currently locked users"""
+    locked_users = []
+    current_time = datetime.now()
+    
+    for identifier, data in failed_login_attempts.items():
+        if data['count'] >= LOCKOUT_THRESHOLD:
+            time_since_lockout = current_time - data['timestamp']
+            if time_since_lockout < LOCKOUT_DURATION:
+                minutes_remaining = int((LOCKOUT_DURATION - time_since_lockout).total_seconds() // 60)
+                locked_users.append({
+                    'identifier': identifier,
+                    'locked_since': data['timestamp'],
+                    'ip_address': data['ip_address'],
+                    'attempts': data['count'],
+                    'minutes_remaining': minutes_remaining,
+                    'manual_lock': data.get('manual_lock', False)
+                })
+    
+    return locked_users
+
+def send_security_alert_email(identifier, ip_address, attempt_count):
+    """Send security breach alert email"""
+    try:
+        # Use existing email configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = os.getenv('GMAIL_USER')
+        sender_password = os.getenv('GMAIL_APP_PASSWORD')
+        
+        print(f"🔍 Attempting to send security alert email...")
+        print(f"📧 Sender email: {sender_email}")
+        print(f"📧 Admin email: {ADMIN_EMAIL}")
+        print(f"📧 Gmail password configured: {'Yes' if sender_password else 'No'}")
+        
+        if not sender_password:
+            print("❌ Gmail app password not configured for security alerts")
+            print("💡 Please set GMAIL_APP_PASSWORD in your .env file")
+            return False
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = ADMIN_EMAIL
+        msg['Subject'] = "🚨 SECURITY ALERT: Multiple Failed Login Attempts - CultureQuest"
+        
+        # Email body
+        body = f"""
+        <html>
+        <body>
+        <h2 style="color: #d32f2f;">🚨 SECURITY BREACH ALERT</h2>
+        <p><strong>IMMEDIATE ACTION REQUIRED</strong></p>
+        
+        <h3>Security Incident Details:</h3>
+        <ul>
+            <li><strong>Account/Email:</strong> {identifier}</li>
+            <li><strong>Failed Attempts:</strong> {attempt_count}</li>
+            <li><strong>IP Address:</strong> {ip_address}</li>
+            <li><strong>Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</li>
+            <li><strong>Status:</strong> Account temporarily locked for 15 minutes</li>
+        </ul>
+        
+        <h3>⚠️ Recommended Actions:</h3>
+        <ol>
+            <li>Monitor for additional suspicious activity</li>
+            <li>Check if this is a legitimate user who forgot their password</li>
+            <li>Consider implementing additional security measures if attacks persist</li>
+            <li>Review server logs for this IP address: {ip_address}</li>
+        </ol>
+        
+        <p style="color: #666;">
+        This is an automated security alert from CultureQuest.<br>
+        If you believe this is a false alarm, please investigate immediately.
+        </p>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        # Send email
+        print(f"📤 Connecting to {smtp_server}:{smtp_port}...")
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            print(f"🔐 Logging in as {sender_email}...")
+            server.login(sender_email, sender_password)
+            print(f"📨 Sending email to {ADMIN_EMAIL}...")
+            server.send_message(msg)
+        
+        print(f"✅ Security alert email sent successfully for {identifier}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to send security alert email: {e}")
+        print(f"💡 Error details: {type(e).__name__}: {str(e)}")
+        return False
 
 # Database Functions
 def get_db_connection():
@@ -98,12 +286,21 @@ def init_database():
                     online_end_time VARCHAR(10),
                     is_google_user BOOLEAN DEFAULT FALSE,
                     email_verified BOOLEAN DEFAULT FALSE,
+                    is_locked BOOLEAN DEFAULT FALSE,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     last_login DATETIME,
                     INDEX idx_username (username),
                     INDEX idx_email (email)
                 )
             """)
+            
+            # Add is_locked column if it doesn't exist (for existing databases)
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE")
+            except pymysql.err.OperationalError as e:
+                # Column already exists, ignore error
+                if "Duplicate column name" not in str(e):
+                    raise
             
             # Create verification_codes table
             cursor.execute("""
@@ -1240,22 +1437,44 @@ def login():
     """Handle login form submission"""
     username = request.form.get('username')
     password = request.form.get('password')
+    user_ip = request.remote_addr
 
     if not username or not password:
         flash('Error. Try again.', 'error')
         return redirect(url_for('login.login_page'))
 
-    # Check for admin login
+    # Check if account is locked (memory-based lockout)
+    is_locked, time_remaining = check_account_lockout(username)
+    if is_locked:
+        minutes_remaining = int(time_remaining.total_seconds() // 60)
+        flash(f'🔒 Account temporarily locked due to multiple failed login attempts. Try again in {minutes_remaining} minutes.', 'error')
+        return redirect(url_for('login.login_page'))
+    
+    # Check for admin login first
     if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        # Clear failed attempts on successful login
+        clear_failed_login_attempts(username)
+        
         session['username'] = username  
         session['is_admin'] = True
         session['admin_2fa_pending'] = True  # Set flag for 2FA requirement
         return redirect(url_for('login.admin_2fa_page'))
 
-    # Check regular user login (including Google users with passwords)
+    # Check if account is permanently locked in database (for regular users)
     user = find_user_by_username(username)
+    if not user:
+        user = find_user_by_email(username)
+    
+    if user and user.get('is_locked', False):
+        flash('🔒 Account is locked. Please contact administrator.', 'error')
+        return redirect(url_for('login.login_page'))
+
+    # Check regular user login (including Google users with passwords)
 
     if user and user.get('password') and check_password_hash(user['password'], password):
+        # Clear failed attempts on successful login
+        clear_failed_login_attempts(username)
+        
         # Update last login time
         update_user_login_time(username)
         
@@ -1270,6 +1489,9 @@ def login():
     # Check if it's a Google user trying to login manually by email
     user_by_email = find_user_by_email(username)
     if user_by_email and user_by_email.get('is_google_user') and user_by_email.get('password') and check_password_hash(user_by_email['password'], password):
+        # Clear failed attempts on successful login
+        clear_failed_login_attempts(username)
+        
         # Update last login time
         update_user_login_time(user_by_email['username'])
         
@@ -1281,8 +1503,21 @@ def login():
         
         return redirect(url_for('login.landing_page'))
     
-    # Invalid credentials - show error message
-    flash('Error. Try again.', 'error')
+    # Invalid credentials - record failed attempt and show error message
+    record_failed_login(username, user_ip)
+    
+    # Show remaining attempts
+    if username in failed_login_attempts:
+        current_attempts = failed_login_attempts[username]['count']
+        remaining_attempts = LOCKOUT_THRESHOLD - current_attempts
+        
+        if remaining_attempts > 0:
+            flash(f'❌ Invalid credentials. {remaining_attempts} attempts remaining before account lockout.', 'error')
+        else:
+            flash('🔒 Account temporarily locked due to multiple failed login attempts.', 'error')
+    else:
+        flash('❌ Invalid credentials. Try again.', 'error')
+    
     return redirect(url_for('login.login_page'))
 
 @login_bp.route('/profile')
@@ -2154,12 +2389,16 @@ def admin_dashboard():
     # Get all users for the table
     all_users = sorted(users, key=lambda x: x.get('created_at', ''), reverse=True)
     
+    # Get locked users
+    locked_users = get_locked_users()
+    
     return render_template('admin_dashboard.html', 
                          total_users=stats['total_users'],
                          google_users=stats['google_users'],
                          regular_users=stats['regular_users'],
                          users_today=stats['users_today'],
                          users_this_week=stats['users_this_week'],
+                         locked_users=locked_users,
                          recent_users=recent_users,
                          all_users=all_users)
 
@@ -2465,6 +2704,188 @@ def internal_error(error):
 def forbidden_error(error):
     """Handle 403 errors - redirect to 404 for security"""
     return render_template('404.html'), 404
+
+# Account Status Management API Routes
+@login_bp.route('/api/admin/account-status')
+@admin_required
+def admin_account_status():
+    """Get all users with their account status and failed login attempts"""
+    try:
+        users = load_users()
+        users_with_status = []
+        
+        for user in users:
+            # Get failed login attempts for this user
+            failed_attempts = 0
+            lock_time_remaining = ""
+            is_memory_locked = False
+            
+            # Check memory-based lockouts first
+            for identifier in [user.get('username'), user.get('email')]:
+                if identifier in failed_login_attempts:
+                    attempt_data = failed_login_attempts[identifier]
+                    if attempt_data['count'] >= LOCKOUT_THRESHOLD:
+                        time_since_lockout = datetime.now() - attempt_data['timestamp']
+                        if time_since_lockout < LOCKOUT_DURATION:
+                            is_memory_locked = True
+                            minutes_remaining = int((LOCKOUT_DURATION - time_since_lockout).total_seconds() // 60)
+                            lock_time_remaining = f"{minutes_remaining} minutes"
+                    failed_attempts = max(failed_attempts, attempt_data['count'])
+            
+            user_status = {
+                'id': user.get('id'),
+                'username': user.get('username'),
+                'email': user.get('email'),
+                'is_locked': user.get('is_locked', False) or is_memory_locked,
+                'failed_attempts': failed_attempts,
+                'lock_time_remaining': lock_time_remaining,
+                'created_at': user.get('created_at')
+            }
+            users_with_status.append(user_status)
+        
+        return jsonify({
+            'success': True,
+            'users': users_with_status
+        })
+        
+    except Exception as e:
+        print(f"Error getting account status: {e}")
+        return jsonify({'success': False, 'message': 'Server error'}), 500
+
+@login_bp.route('/api/admin/lock-account', methods=['POST'])
+@admin_required
+def api_lock_account():
+    """Lock a user account via API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        username = data.get('username')
+        
+        if not user_id or not username:
+            return jsonify({'success': False, 'message': 'User ID and username are required'}), 400
+        
+        # Lock in database
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("UPDATE users SET is_locked = TRUE WHERE id = %s", (user_id,))
+                connection.commit()
+                
+                # Also add to memory-based tracking for immediate effect
+                manually_lock_user(username)
+                
+                print(f"🔒 Admin locked account: {username} (ID: {user_id})")
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Account for {username} has been locked successfully'
+                })
+                
+        finally:
+            connection.close()
+            
+    except Exception as e:
+        print(f"Error locking account: {e}")
+        return jsonify({'success': False, 'message': 'Server error'}), 500
+
+@login_bp.route('/api/admin/unlock-account', methods=['POST'])
+@admin_required
+def api_unlock_account():
+    """Unlock a user account via API"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        username = data.get('username')
+        
+        if not user_id or not username:
+            return jsonify({'success': False, 'message': 'User ID and username are required'}), 400
+        
+        # Unlock in database
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+        
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("UPDATE users SET is_locked = FALSE WHERE id = %s", (user_id,))
+                connection.commit()
+                
+                # Also remove from memory-based tracking
+                manually_unlock_user(username)
+                # Clear any memory-based tracking for email too
+                user = find_user_by_id(user_id)
+                if user and user.get('email'):
+                    manually_unlock_user(user['email'])
+                
+                print(f"🔓 Admin unlocked account: {username} (ID: {user_id})")
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Account for {username} has been unlocked successfully'
+                })
+                
+        finally:
+            connection.close()
+            
+    except Exception as e:
+        print(f"Error unlocking account: {e}")
+        return jsonify({'success': False, 'message': 'Server error'}), 500
+
+# Admin Security Management Routes
+@login_bp.route('/admin/security/locked-users')
+@admin_required
+def admin_locked_users():
+    """View locked users"""
+    locked_users = get_locked_users()
+    return jsonify({
+        'success': True,
+        'locked_users': locked_users
+    })
+
+@login_bp.route('/admin/security/unlock-user', methods=['POST'])
+@admin_required
+def admin_unlock_user():
+    """Unlock a user account"""
+    try:
+        data = request.get_json()
+        identifier = data.get('identifier')
+        
+        if not identifier:
+            return jsonify({'success': False, 'message': 'Username/email required'}), 400
+        
+        success = manually_unlock_user(identifier)
+        
+        if success:
+            flash(f'User {identifier} has been unlocked.', 'success')
+            return jsonify({'success': True, 'message': f'User {identifier} unlocked successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'User was not locked'}), 400
+            
+    except Exception as e:
+        print(f"Error unlocking user: {e}")
+        return jsonify({'success': False, 'message': 'Server error'}), 500
+
+@login_bp.route('/admin/security/lock-user', methods=['POST'])
+@admin_required
+def admin_lock_user():
+    """Lock a user account"""
+    try:
+        data = request.get_json()
+        identifier = data.get('identifier')
+        
+        if not identifier:
+            return jsonify({'success': False, 'message': 'Username/email required'}), 400
+        
+        manually_lock_user(identifier)
+        flash(f'User {identifier} has been locked.', 'warning')
+        return jsonify({'success': True, 'message': f'User {identifier} locked successfully'})
+            
+    except Exception as e:
+        print(f"Error locking user: {e}")
+        return jsonify({'success': False, 'message': 'Server error'}), 500
 
 @login_bp.errorhandler(Exception)
 def handle_exception(error):

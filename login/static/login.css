@@ -445,6 +445,15 @@ h1 {
 }
 
 .input-wrapper input:focus {
+  outline: none;
+}
+
+/* ==================== INPUT VALIDATION STATES ==================== */
+.input-wrapper.focused {
+  background: transparent;
+}
+
+.input-wrapper.focused input {
   border-color: var(--focus-color);
   background: #ffffff;
   background-clip: padding-box;
@@ -453,11 +462,6 @@ h1 {
   -webkit-border-radius: 16px !important;
   -moz-border-radius: 16px !important;
   overflow: hidden;
-}
-
-/* ==================== INPUT VALIDATION STATES ==================== */
-.input-wrapper.focused {
-  background: transparent;
 }
 
 .input-wrapper.valid input {
@@ -1002,8 +1006,7 @@ input[type="password"] {
 input:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--focus-color);
-  outline-offset: 2px;
+  outline: none;
 }
 
 /* Reduced motion for users who prefer it */

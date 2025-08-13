@@ -359,10 +359,14 @@
                     {% endif %}
                 </div>
 
-                <!-- Quick Actions -->
+                <!-- Account Status Management -->
                 <div class="sidebar-card">
-                    <h3 class="sidebar-title">Quick Actions</h3>
+                    <h3 class="sidebar-title">Account Status</h3>
                     <div class="quick-actions">
+                        <button onclick="openAccountStatusModal()" class="quick-action-btn account-status-btn">
+                            <span>🔐</span>
+                            Manage User Accounts
+                        </button>
                         <a href="{{ url_for('login.admin_export_users_excel') }}" class="quick-action-btn">
                             <span>📊</span>
                             Export All Users to Excel
@@ -375,10 +379,6 @@
                             <span>🔄</span>
                             Refresh Dashboard
                         </button>
-                        <a href="{{ url_for('login.login_page') }}" class="quick-action-btn">
-                            <span>👁️</span>
-                            View Login Page
-                        </a>
                     </div>
                 </div>
 
@@ -494,6 +494,411 @@
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) {
                 checkSessionValidity();
+            }
+        });
+    </script>
+
+    <!-- Account Status Management Modal -->
+    <div id="accountStatusModal" class="modal-overlay" style="display: none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Account Status Management</h2>
+                <button class="modal-close" onclick="closeAccountStatusModal()">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="modal-search">
+                    <input type="text" id="modalUserSearch" placeholder="🔍 Search users..." onkeyup="filterUsersInModal()">
+                </div>
+                <div class="users-list-container">
+                    <div class="users-list" id="accountStatusUsersList">
+                        <!-- Users will be loaded here -->
+                        <div class="loading-spinner">Loading users...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: white;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-content {
+            padding: 20px 30px 30px;
+        }
+
+        .modal-search {
+            margin-bottom: 20px;
+        }
+
+        .modal-search input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #f9fafb;
+            transition: all 0.2s;
+        }
+
+        .modal-search input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .users-list-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .user-status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            background: white;
+            margin-bottom: 1px;
+            transition: all 0.2s;
+        }
+
+        .user-status-item:hover {
+            background: #f8fafc;
+            transform: translateX(2px);
+        }
+
+        .user-status-item:last-child {
+            border-bottom: none;
+        }
+
+        .user-status-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .status-icon.unlocked {
+            background: #10b981;
+        }
+
+        .status-icon.locked {
+            background: #ef4444;
+        }
+
+        .user-status-details h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .user-status-details p {
+            margin: 4px 0 0;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .failed-attempts {
+            font-size: 12px;
+            color: #ef4444;
+            margin-top: 2px;
+        }
+
+        .user-status-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .status-action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 80px;
+        }
+
+        .status-action-btn.lock {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-action-btn.lock:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .status-action-btn.unlock {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-action-btn.unlock:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .status-action-btn:disabled {
+            background: #d1d5db;
+            color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .account-status-btn {
+            background: none !important;
+            color: black !important;
+        }
+
+        .account-status-btn:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3) !important;
+        }
+    </style>
+
+    <script>
+        let allUsersData = [];
+
+        // Open Account Status Modal
+        function openAccountStatusModal() {
+            document.getElementById('accountStatusModal').style.display = 'flex';
+            loadAccountStatusUsers();
+        }
+
+        // Close Account Status Modal
+        function closeAccountStatusModal() {
+            document.getElementById('accountStatusModal').style.display = 'none';
+        }
+
+        // Load users for account status management
+        async function loadAccountStatusUsers() {
+            try {
+                const response = await fetch('/api/admin/account-status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allUsersData = data.users;
+                    displayAccountStatusUsers(allUsersData);
+                } else {
+                    document.getElementById('accountStatusUsersList').innerHTML = 
+                        '<div class="loading-spinner">Error loading users</div>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('accountStatusUsersList').innerHTML = 
+                    '<div class="loading-spinner">Error loading users</div>';
+            }
+        }
+
+        // Display users in account status modal
+        function displayAccountStatusUsers(users) {
+            const container = document.getElementById('accountStatusUsersList');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<div class="loading-spinner">No users found</div>';
+                return;
+            }
+
+            const usersHtml = users.map(user => {
+                const isLocked = user.is_locked || false;
+                const failedAttempts = user.failed_attempts || 0;
+                const lockTime = user.lock_time_remaining || '';
+                
+                return `
+                    <div class="user-status-item" data-username="${user.username}" data-email="${user.email}">
+                        <div class="user-status-info">
+                            <div class="status-icon ${isLocked ? 'locked' : 'unlocked'}">
+                                ${isLocked ? '🔒' : '🔓'}
+                            </div>
+                            <div class="user-status-details">
+                                <h4>${user.username}</h4>
+                                <p>${user.email}</p>
+                                ${failedAttempts > 0 ? `<div class="failed-attempts">${failedAttempts} failed attempts</div>` : ''}
+                                ${lockTime ? `<div class="failed-attempts">Locked for: ${lockTime}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="user-status-actions">
+                            ${isLocked ? 
+                                `<button class="status-action-btn unlock" onclick="unlockAccount('${user.username}', '${user.id}')">Unlock</button>` :
+                                `<button class="status-action-btn lock" onclick="lockAccount('${user.username}', '${user.id}')">Lock</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = usersHtml;
+        }
+
+        // Filter users in modal
+        function filterUsersInModal() {
+            const searchTerm = document.getElementById('modalUserSearch').value.toLowerCase();
+            const filteredUsers = allUsersData.filter(user => 
+                user.username.toLowerCase().includes(searchTerm) || 
+                user.email.toLowerCase().includes(searchTerm)
+            );
+            displayAccountStatusUsers(filteredUsers);
+        }
+
+        // Lock account
+        async function lockAccount(username, userId) {
+            if (!confirm(`Are you sure you want to lock the account for ${username}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/lock-account', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_id: userId, username: username })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Refresh the users list
+                    loadAccountStatusUsers();
+                    alert(`Account for ${username} has been locked successfully.`);
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error locking account:', error);
+                alert('Error occurred while locking account');
+            }
+        }
+
+        // Unlock account
+        async function unlockAccount(username, userId) {
+            if (!confirm(`Are you sure you want to unlock the account for ${username}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/unlock-account', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_id: userId, username: username })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Refresh the users list
+                    loadAccountStatusUsers();
+                    alert(`Account for ${username} has been unlocked successfully.`);
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error unlocking account:', error);
+                alert('Error occurred while unlocking account');
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('accountStatusModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAccountStatusModal();
             }
         });
     </script>
