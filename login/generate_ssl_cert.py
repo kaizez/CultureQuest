@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate SSL certificates for local development with 127.0.0.1 and localhost
+Generate SSL certificates for local development with 0.0.0.0 and localhost
 """
 
 import os
@@ -30,7 +30,7 @@ C = US
 ST = Development
 L = Local
 O = CultureQuest
-CN = 127.0.0.1
+CN = 0.0.0.0
 
 [v3_req]
 keyUsage = keyEncipherment, dataEncipherment
@@ -39,8 +39,8 @@ subjectAltName = @alt_names
 
 [alt_names]
 DNS.1 = localhost
-DNS.2 = 127.0.0.1
-IP.1 = 127.0.0.1
+DNS.2 = 0.0.0.0
+IP.1 = 0.0.0.0
 """
         
         with open('ssl_config.conf', 'w') as f:
@@ -96,7 +96,7 @@ def generate_python_cert():
             x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Development"),
             x509.NameAttribute(NameOID.LOCALITY_NAME, "Local"),
             x509.NameAttribute(NameOID.ORGANIZATION_NAME, "CultureQuest"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "127.0.0.1"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "0.0.0.0"),
         ])
         
         cert = x509.CertificateBuilder().subject_name(
@@ -114,8 +114,8 @@ def generate_python_cert():
         ).add_extension(
             x509.SubjectAlternativeName([
                 x509.DNSName("localhost"),
-                x509.DNSName("127.0.0.1"),
-                x509.IPAddress(ipaddress.IPv4Address("127.0.0.1")),
+                x509.DNSName("0.0.0.0"),
+                x509.IPAddress(ipaddress.IPv4Address("0.0.0.0")),
             ]),
             critical=False,
         ).sign(private_key, hashes.SHA256())
@@ -174,9 +174,9 @@ def main():
     
     print("\n✅ SSL certificates ready!")
     print("You can now run the application with HTTPS support.")
-    print("Access your app at: https://127.0.0.1:5000")
+    print("Access your app at: https://0.0.0.0:5000")
     print("\nNote: Your browser may show a security warning for self-signed certificates.")
-    print("Click 'Advanced' and 'Proceed to 127.0.0.1' to continue.")
+    print("Click 'Advanced' and 'Proceed to 0.0.0.0' to continue.")
 
 if __name__ == "__main__":
     main()

@@ -26,7 +26,7 @@ $(document).ready(function () {
 
     // Function to check if user is muted
     function checkMuteStatus() {
-        $.getJSON(`/api/mute-status/${encodeURIComponent(userName)}/${roomId}`, function(response) {
+        $.getJSON(`/api/mute-status/${roomId}`, function(response) {
             isMuted = response.is_muted;
             muteInfo = response.mute_info;
             

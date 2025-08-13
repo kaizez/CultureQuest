@@ -34,7 +34,7 @@ def create_challenge_chat_room(challenge_id, challenge_name):
         
         # Create new chat room with challenge ID as room ID
         chat_room = ChatRoom(
-            id=challenge_id,  # Use challenge ID as chat room ID
+            id=challenge_id,  # Use challenge ID as room ID
             name=f"🎯 {challenge_name}",  # Add emoji prefix to distinguish challenge chats
             description=f"Discussion channel for challenge: {challenge_name}",
             is_active=True

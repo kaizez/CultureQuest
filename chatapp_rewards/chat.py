@@ -70,7 +70,10 @@ def scan_url_with_virustotal(url):
         return True, None, "VirusTotal API key not configured"
     
     if not is_valid_url(url):
+        print(f"Invalid URL format: {url}")
         return False, None, "Invalid URL format"
+    
+    print(f"[DEBUG] Starting VirusTotal scan for URL: {url}")
     
     try:
         # First, try to get existing report for the URL
@@ -79,27 +82,36 @@ def scan_url_with_virustotal(url):
             'resource': url
         }
         
+        print(f"[DEBUG] Checking existing report for {url}")
         report_response = requests.get(VIRUSTOTAL_URL_REPORT_URL, params=report_params, timeout=30)
         
         if report_response.status_code == 200:
             report_data = report_response.json()
+            print(f"[DEBUG] Existing report response_code: {report_data.get('response_code')}")
             
             if report_data['response_code'] == 1:  # Report exists
+                print(f"[DEBUG] Found existing report for {url}")
                 return analyze_url_scan_result(report_data, url)
+        else:
+            print(f"[DEBUG] Report request failed with status {report_response.status_code}")
         
         # If no existing report, submit URL for scanning
+        print(f"[DEBUG] Submitting new scan for {url}")
         scan_params = {
             'apikey': VIRUSTOTAL_API_KEY,
             'url': url
         }
         
         scan_response = requests.post(VIRUSTOTAL_URL_SCAN_URL, data=scan_params, timeout=30)
+        print(f"[DEBUG] Scan submission status: {scan_response.status_code}")
         
         if scan_response.status_code == 200:
             scan_data = scan_response.json()
+            print(f"[DEBUG] Scan response_code: {scan_data.get('response_code')}")
             
             if scan_data['response_code'] == 1:
                 # Wait for scan to complete and get results
+                print(f"[DEBUG] Waiting for scan results for {url}")
                 return wait_for_url_scan_result(url)
             else:
                 return False, None, f"VirusTotal URL scan failed: {scan_data.get('verbose_msg', 'Unknown error')}"
@@ -118,9 +130,13 @@ def wait_for_url_scan_result(url, max_wait_time=60):
     Wait for VirusTotal URL scan to complete and return results
     """
     start_time = time.time()
+    print(f"[DEBUG] Starting wait loop for {url} (max {max_wait_time}s)")
     
     while time.time() - start_time < max_wait_time:
         try:
+            elapsed = time.time() - start_time
+            print(f"[DEBUG] Checking scan status (elapsed: {elapsed:.1f}s)")
+            
             report_params = {
                 'apikey': VIRUSTOTAL_API_KEY,
                 'resource': url
@@ -130,10 +146,14 @@ def wait_for_url_scan_result(url, max_wait_time=60):
             
             if report_response.status_code == 200:
                 report_data = report_response.json()
+                response_code = report_data.get('response_code')
+                print(f"[DEBUG] Report response_code: {response_code}")
                 
-                if report_data['response_code'] == 1:  # Scan complete
+                if response_code == 1:  # Scan complete
+                    print(f"[DEBUG] Scan complete for {url}")
                     return analyze_url_scan_result(report_data, url)
-                elif report_data['response_code'] == -2:  # Still scanning
+                elif response_code == -2:  # Still scanning
+                    print(f"[DEBUG] Still scanning, waiting 5s...")
                     time.sleep(5)  # Wait 5 seconds before checking again
                     continue
                 else:
@@ -647,6 +667,7 @@ def upload_file(room_id):
                 if not is_safe:
                     # Log the security violation
                     violation = SecurityViolation(
+                        user_id=str(user_id),
                         user_name=str(user_name),
                         violation_type='file',
                         content=filename,
@@ -825,6 +846,7 @@ def handle_chat_message(socketio, json):
                 # Collect security violations for unsafe URLs
                 if not is_safe:
                     violation = SecurityViolation(
+                        user_id=str(user_id),
                         user_name=str(user_name),
                         violation_type='url',
                         content=url,

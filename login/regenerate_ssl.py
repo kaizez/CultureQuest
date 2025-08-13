@@ -59,7 +59,7 @@ def regenerate_ssl_certificates():
         ).add_extension(
             x509.SubjectAlternativeName([
                 x509.DNSName(u"localhost"),
-                x509.DNSName(u"127.0.0.1"),
+                x509.DNSName(u"0.0.0.0"),
             ]),
             critical=False,
         ).sign(private_key, hashes.SHA256())

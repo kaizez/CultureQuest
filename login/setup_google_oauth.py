@@ -31,7 +31,7 @@ def main():
        current_client_secret != 'your-google-client-secret':
         print("\nGoogle OAuth appears to be configured!")
         print("If it's still not working, check:")
-        print("1. Redirect URI in Google Cloud Console: https://127.0.0.1:5000/auth/google/authorized")
+        print("1. Redirect URI in Google Cloud Console: https://0.0.0.0:5000/auth/google/authorized")
         print("2. OAuth consent screen is configured")
         print("3. Google+ API or People API is enabled")
         return
@@ -43,7 +43,7 @@ def main():
     print("3. Enable Google+ API or People API")
     print("4. Create OAuth 2.0 Client ID:")
     print("   - Application type: Web application")
-    print("   - Authorized redirect URIs: https://127.0.0.1:5000/auth/google/authorized")
+    print("   - Authorized redirect URIs: https://0.0.0.0:5000/auth/google/authorized")
     print("5. Copy the Client ID and Client Secret")
     
     print("\nWould you like to configure them now?")
@@ -71,8 +71,8 @@ def main():
             lines.extend([
                 f"GOOGLE_CLIENT_ID={client_id}",
                 f"GOOGLE_CLIENT_SECRET={client_secret}",
-                "GOOGLE_OAUTH_REDIRECT_URI=https://127.0.0.1:5000/auth/google/authorized",
-                "OAUTH_HOSTNAME=127.0.0.1:5000"
+                "GOOGLE_OAUTH_REDIRECT_URI=https://0.0.0.0:5000/auth/google/authorized",
+                "OAUTH_HOSTNAME=0.0.0.0:5000"
             ])
             
             # Write back to .env
@@ -81,7 +81,7 @@ def main():
             
             print("\nGoogle OAuth credentials saved to .env file!")
             print("Please restart the application for changes to take effect")
-            print("Access your app at: https://127.0.0.1:5000")
+            print("Access your app at: https://0.0.0.0:5000")
         else:
             print("Invalid credentials provided")
     else:

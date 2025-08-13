@@ -95,6 +95,7 @@ class SecurityViolation(db.Model):
     __table_args__ = mysql_table_args
     
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(36), nullable=True)  # Links to login system user ID (UUID)
     user_name = db.Column(db.String(50), nullable=False)
     violation_type = db.Column(db.String(20), nullable=False)  # 'url' or 'file'
     content = db.Column(db.Text, nullable=False)  # URL or filename
@@ -107,6 +108,7 @@ class SecurityViolation(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'user_name': self.user_name,
             'violation_type': self.violation_type,
             'content': self.content,

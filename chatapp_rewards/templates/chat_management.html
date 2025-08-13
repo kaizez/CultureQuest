@@ -579,6 +579,7 @@
                 <label>Room ID:</label>
                 <input type="text" id="muteRoomId" class="mute-form-input" readonly>
             </div>
+            <input type="hidden" id="muteUserId">
             <div class="mute-form-group">
                 <label>Duration:</label>
                 <select id="muteDuration" class="mute-form-select">
@@ -687,7 +688,7 @@ function renderViolations() {
                 <button class="action-btn btn-view" onclick="viewDetails(${violation.id})" title="View">👁</button>
                 <button class="action-btn btn-delete" onclick="deleteViolation(${violation.id})" title="Delete">🗑</button>
                 <button class="action-btn btn-edit" onclick="updateStatus(${violation.id})" title="Mark as handled">✏</button>
-                <button class="action-btn btn-mute" onclick="showMuteDialog('${escapeHtml(violation.user_name)}', ${violation.room_id})" title="Mute user">🔇</button>
+                <button class="action-btn btn-mute" onclick="showMuteDialog('${escapeHtml(violation.user_name)}', ${violation.room_id}, '${violation.user_id || ''}')" title="Mute user">🔇</button>
                 <button class="action-btn btn-unmute" onclick="unmuteUser('${escapeHtml(violation.user_name)}', ${violation.room_id})" title="Unmute user">🔊</button>
             </div>
         `;
@@ -882,9 +883,10 @@ function warnUser(username) {
     alert(`Warning functionality for user "${username}" would be implemented here.`);
 }
 
-function showMuteDialog(username, roomId) {
+function showMuteDialog(username, roomId, userId) {
     document.getElementById('muteUserName').value = username;
     document.getElementById('muteRoomId').value = roomId;
+    document.getElementById('muteUserId').value = userId || '';
     document.getElementById('muteDuration').value = '24'; // Default to 24 hours
     document.getElementById('muteReason').value = 'Security violation detected';
     document.getElementById('muteDialogOverlay').style.display = 'flex';
@@ -897,6 +899,7 @@ function closeMuteDialog() {
 async function confirmMute() {
     const username = document.getElementById('muteUserName').value;
     const roomId = parseInt(document.getElementById('muteRoomId').value);
+    const userId = document.getElementById('muteUserId').value;
     const duration = document.getElementById('muteDuration').value;
     const reason = document.getElementById('muteReason').value;
 
@@ -906,6 +909,10 @@ async function confirmMute() {
             room_id: roomId,
             reason: reason
         };
+
+        if (userId) {
+            payload.user_id = userId;
+        }
 
         if (duration) {
             payload.duration_hours = parseInt(duration);

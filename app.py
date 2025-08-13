@@ -115,9 +115,9 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 app.config['OAUTHLIB_INSECURE_TRANSPORT'] = os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', 'False').lower() == 'true'
 app.config['OAUTHLIB_RELAX_TOKEN_SCOPE'] = True
 
-# Force HTTPS and correct hostname for OAuth redirects
+# Force HTTPS for OAuth redirects
 app.config['PREFERRED_URL_SCHEME'] = 'https'
-app.config['SERVER_NAME'] = os.environ.get('OAUTH_HOSTNAME', '127.0.0.1:5000')
+# Remove SERVER_NAME to allow dynamic host binding
 
 # RECAPTCHA Config
 app.config['RECAPTCHA_SITE_KEY'] = os.environ.get('RECAPTCHA_SITE_KEY')
@@ -360,22 +360,22 @@ if __name__ == '__main__':
     # Check if certificate files exist
     if os.path.exists(cert_file) and os.path.exists(key_file):
         print("* Starting application in HTTPS mode...")
-        print("* Application starting at: https://127.0.0.1:5000")
+        print("* Application starting at: https://0.0.0.0:5000")
         
         try:
-            socketio.run(app, host='127.0.0.1', port=5000, debug=True, 
+            socketio.run(app, host='0.0.0.0', port=5000, debug=True, 
                         ssl_context=(cert_file, key_file))
         except Exception as e:
             print(f"X Failed to start HTTPS server: {e}")
             print("* Falling back to HTTP mode...")
-            socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+            socketio.run(app, host='0.0.0.0', port=5000, debug=True)
     else:
         print("* Certificate files not found, starting in HTTP mode...")
         print(f"* Looking for: {cert_file} and {key_file}")
-        print("* Application starting at: http://127.0.0.1:5000")
+        print("* Application starting at: http://0.0.0.0:5000")
         
         try:
-            socketio.run(app, host='127.0.0.1', port=5000, debug=True)
+            socketio.run(app, host='0.0.0.0', port=5000, debug=True)
         except Exception as e:
             print(f"X Failed to start server: {e}")
             import traceback

@@ -22,7 +22,7 @@ from flask import Flask
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'chatapp_rewards'))
 try:
-    from models import ChatRoom
+    from models import ChatRoom, SecurityViolation
     CHAT_CLEANUP_AVAILABLE = True
 except ImportError:
     CHAT_CLEANUP_AVAILABLE = False
@@ -77,8 +77,9 @@ def confirm_action(db_info):
     print(f"Database: {db_info}")
     print("Tables to be cleared:")
     print("  - challenge_submissions (ALL challenge data will be deleted)")
+    print("  - security_violation (violations from challenge chat rooms)")
     print("\nTables that will NOT be affected:")
-    print("  - chat_room, message, uploaded_file, security_violation, muted_user")
+    print("  - chat_room, message, uploaded_file, muted_user")
     print("  - Any other main application tables")
     print("\n⚠️  This action is IRREVERSIBLE!")
     print("="*60)
@@ -109,10 +110,11 @@ def clear_challenge_tables():
         
         print(f"✅ Successfully deleted {deleted_challenges} challenge records")
         
-        # Clean up associated chat sessions
+        # Clean up associated chat sessions and security violations
         if CHAT_CLEANUP_AVAILABLE and challenge_ids:
-            print(f"🔄 Cleaning up {len(challenge_ids)} associated chat sessions...")
+            print(f"🔄 Cleaning up {len(challenge_ids)} associated chat sessions and violations...")
             deactivated_count = 0
+            violations_deleted = 0
             
             for challenge_id in challenge_ids:
                 chat_room = ChatRoom.query.get(challenge_id)
@@ -120,14 +122,29 @@ def clear_challenge_tables():
                     chat_room.is_active = False
                     deactivated_count += 1
                     print(f"   Deactivated chat session for challenge {challenge_id}")
+                
+                # Delete security violations for this challenge room using raw SQL to avoid model schema issues
+                try:
+                    violations_result = db.session.execute(db.text("SELECT COUNT(*) FROM security_violation WHERE room_id = :room_id"), {"room_id": challenge_id})
+                    violations_count = violations_result.scalar()
+                    
+                    if violations_count > 0:
+                        db.session.execute(db.text("DELETE FROM security_violation WHERE room_id = :room_id"), {"room_id": challenge_id})
+                        violations_deleted += violations_count
+                        print(f"   Deleted {violations_count} security violations for challenge {challenge_id}")
+                except Exception as e:
+                    print(f"   Warning: Could not delete violations for challenge {challenge_id}: {e}")
             
-            if deactivated_count > 0:
+            if deactivated_count > 0 or violations_deleted > 0:
                 db.session.commit()
-                print(f"✅ Deactivated {deactivated_count} challenge chat sessions")
+                if deactivated_count > 0:
+                    print(f"✅ Deactivated {deactivated_count} challenge chat sessions")
+                if violations_deleted > 0:
+                    print(f"✅ Deleted {violations_deleted} security violations from challenge rooms")
             else:
-                print("✅ No active challenge chat sessions found")
+                print("✅ No active challenge chat sessions or violations found")
         elif not CHAT_CLEANUP_AVAILABLE:
-            print("⚠️  Chat cleanup not available - chat sessions may remain active")
+            print("⚠️  Chat cleanup not available - chat sessions and violations may remain")
         
         print("✅ Challenge database cleared successfully!")
         
