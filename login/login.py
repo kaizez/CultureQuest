@@ -157,6 +157,7 @@ def manually_unlock_user(identifier):
         return True
     return False
 
+
 def get_locked_users():
     """Get list of currently locked users"""
     locked_users = []
@@ -297,6 +298,22 @@ def init_database():
             # Add is_locked column if it doesn't exist (for existing databases)
             try:
                 cursor.execute("ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE")
+            except pymysql.err.OperationalError as e:
+                # Column already exists, ignore error
+                if "Duplicate column name" not in str(e):
+                    raise
+            
+            # Add profile_picture_data column for storing binary image data
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN profile_picture_data LONGBLOB")
+            except pymysql.err.OperationalError as e:
+                # Column already exists, ignore error
+                if "Duplicate column name" not in str(e):
+                    raise
+            
+            # Add profile_picture_type column for storing image MIME type
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN profile_picture_type VARCHAR(50)")
             except pymysql.err.OperationalError as e:
                 # Column already exists, ignore error
                 if "Duplicate column name" not in str(e):
@@ -1537,6 +1554,7 @@ def profile():
                                  username=username, 
                                  email=user['email'],
                                  profile_picture=user.get('profile_picture'), 
+                                 user_id=user['id'],
                                  occupation=user.get('occupation'), 
                                  birthday=user.get('birthday'), 
                                  labels=user.get('labels'),
@@ -1591,6 +1609,38 @@ def update_profile():
     
     return redirect(url_for('login.profile'))
 
+@login_bp.route('/profile-picture/<user_id>')
+def get_profile_picture(user_id):
+    """Serve profile picture from database"""
+    try:
+        connection = get_db_connection()
+        if not connection:
+            return redirect(url_for('static', filename='default_profile.png'))
+        
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT profile_picture_data, profile_picture_type FROM users WHERE id = %s",
+                    (user_id,)
+                )
+                result = cursor.fetchone()
+                
+                if result and result['profile_picture_data']:
+                    from flask import Response
+                    return Response(
+                        result['profile_picture_data'],
+                        mimetype=result['profile_picture_type'] or 'image/jpeg',
+                        headers={'Cache-Control': 'public, max-age=3600'}
+                    )
+                else:
+                    return redirect(url_for('static', filename='default_profile.png'))
+        finally:
+            connection.close()
+            
+    except Exception as e:
+        print(f"Error serving profile picture: {e}")
+        return redirect(url_for('static', filename='default_profile.png'))
+
 @login_bp.route('/upload-profile-picture', methods=['POST'])
 def upload_profile_picture():
     """Handle profile picture upload"""
@@ -1604,7 +1654,7 @@ def upload_profile_picture():
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No file selected'}), 400
     
-    # Check file type and size
+    # Basic security validation
     allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
     max_size = 5 * 1024 * 1024  # 5MB
     
@@ -1623,16 +1673,6 @@ def upload_profile_picture():
         return jsonify({'success': False, 'message': 'File size too large. Maximum 5MB allowed'}), 400
     
     try:
-        # Create uploads directory if it doesn't exist
-        upload_dir = os.path.join('static', 'uploads')
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        # Generate unique filename
-        filename = secure_filename(file.filename)
-        name, ext = os.path.splitext(filename)
-        unique_filename = f"{session['user_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
-        filepath = os.path.join(upload_dir, unique_filename)
-        
         # Process and resize image
         image = Image.open(file)
         
@@ -1647,41 +1687,47 @@ def upload_profile_picture():
         # Resize image to reasonable size (max 400x400)
         image.thumbnail((400, 400), Image.Resampling.LANCZOS)
         
-        # Save processed image
-        image.save(filepath, 'JPEG', quality=85, optimize=True)
+        # Convert processed image to bytes
+        img_byte_array = io.BytesIO()
+        image.save(img_byte_array, format='JPEG', quality=85, optimize=True)
+        img_binary = img_byte_array.getvalue()
         
-        # Update database with new profile picture
+        # Update database with binary image data
         user_id = session.get('user_id')
-        relative_path = f"uploads/{unique_filename}"
+        connection = get_db_connection()
         
-        if update_user(user_id, {'profile_picture': relative_path}):
-            # Update session
-            session['profile_picture'] = relative_path
-            
-            # Clean up old profile picture if it exists and isn't default
-            old_pic = session.get('old_profile_picture')
-            if old_pic and old_pic != 'default_profile.png' and old_pic.startswith('uploads/'):
-                old_filepath = os.path.join('static', old_pic)
-                if os.path.exists(old_filepath):
-                    try:
-                        os.remove(old_filepath)
-                    except:
-                        pass  # Ignore cleanup errors
-            
-            return jsonify({
-                'success': True, 
-                'message': 'Profile picture updated successfully',
-                'image_url': f'/static/{relative_path}'
-            })
+        if connection:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """UPDATE users SET 
+                           profile_picture_data = %s, 
+                           profile_picture_type = %s,
+                           profile_picture = %s 
+                           WHERE id = %s""",
+                        (img_binary, 'image/jpeg', f'db_image_{user_id}', user_id)
+                    )
+                    connection.commit()
+                    
+                    # Update session
+                    session['profile_picture'] = f'db_image_{user_id}'
+                    
+                    return jsonify({
+                        'success': True, 
+                        'message': 'Profile picture updated successfully',
+                        'image_url': f'/profile-picture/{user_id}'
+                    })
+                    
+            finally:
+                connection.close()
         else:
-            # Remove uploaded file if database update failed
-            if os.path.exists(filepath):
-                os.remove(filepath)
-            return jsonify({'success': False, 'message': 'Failed to update database'}), 500
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
             
     except Exception as e:
-        print(f"Error uploading profile picture: {e}")
-        return jsonify({'success': False, 'message': 'Error processing image'}), 500
+        print(f"🚨 Error uploading profile picture for {session.get('username', 'unknown')}: {e}")
+        # Log potential security incident
+        print(f"🔒 Security log - Upload attempt failed: User={session.get('username', 'unknown')}, IP={request.remote_addr}, Error={str(e)}")
+        return jsonify({'success': False, 'message': 'Error processing image - please ensure you are uploading a valid image file'}), 500
 
 @login_bp.route('/logout')
 def logout():

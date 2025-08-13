@@ -274,7 +274,11 @@
                                 <td>
                                     <div class="user-info">
                                         {% if user.profile_picture and user.profile_picture != 'default_profile.png' %}
-                                            <img src="/static/{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            {% if user.profile_picture.startswith('db_image_') %}
+                                                <img src="/profile-picture/{{ user.id }}" alt="{{ user.username }}" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            {% else %}
+                                                <img src="/static/{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            {% endif %}
                                         {% else %}
                                             <div class="user-avatar-placeholder">
                                                 {{ user.username[0].upper() }}
@@ -329,7 +333,11 @@
                             {% for user in recent_users %}
                             <div class="recent-user-item">
                                 {% if user.profile_picture and user.profile_picture != 'default_profile.png' %}
-                                    <img src="/static/{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    {% if user.profile_picture.startswith('db_image_') %}
+                                        <img src="/profile-picture/{{ user.id }}" alt="{{ user.username }}" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    {% else %}
+                                        <img src="/static/{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    {% endif %}
                                 {% else %}
                                     <div class="user-avatar-placeholder">
                                         {{ user.username[0].upper() }}

@@ -77,7 +77,11 @@
                 <div class="profile-section">
                     <div class="profile-avatar-section">
                         {% if user.profile_picture %}
-                            <img src="{{ user.profile_picture }}" alt="{{ user.username }}" class="profile-avatar">
+                            {% if user.profile_picture.startswith('db_image_') %}
+                                <img src="/profile-picture/{{ user.id }}" alt="{{ user.username }}" class="profile-avatar">
+                            {% else %}
+                                <img src="/static/{{ user.profile_picture }}" alt="{{ user.username }}" class="profile-avatar">
+                            {% endif %}
                         {% else %}
                             <div class="profile-avatar-placeholder">
                                 {{ user.username[0].upper() }}

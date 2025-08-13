@@ -51,7 +51,11 @@
     <!-- Left Panel -->
     <div class="left-panel">
       <div class="profile-picture-wrapper">
-        <img src="/static/{{ profile_picture or 'default_profile.png' }}" alt="Profile Picture" class="profile-picture" id="profilePic" onerror="this.src='/static/default_profile.png'">
+        {% if profile_picture and profile_picture.startswith('db_image_') %}
+          <img src="/profile-picture/{{ user_id }}" alt="Profile Picture" class="profile-picture" id="profilePic" onerror="this.src='/static/default_profile.png'">
+        {% else %}
+          <img src="/static/{{ profile_picture or 'default_profile.png' }}" alt="Profile Picture" class="profile-picture" id="profilePic" onerror="this.src='/static/default_profile.png'">
+        {% endif %}
         <div class="edit-photo-overlay">
           <i class="fas fa-camera"></i>
         </div>
@@ -748,7 +752,11 @@
           console.error('Error uploading profile picture:', error);
           
           // Revert the preview on error
-          document.getElementById('profilePic').src = '/static/{{ profile_picture or "default_profile.png" }}';
+          {% if profile_picture and profile_picture.startswith('db_image_') %}
+            document.getElementById('profilePic').src = '/profile-picture/{{ user_id }}';
+          {% else %}
+            document.getElementById('profilePic').src = '/static/{{ profile_picture or "default_profile.png" }}';
+          {% endif %}
           
           // Show error feedback
           overlay.innerHTML = '<i class="fas fa-times"></i>';
