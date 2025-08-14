@@ -260,20 +260,25 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
 }
 
 .modal-content {
     background-color: white;
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    width: 90%;
+    width: 100%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
+    margin: auto;
+    box-sizing: border-box;
 }
 
 .modal-header {
-    padding: 24px 24px 16px;
+    padding: 20px 20px 16px;
     border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
@@ -282,16 +287,20 @@ body {
 
 .modal-header h2 {
     margin: 0;
-    font-size: 24px;
+    font-size: 20px;
     color: #1f2937;
+    word-wrap: break-word;
+    flex: 1;
+    margin-right: 10px;
 }
 
 .close {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: bold;
     color: #6b7280;
     cursor: pointer;
     line-height: 1;
+    flex-shrink: 0;
 }
 
 .close:hover {
@@ -299,7 +308,9 @@ body {
 }
 
 .modal-body {
-    padding: 24px;
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
 }
 
 .form-group {
@@ -316,7 +327,7 @@ body {
 .form-group input,
 .form-group textarea {
     width: 100%;
-    padding: 12px 16px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 14px;
@@ -375,10 +386,11 @@ body {
 }
 
 .modal-footer {
-    padding: 16px 24px 24px;
+    padding: 16px 20px 20px;
     display: flex;
-    gap: 12px;
+    gap: 10px;
     justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 .btn-cancel {
@@ -601,7 +613,8 @@ body {
 }
 
 .btn-view,
-.btn-directions {
+.btn-directions,
+.btn-refund {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -611,6 +624,8 @@ body {
     text-decoration: none;
     font-size: 14px;
     transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
 }
 
 .btn-view {
@@ -631,6 +646,23 @@ body {
 .btn-directions:hover {
     background: #dcfce7;
     transform: translateY(-1px);
+}
+
+.btn-refund {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.btn-refund:hover {
+    background: #fecaca;
+    transform: translateY(-1px);
+}
+
+.btn-refund:disabled {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .no-history {
@@ -676,16 +708,40 @@ body {
         margin-bottom: 16px;
     }
 
-
-    .modal-content {
-        width: 95%;
-        margin: 20px 10px;
+    .modal {
+        padding: 10px;
     }
 
-    .modal-header,
-    .modal-body,
-    .modal-footer {
+    .modal-content {
+        width: 100%;
+        max-height: 95vh;
+        margin: 0;
+    }
+
+    .modal-header {
+        padding: 16px 16px 12px;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+    }
+
+    .modal-body {
         padding: 16px;
+        max-height: 50vh;
+    }
+
+    .modal-footer {
+        padding: 12px 16px 16px;
+        gap: 8px;
+    }
+
+    .btn-cancel,
+    .btn-claim {
+        padding: 8px 16px;
+        font-size: 14px;
+        flex: 1;
+        min-width: 80px;
     }
 
     .history-title {
@@ -854,6 +910,9 @@ body {
                                     <a href="https://www.google.com/maps/dir/?api=1&destination={{ order.assigned_carpark_latitude }},{{ order.assigned_carpark_longitude }}" 
                                        target="_blank" class="btn-directions" title="Get Directions">📍</a>
                                     {% endif %}
+                                    {% if order.status == 'pending' %}
+                                    <button class="btn-refund" onclick="refundOrder('{{ order.order_id }}', '{{ order.reward_item.name if order.reward_item else 'Unknown Item' }}', {{ order.points_spent }})" title="Refund Order">↩️</button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -916,6 +975,39 @@ body {
     
 </div>
 
+<!-- Custom Alert Modal -->
+<div id="customAlert" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2 id="alertTitle">Notice</h2>
+            <span class="close" onclick="closeCustomAlert()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="alertMessage" style="white-space: pre-wrap; line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word; max-height: 300px; overflow-y: auto;"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-claim" onclick="closeCustomAlert()">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Confirm Modal -->
+<div id="customConfirm" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 id="confirmTitle">Confirm Action</h2>
+            <span class="close" onclick="closeCustomConfirm(false)">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="confirmMessage" style="white-space: pre-wrap; line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word; max-height: 300px; overflow-y: auto;"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" onclick="closeCustomConfirm(false)">Cancel</button>
+            <button type="button" class="btn-claim" onclick="closeCustomConfirm(true)">Confirm</button>
+        </div>
+    </div>
+</div>
+
 <!-- Claim Reward Modal -->
 <div id="claimModal" class="modal" style="display: none;">
     <div class="modal-content">
@@ -963,6 +1055,50 @@ body {
 {% endif %}
 <script>
 let currentPoints = {{ user_points }};
+let confirmCallback = null;
+
+// Custom Alert Function
+function customAlert(message, title = 'Notice') {
+    document.getElementById('alertTitle').textContent = title;
+    document.getElementById('alertMessage').innerHTML = message.replace(/\n/g, '<br>');
+    document.getElementById('customAlert').style.display = 'flex';
+}
+
+function closeCustomAlert() {
+    document.getElementById('customAlert').style.display = 'none';
+}
+
+// Custom Confirm Function
+function customConfirm(message, title = 'Confirm Action') {
+    return new Promise((resolve) => {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').innerHTML = message.replace(/\n/g, '<br>');
+        document.getElementById('customConfirm').style.display = 'flex';
+        
+        confirmCallback = resolve;
+    });
+}
+
+function closeCustomConfirm(result) {
+    document.getElementById('customConfirm').style.display = 'none';
+    if (confirmCallback) {
+        confirmCallback(result);
+        confirmCallback = null;
+    }
+}
+
+// Close modals when clicking outside
+document.getElementById('customAlert').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCustomAlert();
+    }
+});
+
+document.getElementById('customConfirm').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCustomConfirm(false);
+    }
+});
 
 function showNotification(message, type) {
     // Remove existing notifications
@@ -1418,6 +1554,85 @@ document.getElementById('claimForm').addEventListener('submit', function(e) {
         submitBtn.textContent = originalText;
     });
 });
+
+// Refund order functionality
+async function refundOrder(orderId, rewardName, pointsSpent) {
+    // Show confirmation dialog
+    const confirmMessage = `Are you sure you want to refund this order?\n\nReward: ${rewardName}\nPoints to be restored: ${pointsSpent}\n\nThis action will:\n• Restore ${pointsSpent} points to your account\n• Add 1 item back to stock\n• Permanently delete this order\n\nThis cannot be undone!`;
+    
+    const confirmation = await customConfirm(confirmMessage, 'Refund Order');
+    
+    if (!confirmation) {
+        return;
+    }
+    
+    // Find and disable the refund button
+    const refundButton = event.target;
+    const originalText = refundButton.innerHTML;
+    refundButton.disabled = true;
+    refundButton.innerHTML = '⏳';
+    
+    fetch('/rewards/refund', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_id: orderId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            
+            // Update points display
+            currentPoints = data.new_points_balance;
+            document.getElementById('user-points').innerHTML = `
+                <div class="points-icon">💎</div>
+                <span>You have <strong>${currentPoints}</strong> points</span>
+            `;
+            
+            // Remove the order row from the table
+            const orderRow = refundButton.closest('tr');
+            if (orderRow) {
+                orderRow.style.transition = 'opacity 0.3s ease';
+                orderRow.style.opacity = '0';
+                setTimeout(() => {
+                    orderRow.remove();
+                    
+                    // Check if table is now empty
+                    const tableBody = document.querySelector('#claimed-tab tbody');
+                    if (tableBody && tableBody.children.length === 0) {
+                        // Replace table with "no history" message
+                        const tabContent = document.getElementById('claimed-tab');
+                        tabContent.innerHTML = `
+                            <div class="no-history">
+                                <div class="no-history-icon">🎁</div>
+                                <h3>No Claimed Rewards Yet</h3>
+                                <p>When you claim rewards, they'll appear here with collection details and locations.</p>
+                            </div>
+                        `;
+                    }
+                }, 300);
+            }
+            
+            // Update button states for reward cards
+            updateAllButtonStates();
+            
+        } else {
+            showNotification(data.error, 'error');
+            refundButton.disabled = false;
+            refundButton.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Failed to process refund. Please try again.', 'error');
+        refundButton.disabled = false;
+        refundButton.innerHTML = originalText;
+    });
+}
 
 // History tab switching functionality
 function showHistoryTab(tabName) {

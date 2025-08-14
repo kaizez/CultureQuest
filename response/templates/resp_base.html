@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="https://unpkg.com/intro.js/minified/introjs.min.css">
     <link rel="stylesheet" href="{{ url_for('response.static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('response.static', filename='css/navbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
     
     {% block scripts_head %}{% endblock %}
 </head>
@@ -46,6 +47,7 @@
     <script src="{{ url_for('response.static', filename='js/base.js') }}"></script>
     <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
     <script src="{{ url_for('response.static', filename='js/intro-tour.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
     
     {% block extra_css %}{% endblock %}
 

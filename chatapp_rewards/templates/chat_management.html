@@ -401,6 +401,38 @@
             .actions-cell {
                 gap: 4px;
             }
+
+            /* Mobile modal adjustments */
+            .mute-dialog-overlay {
+                padding: 10px;
+            }
+            
+            .mute-dialog {
+                padding: 16px;
+                max-height: 95vh;
+            }
+            
+            .mute-dialog h3 {
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+            
+            .custom-message-content {
+                max-height: 200px;
+                font-size: 14px;
+            }
+            
+            .mute-dialog-buttons {
+                margin-top: 12px;
+                gap: 6px;
+            }
+            
+            .mute-btn {
+                padding: 6px 12px;
+                font-size: 13px;
+                flex: 1;
+                min-width: 70px;
+            }
         }
 
         /* Table wrapper for better mobile scrolling */
@@ -426,15 +458,22 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
         }
 
         .mute-dialog {
             background: white;
             border-radius: 12px;
-            padding: 24px;
-            width: 90%;
+            padding: 20px;
+            width: 100%;
             max-width: 500px;
+            max-height: 90vh;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            margin: auto;
+            overflow-y: auto;
+            box-sizing: border-box;
         }
 
         .mute-dialog h3 {
@@ -442,6 +481,7 @@
             color: #1f2937;
             font-size: 18px;
             font-weight: 600;
+            word-wrap: break-word;
         }
 
         .mute-form-group {
@@ -457,22 +497,36 @@
 
         .mute-form-input, .mute-form-select, .mute-form-textarea {
             width: 100%;
-            padding: 10px 4px;
+            padding: 8px 12px;
             border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 14px;
+            box-sizing: border-box;
         }
 
         .mute-form-textarea {
             resize: vertical;
-            min-height: 80px;
+            min-height: 60px;
+            max-height: 120px;
         }
 
         .mute-dialog-buttons {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             justify-content: flex-end;
-            margin-top: 20px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Custom Alert/Confirm specific styling */
+        .custom-message-content {
+            max-height: 300px;
+            overflow-y: auto;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            padding: 8px 0;
         }
 
         .mute-btn {
@@ -573,6 +627,33 @@
         </div>
     </div>
 
+    <!-- Custom Alert Modal -->
+    <div id="customAlert" class="mute-dialog-overlay" style="display: none;">
+        <div class="mute-dialog" style="max-width: 400px;">
+            <h3 id="alertTitle">Notice</h3>
+            <div class="custom-message-content">
+                <div id="alertMessage"></div>
+            </div>
+            <div class="mute-dialog-buttons">
+                <button class="mute-btn mute-btn-primary" onclick="closeCustomAlert()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="customConfirm" class="mute-dialog-overlay" style="display: none;">
+        <div class="mute-dialog" style="max-width: 450px;">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <div class="custom-message-content">
+                <div id="confirmMessage"></div>
+            </div>
+            <div class="mute-dialog-buttons">
+                <button class="mute-btn mute-btn-secondary" onclick="closeCustomConfirm(false)">Cancel</button>
+                <button class="mute-btn mute-btn-primary" onclick="closeCustomConfirm(true)">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Mute User Dialog -->
     <div id="muteDialogOverlay" class="mute-dialog-overlay">
         <div class="mute-dialog">
@@ -617,6 +698,52 @@ let filteredData = [];
 let currentPage = 1;
 let pageSize = 10;
 let totalPages = 1;
+let confirmCallback = null;
+
+// Custom Alert Function
+function customAlert(message, title = 'Notice') {
+    document.getElementById('alertTitle').textContent = title;
+    document.getElementById('alertMessage').innerHTML = message.replace(/\n/g, '<br>');
+    document.getElementById('customAlert').style.display = 'flex';
+}
+
+function closeCustomAlert() {
+    document.getElementById('customAlert').style.display = 'none';
+}
+
+// Custom Confirm Function
+function customConfirm(message, title = 'Confirm Action') {
+    return new Promise((resolve) => {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').innerHTML = message.replace(/\n/g, '<br>');
+        document.getElementById('customConfirm').style.display = 'flex';
+        
+        confirmCallback = resolve;
+    });
+}
+
+function closeCustomConfirm(result) {
+    document.getElementById('customConfirm').style.display = 'none';
+    if (confirmCallback) {
+        confirmCallback(result);
+        confirmCallback = null;
+    }
+}
+
+// Close modals when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('customAlert').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCustomAlert();
+        }
+    });
+
+    document.getElementById('customConfirm').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCustomConfirm(false);
+        }
+    });
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     loadViolations();
@@ -846,25 +973,32 @@ async function viewDetails(violationId) {
         const response = await fetch(`/api/admin/violations/${violationId}`);
         if (response.ok) {
             const violation = await response.json();
-            alert(`Violation Details:\n\nUser: ${violation.user_name}\nType: ${violation.violation_type}\nContent: ${violation.content}\nDetection Details: ${violation.detection_details || 'N/A'}\nTimestamp: ${violation.timestamp}`);
+            const details = `Violation Details:\n\nUser: ${violation.user_name}\nType: ${violation.violation_type}\nContent: ${violation.content}\nDetection Details: ${violation.detection_details || 'N/A'}\nTimestamp: ${violation.timestamp}`;
+            customAlert(details, 'Violation Details');
         }
     } catch (error) {
         console.error('Error loading violation details:', error);
+        customAlert('Error loading violation details. Please try again.', 'Error');
     }
 }
 
 async function deleteViolation(violationId) {
-    if (!confirm('Are you sure you want to delete this violation record?')) return;
+    const confirmed = await customConfirm('Are you sure you want to delete this violation record?\n\nThis action cannot be undone.', 'Delete Violation');
+    if (!confirmed) return;
 
     try {
         const response = await fetch(`/api/admin/violations/${violationId}`, {
             method: 'DELETE'
         });
         if (response.ok) {
+            customAlert('Violation record deleted successfully.', 'Success');
             loadViolations(); // Reload data
+        } else {
+            customAlert('Failed to delete violation record. Please try again.', 'Error');
         }
     } catch (error) {
         console.error('Error deleting violation:', error);
+        customAlert('Error occurred while deleting violation. Please try again.', 'Error');
     }
 }
 
@@ -878,15 +1012,19 @@ async function updateStatus(violationId) {
             body: JSON.stringify({ status: 'handled' })
         });
         if (response.ok) {
+            customAlert('Violation status updated to "handled" successfully.', 'Success');
             loadViolations(); // Reload data
+        } else {
+            customAlert('Failed to update violation status. Please try again.', 'Error');
         }
     } catch (error) {
         console.error('Error updating violation status:', error);
+        customAlert('Error occurred while updating status. Please try again.', 'Error');
     }
 }
 
 function warnUser(username) {
-    alert(`Warning functionality for user "${username}" would be implemented here.`);
+    customAlert(`Warning functionality for user "${username}" would be implemented here.`, 'Warning Feature');
 }
 
 function showMuteDialog(username, roomId, userId) {
@@ -935,20 +1073,21 @@ async function confirmMute() {
         const result = await response.json();
 
         if (response.ok) {
-            alert(`✅ ${result.message}`);
+            customAlert(`✅ ${result.message}`, 'Mute Successful');
             closeMuteDialog();
             loadViolations(); // Refresh the data
         } else {
-            alert(`❌ Error: ${result.error}`);
+            customAlert(`❌ Error: ${result.error}`, 'Mute Failed');
         }
     } catch (error) {
         console.error('Error muting user:', error);
-        alert('❌ Failed to mute user. Please try again.');
+        customAlert('❌ Failed to mute user. Please try again.', 'Error');
     }
 }
 
 async function unmuteUser(username, roomId) {
-    if (!confirm(`Are you sure you want to unmute ${username} in room ${roomId}?`)) return;
+    const confirmed = await customConfirm(`Are you sure you want to unmute ${username} in room ${roomId}?`, 'Unmute User');
+    if (!confirmed) return;
 
     try {
         const response = await fetch('/api/admin/unmute-user', {
@@ -965,14 +1104,14 @@ async function unmuteUser(username, roomId) {
         const result = await response.json();
 
         if (response.ok) {
-            alert(`✅ ${result.message}`);
+            customAlert(`✅ ${result.message}`, 'Unmute Successful');
             loadViolations(); // Refresh the data
         } else {
-            alert(`❌ Error: ${result.error}`);
+            customAlert(`❌ Error: ${result.error}`, 'Unmute Failed');
         }
     } catch (error) {
         console.error('Error unmuting user:', error);
-        alert('❌ Failed to unmute user. Please try again.');
+        customAlert('❌ Failed to unmute user. Please try again.', 'Error');
     }
 }
 

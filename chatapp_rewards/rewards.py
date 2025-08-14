@@ -641,6 +641,108 @@ def update_order_status():
         log_security_event("ORDER_STATUS_UPDATE_ERROR", f"Status update error: {str(e)}", "ERROR")
         return jsonify({'error': 'Failed to update order status'}), 500
 
+@rewards_bp.route('/rewards/refund', methods=['POST'])
+@require_login
+@RateLimiter.rate_limit(limit_per_minute=10)
+@CSRFProtection.require_csrf_token
+def refund_reward():
+    """Handle reward refund - restore points, add stock back, delete order"""
+    try:
+        data = request.get_json()
+        if not data:
+            raise SecViolation("Invalid JSON data", "INVALID_INPUT")
+        
+        order_id = data.get('order_id')
+        if not order_id:
+            raise SecViolation("Missing order_id", "INVALID_INPUT")
+        
+        order_id = InputValidator.validate_string(
+            order_id, max_length=50, min_length=10, field_name="order_id"
+        )
+        
+        # Get current user
+        user_id, username, current_user = get_current_user_with_id()
+        
+        # Get the reward order
+        reward_order = RewardOrder.query.filter_by(
+            order_id=order_id, 
+            user_id=user_id
+        ).first()
+        
+        if not reward_order:
+            return jsonify({'error': 'Order not found or access denied'}), 404
+        
+        # Check if order can be refunded (only if status is 'pending')
+        if reward_order.status != 'pending':
+            status_messages = {
+                'confirmed': 'Cannot refund confirmed orders',
+                'collected': 'Cannot refund collected orders', 
+                'completed': 'Cannot refund completed orders',
+                'cancelled': 'Cannot refund cancelled orders'
+            }
+            error_message = status_messages.get(reward_order.status, f'Cannot refund orders with status: {reward_order.status}')
+            return jsonify({'error': error_message}), 400
+        
+        # Get the reward item
+        reward_item = reward_order.reward_item
+        if not reward_item:
+            return jsonify({'error': 'Reward item not found'}), 404
+        
+        # Get or create user points
+        user_points = get_or_create_user_points(user_id, username)
+        
+        # Log refund attempt
+        log_security_event(
+            "REWARD_REFUND_ATTEMPT",
+            f"User {username} attempting to refund order {order_id} for {reward_item.name}",
+            "INFO"
+        )
+        
+        # Restore points to user
+        user_points.points += reward_order.points_spent
+        user_points.updated_at = datetime.utcnow()
+        
+        # Add stock back to item
+        reward_item.stock += 1
+        reward_item.updated_at = datetime.utcnow()
+        
+        # Delete the reward order
+        db.session.delete(reward_order)
+        
+        # Also delete the corresponding redemption record if it exists
+        redemption = RewardRedemption.query.filter_by(
+            username=username,
+            reward_item_id=reward_item.id,
+            points_spent=reward_order.points_spent
+        ).order_by(RewardRedemption.redeemed_at.desc()).first()
+        
+        if redemption:
+            db.session.delete(redemption)
+        
+        db.session.commit()
+        
+        log_security_event(
+            "REWARD_REFUNDED",
+            f"User {username} successfully refunded {reward_item.name}, restored {reward_order.points_spent} points",
+            "INFO"
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully refunded {reward_item.name}! {reward_order.points_spent} points restored.',
+            'points_restored': reward_order.points_spent,
+            'new_points_balance': user_points.points,
+            'reward_name': reward_item.name
+        })
+        
+    except SecViolation as e:
+        log_security_event("REWARD_REFUND_VIOLATION", f"Security violation: {e.message}", "WARNING")
+        return jsonify({'error': 'Invalid request data'}), 400
+    except Exception as e:
+        db.session.rollback()
+        log_security_event("REWARD_REFUND_ERROR", f"Refund error: {str(e)}", "ERROR")
+        return jsonify({'error': 'Failed to process refund'}), 500
+
 @rewards_bp.route('/rewards/admin/order_details/<order_id>')
 @require_admin
 def admin_order_details(order_id):

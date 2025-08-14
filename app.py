@@ -343,6 +343,66 @@ def handle_my_custom_event(json):
     """Handle chat messages"""
     handle_chat_message(socketio, json)
 
+# AI Chatbot API endpoint
+@app.route('/api/chatbot', methods=['POST'])
+def chatbot_api():
+    """Handle chatbot requests with streaming"""
+    try:
+        from flask import request, Response, stream_template
+        import requests
+        import json
+        
+        data = request.get_json()
+        user_message = data.get('message', '').strip()
+        
+        if not user_message:
+            return {'error': 'No message provided'}, 400
+        
+        # Get Ollama URL from environment
+        ollama_host = os.environ.get('OLLAMA_HOST', 'localhost')
+        ollama_port = os.environ.get('OLLAMA_PORT', '11434')
+        ollama_url = f"http://{ollama_host}:{ollama_port}/api/generate"
+        
+        def generate():
+            try:
+                payload = {
+                    "model": "culturequest-faq",
+                    "prompt": user_message,
+                    "stream": True,
+                    "keep_alive": "30m"
+                }
+                
+                response = requests.post(ollama_url, json=payload, stream=True, timeout=30)
+                
+                if response.status_code == 200:
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                chunk_data = json.loads(line.decode('utf-8'))
+                                if 'response' in chunk_data:
+                                    yield f"data: {json.dumps({'response': chunk_data['response']})}\n\n"
+                                if chunk_data.get('done', False):
+                                    yield f"data: {json.dumps({'done': True})}\n\n"
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+                else:
+                    yield f"data: {json.dumps({'error': 'Chatbot service unavailable'})}\n\n"
+                    
+            except requests.exceptions.RequestException as e:
+                print(f"Ollama connection error: {e}")
+                yield f"data: {json.dumps({'response': 'I apologize, but I am temporarily unavailable. Please try again later.'})}\n\n"
+                yield f"data: {json.dumps({'done': True})}\n\n"
+            except Exception as e:
+                print(f"Chatbot API error: {e}")
+                yield f"data: {json.dumps({'error': 'Internal server error'})}\n\n"
+        
+        return Response(generate(), mimetype='text/plain')
+            
+    except Exception as e:
+        print(f"Chatbot API error: {e}")
+        return {'error': 'Internal server error'}, 500
+
 if __name__ == '__main__':
     # Initialize login database with timeout handling
     print("Initializing database...")
