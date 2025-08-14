@@ -97,7 +97,7 @@ class SecurityViolation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(36), nullable=True)  # Links to login system user ID (UUID)
     user_name = db.Column(db.String(50), nullable=False)
-    violation_type = db.Column(db.String(20), nullable=False)  # 'url' or 'file'
+    violation_type = db.Column(db.String(20), nullable=False)  # 'url', 'file', or 'vulgarity'
     content = db.Column(db.Text, nullable=False)  # URL or filename
     message_content = db.Column(db.Text, nullable=True)  # Original message content
     detection_details = db.Column(db.Text, nullable=True)  # JSON string of scan results

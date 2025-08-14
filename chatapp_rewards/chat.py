@@ -44,6 +44,36 @@ def get_file_hash(file_path):
             hasher.update(chunk)
     return hasher.hexdigest()
 
+# Vulgarity word list (expandable)
+VULGARITY_PATTERNS = [
+    r'\b(?:fuck|shit|damn|hell|bitch|ass|crap)\b',
+    r'\b(?:stupid|idiot|moron|dumb)\b',
+    r'\b(?:hate|kill|die|death)\b',
+    r'\b(?:sex|porn|nude|naked)\b'
+]
+
+def scan_for_vulgarity(text):
+    """
+    Efficiently scan text for vulgarities using pre-compiled regex patterns
+    Returns: (has_vulgarity, matched_words, severity_score)
+    """
+    if not text:
+        return False, [], 0
+    
+    text_lower = text.lower()
+    matched_words = []
+    severity_score = 0
+    
+    # Use pre-compiled patterns for efficiency
+    for pattern in VULGARITY_PATTERNS:
+        matches = re.findall(pattern, text_lower, re.IGNORECASE)
+        if matches:
+            matched_words.extend(matches)
+            severity_score += len(matches)
+    
+    has_vulgarity = len(matched_words) > 0
+    return has_vulgarity, matched_words, severity_score
+
 def extract_urls(text):
     """Extract URLs from text using regex"""
     url_pattern = re.compile(
@@ -856,6 +886,37 @@ def handle_chat_message(socketio, json):
                     )
                     violations_to_add.append(violation)
 
+        # Check for vulgarity in the message
+        has_vulgarity, matched_words, severity_score = scan_for_vulgarity(message)
+        if has_vulgarity:
+            print(f"Vulgarity detected: {matched_words} (severity: {severity_score})")
+            
+            # Create violation record
+            violation = SecurityViolation(
+                user_id=str(user_id),
+                user_name=str(user_name),
+                violation_type='vulgarity',
+                content=str(message),  # Store full message text
+                message_content=str(message),
+                detection_details=json_module.dumps({
+                    'matched_words': matched_words,
+                    'severity_score': severity_score,
+                    'detection_method': 'regex_patterns'
+                }),
+                room_id=room_id
+            )
+            db.session.add(violation)
+            db.session.commit()
+            
+            # Block the message - no user feedback, just silent blocking
+            
+            log_security_event(
+                "VULGARITY_MESSAGE_BLOCKED",
+                f"Message blocked for user {user_name} in room {room_id}: {matched_words}",
+                "WARNING"
+            )
+            return
+
         # Prepare the final message with URL scan results
         final_message = message
         if url_scan_results:
@@ -893,6 +954,7 @@ def handle_chat_message(socketio, json):
             "ERROR"
         )
         emit('error', {'message': 'Message processing failed'})
+
 
 @chat_bp.route('/api/chat/<room_id>/delete', methods=['DELETE'])
 @require_login

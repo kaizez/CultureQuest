@@ -179,6 +179,7 @@ $(document).ready(function () {
             removeURLScanningIndicator();
             appendMessage(msg);
             scrollToBottom();
+            
         }
     });
 
@@ -190,6 +191,8 @@ $(document).ready(function () {
             checkMuteStatus();
         }
     });
+
+
 
     // Function to show URL scanning indicator
     function showURLScanningIndicator(urls) {
@@ -213,6 +216,7 @@ $(document).ready(function () {
             $(this).remove();
         });
     }
+
 
     // Function to send file message to the correct room
     function sendFileMessage(message) {
