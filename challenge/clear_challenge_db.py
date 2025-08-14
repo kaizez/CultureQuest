@@ -154,6 +154,12 @@ def clear_challenge_tables():
             print("✅ Verification: No challenge records remaining")
         else:
             print(f"⚠️  Warning: {remaining_count} records still remain")
+        
+        # Important: Sync chat sessions after clearing to ensure any new challenges have chat rooms
+        if CHAT_INTEGRATION_AVAILABLE:
+            print("🔄 Syncing challenge-chat sessions...")
+            from db_handler import sync_challenge_chat_sessions
+            sync_challenge_chat_sessions()
             
         return True
         
