@@ -6,11 +6,11 @@ from sqlalchemy import text
 
 def scan_file_in_background(app, response_id):
     with app.app_context():
-        query = text(f"SELECT * FROM challenge_submissions where id = '{response_id}'")
+        query = text(f"SELECT * FROM challenge_response where id = '{response_id}'")
         result = db_session.execute(query)
         response = result.fetchone()
         # response = db_session.get(ChallengeResponse, response_id)
-        print(response)
+        print(response, response_id)
         if not response or not response.file_content:
             print(f"Error: Could not find response or file content for {response_id}.")
             return

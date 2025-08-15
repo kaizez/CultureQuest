@@ -4,13 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentTabBtn = document.getElementById('current-tab');
     const doneTabBtn = document.getElementById('done-tab');
 
-    const newChallengesContainer = document.getElementById('new-challenges');
-    const currentChallengesContainer = document.getElementById('current-challenges');
-    const doneChallengesContainer = document.getElementById('done-challenges');
+    const newChallengesContainer = document.getElementById('new-challenges-tab');
+    const currentChallengesContainer = document.getElementById('current-challenges-tab');
+    const doneChallengesContainer = document.getElementById('done-challenges-tab');
 
     const searchBar = document.getElementById('search-bar');
-    const categoryFilter = document.getElementById('category-filter');
-    const difficultySort = document.getElementById('difficulty-sort');
     const sortBy = document.getElementById('sort-by');
     const emptyState = document.getElementById('empty-state');
     const resetButton = document.getElementById('reset-filters-btn');
@@ -30,16 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (doneTabBtn) doneTabBtn.addEventListener('shown.bs.tab', applyFiltersAndSort);
 
     if (searchBar) searchBar.addEventListener('input', applyFiltersAndSort);
-    if (categoryFilter) categoryFilter.addEventListener('change', applyFiltersAndSort);
-    if (difficultySort) difficultySort.addEventListener('change', applyFiltersAndSort);
-    if (sortBy) sortBy.addEventListener('change', applyFiltersAndSort);
     
     if (resetButton) {
         resetButton.addEventListener('click', () => {
             if(searchBar) searchBar.value = '';
-            if(categoryFilter) categoryFilter.value = 'All';
-            if(difficultySort) difficultySort.value = 'All';
-            if(sortBy) sortBy.value = 'Newest';
             applyFiltersAndSort();
         });
     }
@@ -48,10 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateChallengeLists();
 
         const searchQuery = searchBar ? searchBar.value.toLowerCase() : '';
-        const selectedCategory = categoryFilter ? categoryFilter.value : 'All';
-        const selectedDifficulty = difficultySort ? difficultySort.value : 'All';
-        const selectedSort = sortBy ? sortBy.value : 'Newest';
-
+        
         let challengesToFilter = [];
         let activeContainerElement = null;
 
@@ -75,14 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!card) return false;
 
             const title = card.dataset.title ? card.dataset.title.toLowerCase() : '';
-            const difficulty = card.dataset.difficulty;
-            const category = card.dataset.category;
-
+            
             const matchesSearch = title.includes(searchQuery);
-            const matchesCategory = selectedCategory === 'All' || category === selectedCategory;
-            const matchesDifficulty = selectedDifficulty === 'All' || difficulty === selectedDifficulty;
-
-            return matchesSearch && matchesCategory && matchesDifficulty;
+            
+            return matchesSearch;
         });
 
         

@@ -23,6 +23,12 @@
                     <a href="{{ url_for('admin_screening.admin_page') }}" class="nav-link">Admin Screening</a>
                 </li>
                 {% endif %}
+                <li class="nav-item">
+                    <a href="{{ url_for('moderate.admin_uploaded_content_list') }}" class="nav-link">Admin Response</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('moderate.admin_moderate_comments') }}" class="nav-link">Admin Comments</a>
+                </li>
             </ul>
         </div>
         
