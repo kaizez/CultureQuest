@@ -211,7 +211,7 @@ def send_security_alert_email(identifier, ip_address, attempt_count):
         
         # Create message
         msg = MIMEMultipart()
-        msg['From'] = sender_email
+        msg['From'] = f"CultureQuest <{sender_email}>"
         msg['To'] = user_email
         msg['Subject'] = "🚨 SECURITY ALERT: Suspicious Login Activity on Your CultureQuest Account"
         
