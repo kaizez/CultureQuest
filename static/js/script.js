@@ -8,6 +8,7 @@ $(document).ready(function () {
     const chatContainer = $('#chat-container');
     const roomId = chatContainer.data('room-id');
     const userName = chatContainer.data('username');
+    const userProfilePicture = chatContainer.data('user-profile-picture');
 
     if (!roomId) {
         alert('Error: Chat room ID not found. Returning to room selection.');
@@ -337,11 +338,23 @@ $(document).ready(function () {
     // Function to append a message to the messages list
     function appendMessage(msg) {
         const className = msg.user_name === userName ? 'user' : 'other';
-        let avatarContent = className === 'user' ? '👤' : '🤖';
+        let avatarContent;
         
         // Special handling for system messages
         if (msg.user_name === 'System') {
-            avatarContent = '⚙️';
+            avatarContent = '<span class="system-avatar">⚙️</span>';
+        } else {
+            // Use profile picture for regular messages
+            let profilePictureUrl;
+            if (className === 'user') {
+                // Current user - use the profile picture from data attribute
+                profilePictureUrl = userProfilePicture || '/static/default_profile.png';
+            } else {
+                // Other user - use profile picture from message data
+                profilePictureUrl = msg.profile_picture_url || '/static/default_profile.png';
+            }
+            
+            avatarContent = `<img src="${profilePictureUrl}" class="profile-avatar" onerror="this.src='/static/default_profile.png'" alt="${msg.user_name}">`;
         }
         
         const messageTime = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
@@ -359,7 +372,7 @@ $(document).ready(function () {
             });
         }
         
-        const avatarDiv = $('<div>').addClass('message-avatar').append($('<span>').addClass('avatar-icon').text(avatarContent));
+        const avatarDiv = $('<div>').addClass('message-avatar').html(avatarContent);
         const contentDiv = $('<div>').addClass('message-content');
         const bubbleDiv = $('<div>').addClass('bubble-text');
         

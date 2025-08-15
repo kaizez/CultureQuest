@@ -422,6 +422,7 @@ def chat_session(room_id):
     # Get current user from session
     current_user = get_current_user()
     username = current_user['username']
+    user_profile_picture = current_user['profile_picture_url']
     
     # Track the user's visit to this room
     session['last_visited_room'] = room_id
@@ -434,7 +435,8 @@ def chat_session(room_id):
                          username=escape(username), 
                          room=room,
                          room_id=room_id,
-                         notification=notification)
+                         notification=notification,
+                         user_profile_picture=user_profile_picture)
 
 @chat_bp.route('/api/rooms', methods=['GET'])
 @require_login

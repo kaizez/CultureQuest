@@ -4,6 +4,53 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shared_db import db
 
+def get_user_profile_picture_url(user_id):
+    """Get profile picture URL for a user by their user_id"""
+    if not user_id:
+        return '/static/default_profile.png'
+    
+    try:
+        # Import here to avoid circular imports
+        import pymysql
+        from flask import current_app
+        
+        # Get database connection info from app config
+        db_config = current_app.config
+        
+        connection = pymysql.connect(
+            host=db_config.get('MYSQL_HOST', 'localhost'),
+            user=db_config.get('MYSQL_USER', 'root'),
+            password=db_config.get('MYSQL_PASSWORD', ''),
+            database=db_config.get('MYSQL_DATABASE', 'culturequest'),
+            charset='utf8mb4'
+        )
+        
+        with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+            # Query the users table from the login system
+            cursor.execute("SELECT profile_picture, profile_picture_data FROM users WHERE id = %s", (user_id,))
+            result = cursor.fetchone()
+            
+            if result:
+                profile_picture = result['profile_picture']
+                profile_picture_data = result['profile_picture_data']
+                
+                # If user has database-stored profile picture
+                if profile_picture_data or (profile_picture and profile_picture.startswith('db_image_')):
+                    return f'/profile-picture/{user_id}'
+                elif profile_picture:
+                    return f'/static/{profile_picture}'
+                else:
+                    return '/static/default_profile.png'
+            else:
+                return '/static/default_profile.png'
+                
+    except Exception as e:
+        print(f"Error getting profile picture for user {user_id}: {e}")
+        return '/static/default_profile.png'
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
 # MySQL table options
 mysql_table_args = {
     'mysql_engine': 'InnoDB',
@@ -88,7 +135,8 @@ class Message(db.Model):
             'file_info': file_info,
             'file_url': f'/file/{self.file_id}' if self.file_id else None,
             'file_name': file_info['filename'] if file_info else None,
-            'room_id': self.room_id
+            'room_id': self.room_id,
+            'profile_picture_url': get_user_profile_picture_url(self.user_id)
         }
 
 class SecurityViolation(db.Model):

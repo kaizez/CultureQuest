@@ -70,11 +70,28 @@ def get_current_user():
     if 'username' not in session:
         return None
     
+    # Get profile picture URL
+    user_id = session.get('user_id')
+    profile_picture_url = None
+    
+    if user_id:
+        # Check if user has a database-stored profile picture
+        profile_picture = session.get('profile_picture')
+        if profile_picture and profile_picture.startswith('db_image_'):
+            profile_picture_url = f'/profile-picture/{user_id}'
+        elif profile_picture:
+            profile_picture_url = f'/static/{profile_picture}'
+        else:
+            profile_picture_url = '/static/default_profile.png'
+    else:
+        profile_picture_url = '/static/default_profile.png'
+    
     return {
         'username': session['username'],
         'user_id': session.get('user_id'),
         'email': session.get('email'),
-        'is_admin': session.get('is_admin', False)
+        'is_admin': session.get('is_admin', False),
+        'profile_picture_url': profile_picture_url
     }
 
 def get_user_id():
