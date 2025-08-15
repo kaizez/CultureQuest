@@ -190,7 +190,6 @@ def send_security_alert_email(identifier, ip_address, attempt_count):
         
         print(f"🔍 Attempting to send security alert email...")
         print(f"📧 Sender email: {sender_email}")
-        print(f"📧 Admin email: {ADMIN_EMAIL}")
         print(f"📧 Gmail password configured: {'Yes' if sender_password else 'No'}")
         
         if not sender_password:
@@ -198,39 +197,56 @@ def send_security_alert_email(identifier, ip_address, attempt_count):
             print("💡 Please set GMAIL_APP_PASSWORD in your .env file")
             return False
         
+        # Get affected user's email from database
+        user = find_user_by_username(identifier)
+        if not user:
+            user = find_user_by_email(identifier)
+        
+        if not user or not user.get('email'):
+            print(f"❌ Could not find user email for identifier: {identifier}")
+            return False
+        
+        user_email = user['email']
+        print(f"📧 Sending security alert to user email: {user_email}")
+        
         # Create message
         msg = MIMEMultipart()
         msg['From'] = sender_email
-        msg['To'] = ADMIN_EMAIL
-        msg['Subject'] = "🚨 SECURITY ALERT: Multiple Failed Login Attempts - CultureQuest"
+        msg['To'] = user_email
+        msg['Subject'] = "🚨 SECURITY ALERT: Suspicious Login Activity on Your CultureQuest Account"
         
-        # Email body
+        # Email body for user notification
         body = f"""
         <html>
         <body>
-        <h2 style="color: #d32f2f;">🚨 SECURITY BREACH ALERT</h2>
-        <p><strong>IMMEDIATE ACTION REQUIRED</strong></p>
+        <h2 style="color: #d32f2f;">🚨 SECURITY ALERT: Suspicious Login Activity</h2>
+        <p><strong>Dear CultureQuest User,</strong></p>
+        
+        <p>We detected multiple failed login attempts on your CultureQuest account and have temporarily locked it for your protection.</p>
         
         <h3>Security Incident Details:</h3>
         <ul>
-            <li><strong>Account/Email:</strong> {identifier}</li>
-            <li><strong>Failed Attempts:</strong> {attempt_count}</li>
-            <li><strong>IP Address:</strong> {ip_address}</li>
+            <li><strong>Your Account:</strong> {identifier}</li>
+            <li><strong>Failed Login Attempts:</strong> {attempt_count}</li>
+            <li><strong>Suspicious IP Address:</strong> {ip_address}</li>
             <li><strong>Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</li>
             <li><strong>Status:</strong> Account temporarily locked for 15 minutes</li>
         </ul>
         
-        <h3>⚠️ Recommended Actions:</h3>
+        <h3>🔐 What You Should Do:</h3>
         <ol>
-            <li>Monitor for additional suspicious activity</li>
-            <li>Check if this is a legitimate user who forgot their password</li>
-            <li>Consider implementing additional security measures if attacks persist</li>
-            <li>Review server logs for this IP address: {ip_address}</li>
+            <li><strong>If this was you:</strong> Wait 15 minutes and try logging in again. Consider using the "Forgot Password" feature if you're having trouble remembering your password.</li>
+            <li><strong>If this wasn't you:</strong> Someone may be trying to access your account. Please change your password immediately after the lockout expires.</li>
+            <li><strong>For added security:</strong> Consider enabling two-factor authentication if available.</li>
+            <li><strong>Contact support:</strong> If you continue to experience issues or suspect unauthorized access.</li>
         </ol>
         
-        <p style="color: #666;">
-        This is an automated security alert from CultureQuest.<br>
-        If you believe this is a false alarm, please investigate immediately.
+        <p><strong>Important:</strong> Your account will automatically unlock in 15 minutes. You do not need to take any immediate action unless you suspect unauthorized access.</p>
+        
+        <p style="color: #666; margin-top: 30px;">
+        This is an automated security notification from CultureQuest.<br>
+        If you did not attempt to log in, please change your password immediately.<br>
+        Do not reply to this email.
         </p>
         </body>
         </html>
@@ -244,7 +260,7 @@ def send_security_alert_email(identifier, ip_address, attempt_count):
             server.starttls()
             print(f"🔐 Logging in as {sender_email}...")
             server.login(sender_email, sender_password)
-            print(f"📨 Sending email to {ADMIN_EMAIL}...")
+            print(f"📨 Sending email to {user_email}...")
             server.send_message(msg)
         
         print(f"✅ Security alert email sent successfully for {identifier}")
