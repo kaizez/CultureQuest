@@ -99,6 +99,10 @@ load_env()
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production-' + str(uuid.uuid4()))
 
+# Handle reverse proxy headers for HTTPS
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 # Configure multiple template directories
 template_loaders = [
     FileSystemLoader(os.path.join(current_dir, 'templates')),  # Root templates for error pages
@@ -117,6 +121,27 @@ app.config['OAUTHLIB_RELAX_TOKEN_SCOPE'] = True
 
 # Force HTTPS for OAuth redirects
 app.config['PREFERRED_URL_SCHEME'] = 'https'
+
+# Middleware to force HTTPS URLs for OAuth
+@app.before_request
+def force_https_for_oauth():
+    """Force HTTPS scheme for OAuth URLs"""
+    from flask import request, redirect
+    if request.endpoint and 'google' in request.endpoint:
+        if not request.is_secure and not app.debug:
+            return redirect(request.url.replace('http://', 'https://'))
+
+# Override url_for to always use HTTPS for OAuth routes
+from flask import url_for as flask_url_for
+def secure_url_for(endpoint, **values):
+    """Custom url_for that forces HTTPS for OAuth endpoints"""
+    if 'google' in endpoint or endpoint.startswith('google'):
+        return flask_url_for(endpoint, _external=True, _scheme='https', **values)
+    return flask_url_for(endpoint, **values)
+
+# Replace url_for globally
+import builtins
+builtins.url_for = secure_url_for
 # Remove SERVER_NAME to allow dynamic host binding
 
 # RECAPTCHA Config
@@ -396,7 +421,7 @@ def chatbot_api():
                 print(f"Chatbot API error: {e}")
                 yield f"data: {json.dumps({'error': 'Internal server error'})}\n\n"
         
-        return Response(generate(), mimetype='text/plain')
+        return Response(generate(), mimetype='text/event-stream', headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
             
     except Exception as e:
         print(f"Chatbot API error: {e}")
@@ -415,26 +440,31 @@ if __name__ == '__main__':
     # Use mkcert certificates for HTTPS
     cert_file = 'login/localhost+1.pem'
     key_file = 'login/localhost+1-key.pem'
+    flask_env = os.environ.get('FLASK_ENV', 'production')
     
-    # Check if certificate files exist
-    if os.path.exists(cert_file) and os.path.exists(key_file):
-        print("* Starting application in HTTPS mode...")
+    # Check if certificate files exist AND we're in development mode
+    if os.path.exists(cert_file) and os.path.exists(key_file) and flask_env == 'development':
+        print("* Starting application in HTTPS mode (development)...")
         print("* Application starting at: https://0.0.0.0:5000")
         
         try:
             socketio.run(app, host='0.0.0.0', port=5000, debug=True, 
-                        ssl_context=(cert_file, key_file))
+                        ssl_context=(cert_file, key_file), allow_unsafe_werkzeug=True)
         except Exception as e:
             print(f"X Failed to start HTTPS server: {e}")
             print("* Falling back to HTTP mode...")
-            socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+            socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
     else:
-        print("* Certificate files not found, starting in HTTP mode...")
-        print(f"* Looking for: {cert_file} and {key_file}")
+        # Production mode or no certificates - always use HTTP
+        if flask_env == 'production':
+            print("* Production mode: Starting in HTTP mode for Cloudflare tunnel...")
+        else:
+            print("* Certificate files not found, starting in HTTP mode...")
+            print(f"* Looking for: {cert_file} and {key_file}")
         print("* Application starting at: http://0.0.0.0:5000")
         
         try:
-            socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+            socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
         except Exception as e:
             print(f"X Failed to start server: {e}")
             import traceback

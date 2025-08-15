@@ -10,6 +10,7 @@ except ImportError:
     UTC = timezone.utc
 from dotenv import load_dotenv
 from flask_dance.contrib.google import make_google_blueprint, google
+from flask_dance.consumer import oauth_authorized
 import os
 import pymysql
 from functools import wraps
@@ -60,6 +61,15 @@ DB_CONFIG = {
 # Google OAuth setup (will be registered in main app only if configured)
 google_bp = None
 if os.getenv('GOOGLE_CLIENT_ID') and os.getenv('GOOGLE_CLIENT_SECRET'):
+    # Determine redirect URL based on environment
+    redirect_url = None
+    if os.getenv('FLASK_ENV') == 'development':
+        # Local development - use localhost with HTTP for simplicity
+        redirect_url = "http://localhost:5000/auth/google/callback"
+    else:
+        # Production - use domain name
+        redirect_url = "https://culturequest.nypdsf.me/auth/google/callback"
+    
     google_bp = make_google_blueprint(
         client_id=os.getenv('GOOGLE_CLIENT_ID'),
         client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
@@ -68,8 +78,85 @@ if os.getenv('GOOGLE_CLIENT_ID') and os.getenv('GOOGLE_CLIENT_SECRET'):
             "https://www.googleapis.com/auth/userinfo.email", 
             "https://www.googleapis.com/auth/userinfo.profile"
         ],
-        redirect_to='login.google_callback'
+        redirect_url=redirect_url
     )
+    
+    @oauth_authorized.connect_via(google_bp)
+    def google_logged_in(blueprint, token):
+        """Handle Google OAuth success"""
+        print(f"DEBUG OAuth: Token received: {token is not None}")
+        if not token:
+            print("DEBUG OAuth: No token received")
+            return False
+        
+        # Get user info from Google
+        user_info = blueprint.session.get('/oauth2/v2/userinfo')
+        print(f"DEBUG OAuth: User info response: {user_info.ok if user_info else 'No response'}")
+        if not user_info.ok:
+            print(f"DEBUG OAuth: User info error: {user_info.text if user_info else 'No response'}")
+            return False
+            
+        google_data = user_info.json()
+        print(f"DEBUG OAuth: User data: {google_data}")
+        result = handle_google_oauth_success(google_data)
+        print(f"DEBUG OAuth: Handler result: {result}")
+        
+        # Handle redirects based on the result
+        from flask import redirect, url_for
+        if session.get('username'):
+            print("DEBUG OAuth: Redirecting to landing page")
+            return redirect(url_for('login.landing_page'))
+        elif session.get('completing_google_signup') or session.get('google_signup'):
+            print("DEBUG OAuth: Redirecting to signup")
+            return redirect(url_for('login.signup2_page'))
+        else:
+            print("DEBUG OAuth: Redirecting to login")
+            return redirect(url_for('login.login_page'))
+
+def handle_google_oauth_success(user_data):
+    """Handle successful Google OAuth authentication"""
+    email = user_data.get('email')
+    name = user_data.get('name')
+    profile_picture = user_data.get('picture')
+
+    if not email or not name:
+        return False
+
+    # Check if user exists
+    existing_user = find_user_by_email(email)
+
+    if existing_user and existing_user.get('username') and existing_user.get('password'):
+        # User exists and has completed signup - log them in
+        
+        # Update last login time
+        update_user_login_time(existing_user['username'])
+        
+        # Set session data for existing user
+        session['username'] = existing_user['username']
+        session['email'] = existing_user['email']
+        # Use default picture if no custom profile picture is set
+        session['profile_picture'] = existing_user.get('profile_picture') or 'default_profile.png'
+        session['is_admin'] = existing_user.get('username') == ADMIN_USERNAME
+        session['user_id'] = existing_user.get('id')
+        session.permanent = True
+
+        return False  # Don't redirect automatically
+    
+    elif existing_user:
+        # User exists but hasn't completed signup - redirect to complete signup
+        session['google_email'] = email
+        session['google_name'] = name
+        session['google_picture'] = profile_picture
+        session['completing_google_signup'] = True
+        return False
+    
+    else:
+        # New user - start signup process with Google data
+        session['google_email'] = email
+        session['google_name'] = name  
+        session['google_picture'] = profile_picture
+        session['google_signup'] = True
+        return False
 
 # Security Functions
 def check_account_lockout(identifier):
@@ -1765,54 +1852,23 @@ def logout():
 
 @login_bp.route('/auth/google/callback')
 def google_callback():
-    """Handle Google OAuth callback"""
+    """Handle Google OAuth callback - redirects after OAuth success"""
+    print(f"DEBUG Callback: Google authorized: {google.authorized if google else 'No google object'}")
+    print(f"DEBUG Callback: Session keys: {list(session.keys())}")
+    
     if not google.authorized:
+        print("DEBUG Callback: Not authorized, redirecting to login")
         return redirect(url_for('login.login_page'))
     
-    try:
-        # Get user data from Google
-        user_info = google.get('/oauth2/v2/userinfo')
-        
-        if not user_info.ok:
-            return redirect(url_for('login.login_page'))
-
-        user_data = user_info.json()
-        
-        email = user_data.get('email')
-        name = user_data.get('name')
-        profile_picture = user_data.get('picture')
-
-        if not email or not name:
-            return redirect(url_for('login.login_page'))
-
-        # Check if user exists
-        existing_user = find_user_by_email(email)
-
-        if existing_user and existing_user.get('username') and existing_user.get('password'):
-            # User exists and has completed signup - log them in
-            
-            # Update last login time
-            update_user_login_time(existing_user['username'])
-            
-            # Set session data for existing user
-            session['username'] = existing_user['username']
-            session['email'] = existing_user['email']
-            # Use default picture if no custom profile picture is set
-            session['profile_picture'] = existing_user.get('profile_picture') or 'default_profile.png'
-            session['user_id'] = existing_user['id']
-            session['is_admin'] = False
-            
-            return redirect(url_for('login.landing_page'))
-        else:
-            # New user or Google user without username/password - redirect to signup2
-            # Store Google info in session for signup2
-            session['google_email'] = email
-            session['google_name'] = name
-            session['google_profile_picture'] = profile_picture
-            
-            return redirect(url_for('login.signup2_page'))
-
-    except Exception as e:
+    # Check session for Google OAuth results
+    if session.get('username'):
+        print(f"DEBUG Callback: User logged in: {session.get('username')}")
+        return redirect(url_for('login.landing_page'))
+    elif session.get('completing_google_signup') or session.get('google_signup'):
+        print("DEBUG Callback: Need to complete signup")
+        return redirect(url_for('login.signup2_page'))
+    else:
+        print("DEBUG Callback: OAuth failed, redirecting to login")
         return redirect(url_for('login.login_page'))
 
 # Password Reset Routes
