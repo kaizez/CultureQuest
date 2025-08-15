@@ -3,11 +3,12 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session, DeclarativeBase
 import json
 
-DATABASE_URL = os.environ.get('SQLALCHEMY_DATABASE_URI')
-if not DATABASE_URL:
-    raise ValueError("No DATABASE_URL set for SQLAlchemy in .env file")
-
-
+db_host = os.environ.get('DB_HOST')
+db_port = os.environ.get('DB_PORT')
+db_user = os.environ.get('DB_USER')
+db_password = os.environ.get('DB_PASSWORD')
+db_name = os.environ.get('DB_NAME')
+DATABASE_URL = f'mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 engine = create_engine(DATABASE_URL)
 
 
