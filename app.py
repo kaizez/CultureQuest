@@ -359,9 +359,8 @@ def chatbot_api():
             return {'error': 'No message provided'}, 400
         
         # Get Ollama URL from environment
-        ollama_host = os.environ.get('OLLAMA_HOST', 'localhost')
-        ollama_port = os.environ.get('OLLAMA_PORT', '11434')
-        ollama_url = f"http://{ollama_host}:{ollama_port}/api/generate"
+        ollama_base_url = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
+        ollama_url = f"{ollama_base_url}/api/generate"
         
         def generate():
             try:
