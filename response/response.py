@@ -25,7 +25,7 @@ def ratelimit_handler(e):
         'timestamp': time.time()
     }
     flash("You have made too many requests recently. Please wait a moment and try again.", "warning")
-    return redirect(url_for('response.challenges'))
+    return redirect(url_for('events.event_page'))
 
 @response_bp.route('/challenges')
 @require_login
@@ -118,6 +118,17 @@ def wip_challenge_details(challenge_id):
     image_data = db_session.execute(query, {"challenge_id": challenge_id}).fetchone()
     encoded_image = base64.b64encode(image_data[0]).decode('utf-8')
     
+    query = text(f"SELECT status FROM challenge_status where challenge_id = {challenge_id}")
+    status_result = db_session.execute(query).fetchone()
+    print(status_result)
+    if status_result == None:
+        form = AcceptChallengeForm()
+        return render_template("challenge_description.html",
+                            challenge=challenge,
+                            form=form,
+                            comments=None,
+                            encoded_image=encoded_image)
+
     return render_template('challenge_wip.html',
                            challenge=challenge,
                            comment_form=comment_form,
@@ -234,7 +245,7 @@ def challenge_submission(challenge_id):
                             scan_thread.start()
                         
                         flash(f'Challenge "{challenge.challenge_name}" submitted successfully!', 'success')
-                        return redirect(url_for('response.challenges'))
+                        return redirect(url_for('events.event_page'))
 
                     except Exception as e:
                         print(e)
@@ -245,7 +256,7 @@ def challenge_submission(challenge_id):
             if not error_message: 
                 try:
                     flash(f'Your challenge "{challenge.challenge_name}" has been successfully completed and submitted!', 'success')
-                    return redirect(url_for('response.challenges'))
+                    return redirect(url_for('events.event_page'))
                 except Exception as e:
                     print(e)
                     db_session.rollback()
@@ -300,7 +311,7 @@ def report_comment(comment_id):
         flash('Comment has been reported for review.', 'info')
     else:
         flash('Comment not found.', 'danger')
-    return redirect(url_for('response.challenges'))
+    return redirect(url_for('events.event_page'))
 
 @response_bp.route('/track_points')
 @require_login

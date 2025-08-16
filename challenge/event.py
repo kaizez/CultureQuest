@@ -2,6 +2,9 @@ from flask import Blueprint, render_template, request, session
 from db_handler import fetch_challenges, check_and_update_rate_limit  # Fetch function from db_handler.py
 from auth_decorators import login_required  # Import authentication decorator
 import math
+from sqlalchemy import text
+from response.db import db_session
+import base64
 
 # Create a Blueprint for the event page
 event_bp = Blueprint('event', __name__, template_folder='templates')
@@ -53,7 +56,36 @@ def event_page():
         'next_num': page + 1 if page < total_pages else None
     }
     
+    query_user_statuses = text("SELECT challenge_id, status FROM challenge_status WHERE user_id = :user_id")
+    status_results = db_session.execute(query_user_statuses, {"user_id": user_id}).fetchall()
+    challenge_statuses = {str(row.challenge_id): row.status for row in status_results}
+
+    query_all_challenges = text("SELECT * FROM challenge_submissions")
+    all_challenges_results = db_session.execute(query_all_challenges).fetchall()
+
+    current_challenges = []
+    done_challenges = []
+
+    for challenge_row in all_challenges_results:
+        challenge_dict = dict(challenge_row._mapping)
+
+        if challenge_dict.get('media_data'):
+            encoded_image = base64.b64encode(challenge_dict['media_data']).decode('utf-8')
+            challenge_dict['encoded_image'] = encoded_image
+        else:
+            challenge_dict['encoded_image'] = None
+
+
+        status = challenge_statuses.get(str(challenge_dict['id']))
+
+        if status == 'ACCEPTED':
+            current_challenges.append(challenge_dict)
+        elif status == 'COMPLETED' or status == 'APPROVED' or status == 'REJECTED':
+            done_challenges.append(challenge_dict)
+
     return render_template('event.html', 
-                         featured_challenge=featured_challenge,
-                         challenges=current_page_challenges,
-                         pagination=pagination)
+                        featured_challenge=featured_challenge,
+                        challenges=current_page_challenges,
+                        pagination=pagination,
+                        current_challenges=current_challenges,
+                        done_challenges=done_challenges,)
