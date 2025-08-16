@@ -8,6 +8,27 @@ from dotenv import load_dotenv
 from jinja2 import FileSystemLoader, ChoiceLoader
 from secure import Secure
 
+# Load environment variables first before any imports that need them
+def load_env():
+    """Load environment variables from .env file."""
+    basedir = os.getcwd()
+    dotenv_path = os.path.join(basedir, '.env')
+    if os.path.exists(dotenv_path):
+        print(f"Loading .env file from {dotenv_path}")
+        load_dotenv(dotenv_path)
+        
+        # Debug: Check if API key is loaded
+        api_key = os.environ.get('VIRUSTOTAL_API_KEY')
+        if api_key:
+            print(f"[OK] VirusTotal API key loaded (length: {len(api_key)})")
+        else:
+            print("[WARNING] VirusTotal API key not found in environment")
+    else:
+        print("Warning: .env file not found.")
+        print(f"Looking for .env at: {dotenv_path}")
+
+load_env()
+
 # Add current directory and module directories to Python path for proper imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
@@ -74,26 +95,6 @@ from response.mod import moderate_bp
 # Restore original working directory
 os.chdir(old_cwd)
 
-def load_env():
-    """Load environment variables from .env file."""
-    basedir = os.getcwd()
-    dotenv_path = os.path.join(basedir, '.env')
-    if os.path.exists(dotenv_path):
-        print(f"Loading .env file from {dotenv_path}")
-        load_dotenv(dotenv_path)
-        
-        # Debug: Check if API key is loaded
-        api_key = os.environ.get('VIRUSTOTAL_API_KEY')
-        if api_key:
-            print(f"[OK] VirusTotal API key loaded (length: {len(api_key)})")
-        else:
-            print("[WARNING] VirusTotal API key not found in environment")
-    else:
-        print("Warning: .env file not found.")
-        print(f"Looking for .env at: {dotenv_path}")
-
-# Load environment variables
-load_env()
 
 # Initialize the Flask app
 app = Flask(__name__, static_url_path='/static', static_folder='static')
