@@ -25,7 +25,7 @@ def ratelimit_handler(e):
         'timestamp': time.time()
     }
     flash("You have made too many requests recently. Please wait a moment and try again.", "warning")
-    return redirect(url_for('events.event_page'))
+    return redirect(url_for('event.event_page'))
 
 @response_bp.route('/challenges')
 @require_login
@@ -245,7 +245,7 @@ def challenge_submission(challenge_id):
                             scan_thread.start()
                         
                         flash(f'Challenge "{challenge.challenge_name}" submitted successfully!', 'success')
-                        return redirect(url_for('events.event_page'))
+                        return redirect(url_for('event.event_page'))
 
                     except Exception as e:
                         print(e)
@@ -256,7 +256,7 @@ def challenge_submission(challenge_id):
             if not error_message: 
                 try:
                     flash(f'Your challenge "{challenge.challenge_name}" has been successfully completed and submitted!', 'success')
-                    return redirect(url_for('events.event_page'))
+                    return redirect(url_for('event.event_page'))
                 except Exception as e:
                     print(e)
                     db_session.rollback()
@@ -311,7 +311,7 @@ def report_comment(comment_id):
         flash('Comment has been reported for review.', 'info')
     else:
         flash('Comment not found.', 'danger')
-    return redirect(url_for('events.event_page'))
+    return redirect(url_for('event.event_page'))
 
 @response_bp.route('/track_points')
 @require_login
