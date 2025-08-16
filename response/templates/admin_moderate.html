@@ -13,6 +13,20 @@
 {% endblock %}
 
 {% block content %}
+<main class="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+</main>
 <div class="container py-4 px-4 mx-auto">
     <header class="mb-4">
         <h1 class="h4 h3-md fw-bold text-gray-800">Admin: Comment Moderation Queue</h1>
@@ -41,7 +55,7 @@
                     <tr>
                         <td>{{ comment.text }}</td>
                         <td>{{ comment.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>{{ comment.user_name }}</td>
+                        <td>{{ comment.username }}</td>
                         <td>
                             <a href="{{ url_for('response.wip_challenge_details', challenge_id=comment.challenge_id) }}" target="_blank">
                                 {{ comment.challenge_name }}

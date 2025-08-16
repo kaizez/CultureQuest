@@ -28,10 +28,10 @@ def ratelimit_handler(e):
     return redirect(url_for('response.challenges'))
 
 @response_bp.route('/challenges')
-# @require_login
+@require_login
 def challenges():
         
-    user_id = get_user_id() if get_user_id() else r'"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"'
+    user_id = get_user_id() if get_user_id() else r"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"
     print(user_id)
     query_user_statuses = text("SELECT challenge_id, status FROM challenge_status WHERE user_id = :user_id")
     status_results = db_session.execute(query_user_statuses, {"user_id": user_id}).fetchall()
@@ -59,7 +59,7 @@ def challenges():
             new_challenges.append(challenge_dict)
         elif status == 'ACCEPTED':
             current_challenges.append(challenge_dict)
-        elif status == 'COMPLETED':
+        elif status == 'COMPLETED' or status == 'APPROVED' or status == 'REJECTED':
             done_challenges.append(challenge_dict)
 
     query_points = text("SELECT points from user_points where user_id=:user_id")
@@ -75,7 +75,7 @@ def challenges():
     )
 
 @response_bp.route('/challenges/<string:challenge_id>')
-# @require_login
+@require_login
 def challenge_description(challenge_id):
     query = text(f"SELECT * FROM challenge_submissions where id = :challenge_id")
     result = db_session.execute(query, {"challenge_id": challenge_id})
@@ -99,7 +99,7 @@ def challenge_description(challenge_id):
                             encoded_image=encoded_image)
 
 @response_bp.route('/wip-challenges/<string:challenge_id>')
-# @require_login
+@require_login
 def wip_challenge_details(challenge_id):
     query = text("SELECT * FROM challenge_submissions where id = :challenge_id")
     result = db_session.execute(query, {"challenge_id": challenge_id})
@@ -127,10 +127,10 @@ def wip_challenge_details(challenge_id):
                            encoded_image=encoded_image)
 
 @response_bp.route('/wip-challenges/<string:challenge_id>/add-comment', methods=['POST'])
-# @require_login
+@require_login
 @limiter.limit("5 per minute") 
 def add_comment_to_wip_challenge(challenge_id):
-    user_id = get_user_id() if get_user_id() else r'"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"'
+    user_id = get_user_id() if get_user_id() else r"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"
     query = text(f"SELECT * FROM challenge_submissions where id = :challenge_id")
     result = db_session.execute(query, {"challenge_id": challenge_id})
     challenge = result.fetchone()
@@ -170,14 +170,13 @@ def add_comment_to_wip_challenge(challenge_id):
         return jsonify({'success': False, 'message': errors[0] if errors else 'Invalid data submitted.'}), 422
 
 @response_bp.route('/submit-challenge/<string:challenge_id>', methods=['GET', 'POST'])
-# @require_login
-@limiter.limit("2 per minute")
+@require_login
+@limiter.limit("5 per minute")
 def challenge_submission(challenge_id):
     query = text(f"SELECT * FROM challenge_submissions where id = :challenge_id")
     result = db_session.execute(query, {"challenge_id": challenge_id})
     challenge = result.fetchone()
-        
-    user_id = get_user_id() if get_user_id() else r'"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"'
+    user_id = get_user_id() if get_user_id() else r"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"
 
     form = SubmissionForm(request.form)
 
@@ -224,13 +223,8 @@ def challenge_submission(challenge_id):
                         db_session.add(new_response)
                         
                         db_session.commit()
-                        
-                        update_status = ChallegeStatus(
-                        challenge_id=challenge_id,
-                        user_id = user_id,
-                        status = "COMPLETED"
-                        )
-                        db_session.add(update_status)
+                        query = text("UPDATE challenge_status SET status = 'COMPLETED' WHERE user_id = :user_id and challenge_id = :challenge_id")
+                        db_session.execute(query, {"user_id": user_id, "challenge_id": challenge_id})
                         
                         db_session.commit()
                 
@@ -267,7 +261,7 @@ def challenge_submission(challenge_id):
     return render_template('challenge_submission.html', challenge=challenge, form=form)
 
 @response_bp.route('/challenges/accept/<string:challenge_id>', methods=['POST'])
-# @require_login
+@require_login
 def accept_challenge(challenge_id):
     form = AcceptChallengeForm()
     if form.validate_on_submit():
@@ -275,7 +269,7 @@ def accept_challenge(challenge_id):
         result = db_session.execute(query, {"challenge_id": challenge_id})
         challenge = result.fetchone()        
         
-        user_id = get_user_id() if get_user_id() else r'"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"'
+        user_id = get_user_id() if get_user_id() else r"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"
         try:
             update_status = ChallegeStatus(
                 challenge_id=challenge_id,
@@ -296,7 +290,7 @@ def accept_challenge(challenge_id):
     return redirect(url_for('response.wip_challenge_details', challenge_id=challenge.id))
 
 @response_bp.route('/report-comment/<string:comment_id>', methods=['POST'])
-# @require_login
+@require_login
 @limiter.limit("15 per minute")
 def report_comment(comment_id):
     comment = db_session.get(Comment, comment_id)
@@ -308,3 +302,45 @@ def report_comment(comment_id):
         flash('Comment not found.', 'danger')
     return redirect(url_for('response.challenges'))
 
+@response_bp.route('/track_points')
+@require_login
+def track_points():
+    user_id = get_user_id() if get_user_id() else r"a56b84f3-2b4c-4670-b3b6-6894af8f78dc"
+    username = get_username() if get_username() else "Iamwk"
+
+    query = text("select points from user_points WHERE user_id = :user_id")
+    user_points = db_session.execute(query, {"user_id": user_id}).scalar()
+
+    query = text("SELECT * FROM challenge_status WHERE user_id = :user_id ")
+    status_records = db_session.execute(query, {"user_id": user_id}).fetchall()
+    query = text("SELECT points FROM challenge_submissions WHERE id = :challenge_id")
+
+    challenge_points = {}
+    total_points = 0
+
+    if status_records:
+        challenge_ids = [str(record.challenge_id) for record in status_records]
+        ids_list = ", ".join(challenge_ids)
+        points_query = text(f"SELECT id, challenge_name, points FROM challenge_submissions WHERE id IN ({ids_list})")
+        points_results = db_session.execute(points_query).fetchall()
+        
+        challenge_points = {
+            row.id: {
+                'name': row.challenge_name, 
+                'points': row.points
+            } 
+            for row in points_results
+        }
+        
+        total_points = sum(
+            challenge_points.get(record.challenge_id, {}).get('points', 0) 
+            for record in status_records 
+            if record.status == 'COMPLETED'
+        )
+
+    return render_template('track_points.html', 
+                           username = username,
+                           user_points = user_points,
+                         status_records=status_records,
+                         challenge_points=challenge_points,
+                         total_points=total_points)

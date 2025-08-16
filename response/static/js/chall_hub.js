@@ -1,87 +1,60 @@
-// static/js/chall_hub.js
 document.addEventListener('DOMContentLoaded', () => {
-    const newTabBtn = document.getElementById('new-tab');
-    const currentTabBtn = document.getElementById('current-tab');
-    const doneTabBtn = document.getElementById('done-tab');
-
-    const newChallengesContainer = document.getElementById('new-challenges-tab');
-    const currentChallengesContainer = document.getElementById('current-challenges-tab');
-    const doneChallengesContainer = document.getElementById('done-challenges-tab');
-
     const searchBar = document.getElementById('search-bar');
-    const sortBy = document.getElementById('sort-by');
-    const emptyState = document.getElementById('empty-state');
-    const resetButton = document.getElementById('reset-filters-btn');
+    const challengeTabs = document.querySelectorAll('#challengeTabs .nav-link');
 
-    let allNewChallenges = [];
-    let allCurrentChallenges = [];
-    let allDoneChallenges = [];
-
-    function updateChallengeLists() {
-        allNewChallenges = Array.from(newChallengesContainer.querySelectorAll('.challenge-card')).map(card => card.closest('.col'));
-        allCurrentChallenges = Array.from(currentChallengesContainer.querySelectorAll('.challenge-card')).map(card => card.closest('.col'));
-        allDoneChallenges = Array.from(doneChallengesContainer.querySelectorAll('.challenge-card')).map(card => card.closest('.col'));
-    }
-
-    if (newTabBtn) newTabBtn.addEventListener('shown.bs.tab', applyFiltersAndSort);
-    if (currentTabBtn) currentTabBtn.addEventListener('shown.bs.tab', applyFiltersAndSort);
-    if (doneTabBtn) doneTabBtn.addEventListener('shown.bs.tab', applyFiltersAndSort);
-
-    if (searchBar) searchBar.addEventListener('input', applyFiltersAndSort);
-    
-    if (resetButton) {
-        resetButton.addEventListener('click', () => {
-            if(searchBar) searchBar.value = '';
-            applyFiltersAndSort();
-        });
-    }
-
-    function applyFiltersAndSort() {
-        updateChallengeLists();
-
-        const searchQuery = searchBar ? searchBar.value.toLowerCase() : '';
+    // This function performs the search and filtering
+    function applyFilters() {
+        const searchQuery = searchBar.value.toLowerCase();
         
-        let challengesToFilter = [];
-        let activeContainerElement = null;
-
-        if (newChallengesContainer && newChallengesContainer.classList.contains('show')) {
-            challengesToFilter = allNewChallenges;
-            activeContainerElement = newChallengesContainer.querySelector('.row');
-        } else if (currentChallengesContainer && currentChallengesContainer.classList.contains('show')) {
-            challengesToFilter = allCurrentChallenges;
-            activeContainerElement = currentChallengesContainer.querySelector('.row');
-        } else if (doneChallengesContainer && doneChallengesContainer.classList.contains('show')) {
-            challengesToFilter = allDoneChallenges;
-            activeContainerElement = doneChallengesContainer.querySelector('.row');
-        } else {
-            // Fallback to the first tab if none are active
-            challengesToFilter = allNewChallenges;
-            activeContainerElement = newChallengesContainer ? newChallengesContainer.querySelector('.row') : null;
+        // Find the currently active tab pane
+        const activeTabPane = document.querySelector('.tab-pane.fade.show.active');
+        if (!activeTabPane) {
+            return; // Exit if no active tab is found
         }
+        
+        // Get all challenge columns within that active tab
+        const challenges = activeTabPane.querySelectorAll('.col');
+        let visibleChallengeCount = 0;
 
-        let filteredChallenges = challengesToFilter.filter(colElement => {
-            const card = colElement.querySelector('.challenge-card');
-            if (!card) return false;
-
-            const title = card.dataset.title ? card.dataset.title.toLowerCase() : '';
-            
-            const matchesSearch = title.includes(searchQuery);
-            
-            return matchesSearch;
+        challenges.forEach(col => {
+            const card = col.querySelector('.challenge-card');
+            if (card) {
+                const title = card.dataset.title.toLowerCase();
+                
+                // If the card's title includes the search query...
+                if (title.includes(searchQuery)) {
+                    // ...show the column by removing the 'd-none' class.
+                    col.classList.remove('d-none');
+                    visibleChallengeCount++;
+                } else {
+                    // ...otherwise, hide the column by adding the 'd-none' class.
+                    col.classList.add('d-none');
+                }
+            }
         });
 
-        
-        if (activeContainerElement) {
-            activeContainerElement.innerHTML = '';
-            if (filteredChallenges.length > 0) {
-                filteredChallenges.forEach(colElement => activeContainerElement.appendChild(colElement));
-                if (emptyState) emptyState.classList.add('d-none');
+        // Optional: Show a "no results" message if needed
+        const noResultsMessage = activeTabPane.querySelector('.text-secondary.text-center.col-12');
+        if (noResultsMessage) {
+            if (visibleChallengeCount === 0) {
+                noResultsMessage.textContent = 'No challenges match your search.';
+                noResultsMessage.classList.remove('d-none');
             } else {
-                if (emptyState) emptyState.classList.remove('d-none');
+                noResultsMessage.classList.add('d-none');
             }
         }
     }
-    
-    updateChallengeLists();
-    applyFiltersAndSort();
+
+    // Add an event listener to the search bar
+    if (searchBar) {
+        searchBar.addEventListener('input', applyFilters);
+    }
+
+    // Add event listeners to the tabs to re-apply the filter when a new tab is shown
+    challengeTabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', applyFilters);
+    });
+
+    // Run once on page load to handle any initial state
+    applyFilters();
 });

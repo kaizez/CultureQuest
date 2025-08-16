@@ -23,7 +23,6 @@ class ChallengeResponse(Base):
     file_content = Column(MEDIUMBLOB, nullable=True)
     submission_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     status = Column(String(50), nullable=False, default='PENDING_SCAN')
-    mod_status = Column(String(50), nullable=False, default='PENDING')
     virustotal_scan_results = Column(Text, nullable=True)
 
 class Comment(Base):
@@ -35,5 +34,5 @@ class Comment(Base):
     status = Column(String(50), nullable=False, default='PENDING')
     user_id = Column(String(50), nullable=False, default='default_user')
     challenge_id = Column(Integer, nullable=False)
-    challenge_name = Column(Integer, nullable=False)
-    username = Column(Integer, nullable=False)
+    challenge_name = Column(Text, nullable=True)
+    username = Column(String(50), nullable=True)

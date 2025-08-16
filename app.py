@@ -68,7 +68,7 @@ init_database = login_module.init_database
 
 # Import response module
 os.chdir(os.path.join(current_dir, 'response'))
-from response.response import response_bp
+from response.response import response_bp, limiter
 from response.mod import moderate_bp
 
 # Restore original working directory
@@ -183,6 +183,7 @@ def set_security_headers(response):
 # Initialize extensions
 db.init_app(app)
 socketio = SocketIO(app)
+limiter.init_app(app)
 
 # Make auth functions available to all templates
 from chatapp_rewards.auth_utils import get_navbar_template

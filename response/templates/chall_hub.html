@@ -1,14 +1,32 @@
 {% extends "base.html" %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/intro.js/minified/introjs.min.css">
 <link rel="stylesheet" href="{{ url_for('response.static', filename='css/chall_hub.css') }}">
 {% endblock %}
 
 {% block content %}
+
+<main class="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+</main>
 <div class="container mx-auto px-4 py-8">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-8">
         <div>
@@ -17,7 +35,8 @@
         </div>
         <div class="mt-4 mt-md-0 d-flex align-items-center" style="gap: 0.5rem;">
             <button id="start-tour-btn" class="btn btn-outline-primary btn-sm">Start Tour</button>
-            
+            <a href="{{ url_for('response.track_points') }}" class="btn btn-outline-primary btn-sm">Track my points</a>
+
             <div class="bg-purple-subtle text-purple px-4 py-2 rounded-pill d-flex align-items-center">
                 <i class="fas fa-trophy me-2"></i>
                 <span>{{points.points}}</span>
@@ -26,18 +45,21 @@
     </div>
 
     <ul class="nav nav-tabs" id="challengeTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="new-challenges-tab" data-bs-toggle="tab" data-bs-target="#new-challenges" type="button" role="tab" aria-controls="new-challenges" aria-selected="true">New Challenges</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="current-challenges-tab" data-bs-toggle="tab" data-bs-target="#current-challenges" type="button" role="tab" aria-controls="current-challenges" aria-selected="false">My Challenges</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="done-challenges-tab" data-bs-toggle="tab" data-bs-target="#done-challenges" type="button" role="tab" aria-controls="done-challenges" aria-selected="false">Done Challenges</button>
-    </li>
-</ul>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="new-tab" data-bs-toggle="tab" data-bs-target="#new-challenges"
+                type="button" role="tab" aria-controls="new-challenges" aria-selected="true">New Challenges</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="current-tab" data-bs-toggle="tab" data-bs-target="#current-challenges"
+                type="button" role="tab" aria-controls="current-challenges" aria-selected="false">My Challenges</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="done-tab" data-bs-toggle="tab" data-bs-target="#done-challenges" type="button"
+                role="tab" aria-controls="done-challenges" aria-selected="false">Done Challenges</button>
+        </li>
+    </ul>
 
-<div class="tab-content" id="challengeTabsContent">
+    <div class="tab-content" id="challengeTabsContent">
     </div>
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
@@ -48,19 +70,19 @@
                 </div>
                 <input type="text" id="search-bar" placeholder="Search challenges..." class="form-control ps-5 rounded">
             </div>
-        </div>        
+        </div>
     </div>
 
-    <div class="tab-content">
+    <div class="tab-content" id="challengeTabsContent">
         <div class="tab-pane fade show active" id="new-challenges" role="tabpanel" aria-labelledby="new-tab">
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 {% for challenge in new_challenges %}
                 <div class="col">
                     <div class="position-relative">
-                        <img src="data:image/jpeg;base64,{{ challenge.encoded_image }}" alt="Submitted Image" class="card-img-top" style="height: 160px; object-fit: cover;">
+                        <img src="data:image/jpeg;base64,{{ challenge.encoded_image }}" alt="Submitted Image"
+                            class="card-img-top" style="height: 160px; object-fit: cover;">
                     </div>
-                    <div class="challenge-card card h-100"
-                        data-category="{{ challenge.category }}" data-title="{{ challenge.id | lower }}">
+                    <div class="challenge-card card h-100" data-title="{{ challenge.name | lower }}">
                         <div class="card-body p-4">
                             <h3 class="h5 fw-bold text-gray-800 mb-2">{{ challenge.challenge_name }}</h3>
                             <p class="text-secondary mb-3">{{ challenge.description | truncate(100) }}</p>
@@ -86,24 +108,13 @@
                 {% for challenge in current_challenges %}
                 <div class="col">
                     <div class="position-relative">
-                        <img src="data:image/jpeg;base64,{{ challenge.encoded_image }}" alt="Submitted Image" class="card-img-top" style="height: 160px; object-fit: cover;">
+                        <img src="data:image/jpeg;base64,{{ challenge.encoded_image }}" alt="Submitted Image"
+                            class="card-img-top" style="height: 160px; object-fit: cover;">
                     </div>
-                    <div class="challenge-card card h-100"
-                        data-category="{{ challenge.category }}" data-title="{{ challenge.challenge_name | lower }}">
+                    <div class="challenge-card card h-100" data-title="{{ challenge.challenge_name | lower }}">
                         <div class="card-body p-4">
                             <h3 class="h5 fw-bold text-gray-800 mb-2">{{ challenge.challenge_name }}</h3>
                             <p class="text-secondary mb-3">{{ challenge.description | truncate(100) }}</p>
-
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between small text-secondary mb-1">
-                                    <span>Progress</span>
-                                    <span>{{ challenge.progress_percent }}%</span>
-                                </div>
-                                <div class="progress rounded-pill" style="height: 0.625rem;">
-                                    <div class="progress-bar bg-primary rounded-pill" role="progressbar"
-                                        style="width: {{ challenge.progress_percent }}%"></div>
-                                </div>
-                            </div>
 
                             <div class="d-flex align-items-center text-muted small mb-3">
                                 <i class="fas fa-trophy ms-4 me-2"></i>
@@ -130,24 +141,13 @@
                 {% for challenge in done_challenges %}
                 <div class="col">
                     <div class="position-relative">
-                        <img src="data:image/jpeg;base64,{{ challenge.encoded_image }}" alt="Submitted Image" class="card-img-top" style="height: 160px; object-fit: cover;">
+                        <img src="data:image/jpeg;base64,{{ challenge.encoded_image }}" alt="Submitted Image"
+                            class="card-img-top" style="height: 160px; object-fit: cover;">
                     </div>
-                    <div class="challenge-card card h-100"
-                        data-category="{{ challenge.category }}" data-title="{{ challenge.challenge_name | lower }}">
+                    <div class="challenge-card card h-100" data-title="{{ challenge.challenge_name | lower }}">
                         <div class="card-body p-4">
                             <h3 class="h5 fw-bold text-gray-800 mb-2">{{ challenge.challenge_name }}</h3>
                             <p class="text-secondary mb-3">{{ challenge.description | truncate(100) }}</p>
-
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between small text-secondary mb-1">
-                                    <span>Progress</span>
-                                    <span>{{ challenge.progress_percent }}%</span>
-                                </div>
-                                <div class="progress rounded-pill" style="height: 0.625rem;">
-                                    <div class="progress-bar bg-success rounded-pill" role="progressbar"
-                                        style="width: {{ challenge.progress_percent }}%"></div>
-                                </div>
-                            </div>
 
                             <div class="d-flex align-items-center text-muted small mb-3">
                                 <i class="fas fa-trophy me-2"></i>

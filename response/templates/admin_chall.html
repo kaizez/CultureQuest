@@ -6,7 +6,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('response.static', filename='css/chall_hub.css') }}">
 <style>
-
 .navbar-nav{
     flex-direction: row;
 }
@@ -14,6 +13,20 @@
 {% endblock %}
 
 {% block content %}
+<main class="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+</main>
 <div class="container py-4 px-4 mx-auto">
     <header class="mb-4">
         <h1 class="h4 h3-md fw-bold text-gray-800">Admin: Uploaded Challenge Content</h1>
@@ -22,20 +35,30 @@
 
     <ul class="nav nav-tabs mb-4" id="challengeTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-challenges" type="button" role="tab" aria-controls="pending-challenges" aria-selected="true">Pending</button>
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-challenges" type="button" role="tab" aria-controls="pending-challenges" aria-selected="true">
+                Pending
+            </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved-challenges" type="button" role="tab" aria-controls="approved-challenges" aria-selected="false">Approved</button>
+            <button class="nav-link" id="approved-tab" data-bs-toggle="tab" data-bs-target="#approved-challenges" type="button" role="tab" aria-controls="approved-challenges" aria-selected="false">
+                Approved
+            </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected-challenges" type="button" role="tab" aria-controls="rejected-challenges" aria-selected="false">Rejected</button>
+            <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected-challenges" type="button" role="tab" aria-controls="rejected-challenges" aria-selected="false">
+                Rejected
+            </button>
         </li>
     </ul>
 
     <div class="tab-content">
+        <!-- PENDING TAB -->
         <div class="tab-pane fade show active" id="pending-challenges" role="tabpanel" aria-labelledby="pending-tab">
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {% for response in responses if response.mod_status == 'PENDING' %}
+                {% for response in responses %}
+                    {% set status_key = response.challenge_id|string + '_' + response.user_id|string %}
+                    {% set current_status = challenge_statuses.get(status_key, 'PENDING') %}
+                    {% if current_status == 'COMPLETED' %}
                     <div class="col">
                         <div class="card h-100">
                             <div class="card-body">
@@ -43,7 +66,8 @@
                                 <p class="card-text">
                                     <small class="text-muted">User ID: {{ response.user_id }}</small><br>
                                     <small class="text-muted">File: {{ response.filename }}</small><br>
-                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small><br>
+                                    <small class="text-muted">Status: <span class="badge bg-warning">{{ current_status }}</span></small>
                                 </p>
                                 <a href="{{ url_for('moderate.admin_uploaded_content_detail', response_id=response.id) }}" class="btn btn-primary btn-sm">View Details</a>
                                 <form action="{{ url_for('moderate.admin_update_response_status', response_id=response.id, action='approve') }}" method="POST" class="d-inline">
@@ -55,33 +79,22 @@
                             </div>
                         </div>
                     </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="approved-challenges" role="tabpanel" aria-labelledby="approved-tab">
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {% for response in responses if response.mod_status == 'APPROVED' %}
-                    <div class="col">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ response.challenge_title }}</h5>
-                                <p class="card-text">
-                                    <small class="text-muted">User ID: {{ response.user_id }}</small><br>
-                                    <small class="text-muted">File: {{ response.filename }}</small><br>
-                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small>
-                                </p>
-                                <a href="{{ url_for('moderate.admin_uploaded_content_detail', response_id=response.id) }}" class="btn btn-primary btn-sm">View Details</a>
-                            </div>
-                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="col-12">
+                        <p class="text-muted text-center">No pending challenges found.</p>
                     </div>
                 {% endfor %}
             </div>
         </div>
 
-        <div class="tab-pane fade" id="rejected-challenges" role="tabpanel" aria-labelledby="rejected-tab">
+        <!-- APPROVED TAB -->
+        <div class="tab-pane fade" id="approved-challenges" role="tabpanel" aria-labelledby="approved-tab">
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {% for response in responses if response.mod_status == 'REJECTED' %}
+                {% for response in responses %}
+                    {% set status_key = response.challenge_id|string + '_' + response.user_id|string %}
+                    {% set current_status = challenge_statuses.get(status_key, 'PENDING') %}
+                    {% if current_status == 'APPROVED' %}
                     <div class="col">
                         <div class="card h-100">
                             <div class="card-body">
@@ -89,11 +102,47 @@
                                 <p class="card-text">
                                     <small class="text-muted">User ID: {{ response.user_id }}</small><br>
                                     <small class="text-muted">File: {{ response.filename }}</small><br>
-                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small><br>
+                                    <small class="text-muted">Status: <span class="badge bg-success">{{ current_status }}</span></small>
                                 </p>
                                 <a href="{{ url_for('moderate.admin_uploaded_content_detail', response_id=response.id) }}" class="btn btn-primary btn-sm">View Details</a>
                             </div>
                         </div>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="col-12">
+                        <p class="text-muted text-center">No approved challenges found.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- REJECTED TAB -->
+        <div class="tab-pane fade" id="rejected-challenges" role="tabpanel" aria-labelledby="rejected-tab">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for response in responses %}
+                    {% set status_key = response.challenge_id|string + '_' + response.user_id|string %}
+                    {% set current_status = challenge_statuses.get(status_key, 'PENDING') %}
+                    {% if current_status == 'REJECTED' %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ response.challenge_title }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">User ID: {{ response.user_id }}</small><br>
+                                    <small class="text-muted">File: {{ response.filename }}</small><br>
+                                    <small class="text-muted">Submitted: {{ response.submission_date.strftime('%Y-%m-%d %H:%M') }}</small><br>
+                                    <small class="text-muted">Status: <span class="badge bg-danger">{{ current_status }}</span></small>
+                                </p>
+                                <a href="{{ url_for('moderate.admin_uploaded_content_detail', response_id=response.id) }}" class="btn btn-primary btn-sm">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="col-12">
+                        <p class="text-muted text-center">No rejected challenges found.</p>
                     </div>
                 {% endfor %}
             </div>

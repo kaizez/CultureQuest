@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Challenge History{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        min-height: 100vh;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+
+    .main-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 24px;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .page-title {
+        font-size: 48px;
+        font-weight: 700;
+        color: #1f2937;
+        line-height: 1.1;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+    }
+
+    .points-display {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        border-radius: 24px;
+        padding: 16px 24px;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 32px;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .points-icon {
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .username-display {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #f0f9ff;
+        border: 1px solid #e0f2fe;
+        border-radius: 24px;
+        padding: 8px 16px;
+        color: #0369a1;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 16px;
+    }
+
+    .username-icon {
+        width: 20px;
+        height: 20px;
+        background: #0369a1;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    /* History Section Styles */
+    .history-section {
+        margin: 48px 0;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .history-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+        padding: 32px 32px 24px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .history-table-container {
+        overflow-x: auto;
+    }
+
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .history-table th {
+        background: #f9fafb;
+        padding: 16px 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+
+    .history-table td {
+        padding: 16px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: top;
+    }
+
+    .history-table tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 24px 16px;
+        }
+
+        .page-title {
+            font-size: 36px;
+        }
+
+        .history-title {
+            font-size: 24px;
+            padding: 24px 16px 16px;
+        }
+
+        .history-table-container {
+            overflow-x: scroll;
+        }
+
+        .history-table {
+            min-width: 800px;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 12px 8px;
+            font-size: 13px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+</main>
+
+<div class="page-header">
+    <h1 class="page-title">Track your challenge response</h1>
+    <div class="username-display">
+        <span>Welcome, {{ username }}</span>
+    </div>
+    <div class="points-display" id="user-points">
+        <div class="points-icon">💎</div>
+        <span>You have <strong>{{ user_points }}</strong> points</span>
+    </div>
+</div>
+
+<div id="flash-messages"></div>
+
+<div class="history-section">
+    <h2 class="history-title">Your Challenge History</h2>
+
+    <div>
+        <div class="history-table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-trophy" style="margin-right: 0.25rem;"></i>Challenge</th>
+                        <th><i class="fas fa-flag" style="margin-right: 0.25rem;"></i>Status</th>
+                        <th><i class="fas fa-coins" style="margin-right: 0.25rem;"></i>Points</th>
+                        <th><i class="fas fa-cog" style="margin-right: 0.25rem;"></i>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if status_records %}
+                    {% for record in status_records %}
+                    {% set challenge_info = challenge_points.get(record.challenge_id, {}) %}
+                    <tr>
+                        <td>
+                            <div class="challenge-name">{{ challenge_info.get('name', 'Unknown Challenge') }}</div>
+                            <div class="challenge-description">
+                                {% set description = challenge_info.get('description', '') %}
+                                {{ description[:80] }}{% if description|length > 80 %}...{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if record.status == 'COMPLETED' %}
+                            <span class="status-badge bg-success text-white">{{ record.status }}</span>
+                            {% elif record.status == 'APPROVED' %}
+                            <span class="status-badge bg-success text-white">Approved</span>
+                            {% elif record.status == 'IN_PROGRESS' %}
+                            <span class="status-badge bg-primary text-white">In Progress</span>
+                            {% elif record.status == 'PENDING' %}
+                            <span class="status-badge bg-warning text-dark">Pending</span>
+                            {% elif record.status == 'REJECTED' %}
+                            <span class="status-badge bg-muted text-white">Rejected</span>
+                            {% else %}
+                            <span class="status-badge bg-secondary text-white">{{ record.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.status == 'APPROVED' %}
+                            <div class="points-earned text-success">{{ challenge_info.get('points', 0) }} pts</div>
+                            {% else %}
+                            <div class="points-pending">0 pts</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('response.wip_challenge_details', challenge_id=record.challenge_id) }}"
+                                class="action-btn">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 24px;">
+                            You haven't started any challenges yet. Go accept one!
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

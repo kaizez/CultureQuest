@@ -17,7 +17,7 @@ limiter = Limiter(
 )
 
 @moderate_bp.route('/download-file/<string:response_id>')
-# @require_admin
+@require_admin
 def download_file(response_id):
     query = text("SELECT * FROM challenge_response WHERE id = :response_id")
     result = db_session.execute(query, {"response_id": response_id})
@@ -33,7 +33,7 @@ def download_file(response_id):
     )
 
 @moderate_bp.route('/rescan-file/<string:response_id>', methods=['POST'])
-# @require_admin
+@require_admin
 @limiter.limit("5 per minute")
 def admin_rescan_file(response_id):
     query = text("SELECT * FROM challenge_response WHERE id = :response_id")
@@ -58,30 +58,39 @@ def admin_rescan_file(response_id):
     return redirect(url_for('moderate.admin_uploaded_content_detail', response_id=response.id))
 
 @moderate_bp.route('/uploaded-content')
-# @require_admin
+@require_admin
 def admin_uploaded_content_list():        
     responses_stmt = select(ChallengeResponse).order_by(desc(ChallengeResponse.submission_date))
     responses = db_session.execute(responses_stmt).scalars().all()
 
-    # Step 2: Efficiently fetch all needed challenge titles
     challenge_ids = {res.challenge_id for res in responses}
     challenge_titles = {}
     if challenge_ids:
-        # Assuming the table with challenge definitions is 'challenges'
         ids_list = ", ".join(map(str, challenge_ids))
         query = text(f"SELECT id, challenge_name FROM challenge_submissions WHERE id IN ({ids_list})")
         title_results = db_session.execute(query).fetchall()
         challenge_titles = {row[0]: row[1] for row in title_results}
-        print(ids_list)
 
-    # Step 3: Attach the title to each response object
+    challenge_statuses = {}
+    if responses:
+        challenge_user_pairs = [(res.challenge_id, res.user_id) for res in responses]
+        
+        for challenge_id, user_id in challenge_user_pairs:
+            query = text("SELECT status FROM challenge_status WHERE challenge_id = :challenge_id AND user_id = :user_id")
+            result = db_session.execute(query, {"challenge_id": challenge_id, "user_id": user_id}).fetchone()
+            
+            status_key = f"{challenge_id}_{user_id}"
+            challenge_statuses[status_key] = result.status if result else 'PENDING'
+
     for response in responses:
-        response.challenge_title = challenge_titles.get(response.challenge_id, 'Challenge1')
+        query = text(f"SELECT challenge_name FROM challenge_submissions where id = :response_id")
+        challenge = db_session.execute(query, {"response_id": response.challenge_id}).fetchone()
+        response.challenge_title = challenge[0]
 
-    return render_template('admin_chall.html', responses=responses)
+    return render_template('admin_chall.html', responses=responses, challenge_statuses=challenge_statuses)
 
 @moderate_bp.route('/uploaded-content/<string:response_id>')
-# @require_admin
+@require_admin
 def admin_uploaded_content_detail(response_id):
     query = text("SELECT * FROM challenge_response WHERE id = :response_id")
     result = db_session.execute(query, {"response_id": response_id})
@@ -90,7 +99,7 @@ def admin_uploaded_content_detail(response_id):
         flash(f"Response with ID {response_id} not found.", "danger")
         return redirect(url_for('moderate.admin_uploaded_content_list'))
     query = text(f"SELECT challenge_name FROM challenge_submissions where id = :response_id")
-    challenge = db_session.execute(query, {"response_id": response_id}).fetchone()
+    challenge = db_session.execute(query, {"response_id": response.challenge_id}).fetchone()
 
     if challenge is None:
         challenge = 'Challenge1'
@@ -108,14 +117,19 @@ def admin_uploaded_content_detail(response_id):
                            scan_summary=scan_summary)
 
 @moderate_bp.route('/update-response-status/<string:response_id>/<string:action>', methods=['POST'])
-# @require_admin
+@require_admin
 def admin_update_response_status(response_id, action):
     response = db_session.get(ChallengeResponse, response_id)
 
-    query = text("SELECT points FROM challenge_submissions WHERE challenge_id = :challenge_id")
-    points = db_session.execute(query, {"challenge_id": response.challenge_id}).fetchone()
-    query = text("UPDATE user_points SET points = :points WHERE user_id = :user_id")
-    db_session.execute(query, {'points':points, 'user_id': response.user_id})
+    query = text("select points from user_points WHERE user_id = :user_id")
+    user_points = db_session.execute(query, {"user_id": response.user_id}).scalar()
+
+    query = text("SELECT points FROM challenge_submissions WHERE id = :challenge_id")
+    points = db_session.execute(query, {"challenge_id": response.challenge_id}).scalar()
+    if points:
+        total_points= points + user_points
+    else:
+        total_points = user_points
     
     if not response:
         flash(f"Challenge response with ID {response_id} not found.", 'danger')
@@ -125,10 +139,14 @@ def admin_update_response_status(response_id, action):
         return redirect(url_for('moderate.admin_uploaded_content_list'))
 
     if action == 'approve':
-        response.mod_status = 'APPROVED'
+        query = text(f"UPDATE challenge_status SET status = 'APPROVED' WHERE challenge_id = {response.challenge_id}")
+        db_session.execute(query)
+        query = text("UPDATE user_points SET points = :points WHERE user_id = :user_id")
+        db_session.execute(query, {'points': total_points, 'user_id': response.user_id})
         flash(f"Challenge response approved.", 'success')
     elif action == 'reject':
-        response.mod_status = 'REJECTED'
+        query = text(f"UPDATE challenge_status SET status = 'REJECTED' WHERE challenge_id = {response.challenge_id}")
+        db_session.execute(query)
         flash(f"Challenge response rejected.", 'warning')
     else:
         flash("Invalid action.", "danger")
@@ -141,14 +159,14 @@ def admin_update_response_status(response_id, action):
     return redirect(url_for('moderate.admin_uploaded_content_list'))
 
 @moderate_bp.route('/moderate-comments')
-# @require_admin
+@require_admin
 def admin_moderate_comments():
     comments_stmt = select(Comment).filter(or_(Comment.status == 'PENDING', Comment.status == 'REPORTED')).order_by(desc(Comment.timestamp))
     pending_comments = db_session.execute(comments_stmt).scalars().all()
     return render_template('admin_moderate.html', comments=pending_comments)
 
 @moderate_bp.route('/update-comment-status/<string:comment_id>/<string:action>', methods=['POST'])
-# @require_admin
+@require_admin
 def admin_update_comment_status(comment_id, action):
     comment = db_session.get(Comment, comment_id)
     if not comment:

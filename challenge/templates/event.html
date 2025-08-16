@@ -11,7 +11,7 @@
         <!-- Featured Challenge -->
         {% if featured_challenge %}
             <div class="featured-challenge">
-                <a href="{{ url_for('response.challenge_description', challenge_id=featured_challenge.id) }}" style="text-decoration: none; color: inherit; display: contents;">
+                <a href="{{ url_for('response.challenges') }}" style="text-decoration: none; color: inherit; display: contents;">
                     <div class="featured-challenge-image-container">
                         {% if featured_challenge['media'] %}
                             <img src="/uploads/{{ featured_challenge['media'] }}" alt="{{ featured_challenge['challenge_name'] or featured_challenge['name'] }}" class="featured-challenge-image">
@@ -57,7 +57,7 @@
                             {% endif %}
                         </div>
                         <div class="challenge-card-content">
-                            <a href="{{ url_for('response.challenge_description', challenge_id=challenge.id) }}" style="text-decoration: none; color: inherit;">
+                            <a href="{{ url_for('response.challenges') }}" style="text-decoration: none; color: inherit;">
                             <h3 class="challenge-card-title">{{ challenge['challenge_name'] or challenge['name'] }}</h3></a>
                         </div>
                     </div>
