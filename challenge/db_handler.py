@@ -16,7 +16,7 @@ except ImportError as e:
     CHAT_INTEGRATION_AVAILABLE = False
 
 # Define rate limit parameters - Protects against abuse and DoS attacks
-RATE_LIMIT = 5  # Max requests per minute - Protects against rapid-fire spam attacks
+RATE_LIMIT = 10  # Max requests per minute - Protects against rapid-fire spam attacks
 RATE_LIMIT_WINDOW = timedelta(minutes=1)  # 1 minute window - Protects against sustained abuse
 
 def create_challenge_chat_room(challenge_id, challenge_name):
