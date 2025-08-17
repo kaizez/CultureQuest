@@ -35,7 +35,7 @@ def create_challenge_chat_room(challenge_id, challenge_name):
         # Create new chat room with challenge ID as room ID
         chat_room = ChatRoom(
             id=challenge_id,  # Use challenge ID as room ID
-            name=f"🎯 {challenge_name}",  # Add emoji prefix to distinguish challenge chats
+            name=f"🎯 {challenge_name} (#{challenge_id})",  # Add emoji prefix and ID to ensure uniqueness
             description=f"Discussion channel for challenge: {challenge_name}",
             is_active=True
         )
@@ -125,7 +125,7 @@ def sync_challenge_chat_sessions():
             elif not existing_room.is_active:
                 # Reactivate if challenge exists but chat room is inactive
                 existing_room.is_active = True
-                existing_room.name = f"🎯 {challenge.challenge_name}"
+                existing_room.name = f"🎯 {challenge.challenge_name} (#{challenge.id})"
                 existing_room.description = f"Discussion channel for challenge: {challenge.challenge_name}"
                 db.session.commit()
                 print(f"[OK] Reactivated chat session for challenge {challenge.id}")
